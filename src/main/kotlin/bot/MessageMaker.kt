@@ -1,7 +1,6 @@
 package bot
 
 import db.DatabaseHelper
-import db.Player
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
@@ -15,16 +14,17 @@ class MessageMaker {
     companion object {
 
         fun getFlagMessage(chatId: Long, flag: String): SendMessage {
-            val player = DatabaseHelper.getPlayerById(chatId)
+            val player = DatabaseHelper.getPlayerById(chatId)!!
             val msgText: String
             for (task in DatabaseHelper.tasks.values) {
                 if (flag == task.flag) {
-                    if (player!!.solvedTasks.contains(task.id)) {
+                    val solvedTasks = player.solvedTasks.split("|")
+                    if (solvedTasks.contains(task.id.toString())) {
                         msgText = "Это задание ты уже решил, поздравляю! А теперь займись другими!"
                     } else {
                         msgText = "Верно! +${task.cost}"
                         player.score += task.cost
-                        player.solvedTasks.add(task.id)
+                        player.solvedTasks += "${task.id}|"
                         DatabaseHelper.updatePlayersDatabase()
                     }
 
@@ -48,13 +48,12 @@ class MessageMaker {
         }
 
         fun getMenuMessage(firstName: String, chatId: Long, userName: String?): SendMessage {
-            var player = DatabaseHelper.getPlayerById(chatId)
+            val player = DatabaseHelper.getPlayerById(chatId)
             if (player == null) {
-                player = Player(chatId, userName ?: firstName, 0, arrayListOf())
-                DatabaseHelper.insertNewPlayer(player)
+                DatabaseHelper.addNewPlayer(chatId, userName ?: firstName)
             }
 
-            val msgText = "Ку, ${userName ?: firstName}! Твой текущий счёт: ${player.score}\nДля управления используй кнопки. Чтобы сдать флаг напиши /flag \"твой флаг\""
+            val msgText = "Ку, ${userName ?: firstName}! Твой текущий счёт: ${player?.score}\nДля управления используй кнопки. Чтобы сдать флаг напиши /flag \"твой флаг\""
             val buttonRow1 = listOf<InlineKeyboardButton>(
                     InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
                     InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)
@@ -87,9 +86,9 @@ class MessageMaker {
         fun getTasksMessage(chatId: Long): SendMessage {
             val msgText = "Список заданий: "
             val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
-            if (chatId in DatabaseHelper.players) {
+            if (DatabaseHelper.checkPlayerInDatabase(chatId)) {
                 for (task in DatabaseHelper.tasks.values) {
-                    val taskSolved = task.id in DatabaseHelper.players[chatId]!!.solvedTasks
+                    val taskSolved = task.id in DatabaseHelper.getSolvedTasksForPlayer(chatId)
                     buttonsList.add(listOf(
                             InlineKeyboardButton()
                                     .setText(
@@ -111,7 +110,7 @@ class MessageMaker {
 
 
         fun getScoreboardMessage(chatId: Long): SendMessage {
-            val scoreboard = DatabaseHelper.getScoreboard().sortedByDescending { it.second }.toTypedArray()
+            val scoreboard = DatabaseHelper.getScoreboard()
             var msgText = "Таблица лидеров:\n"
             var i = 1
             for (position in scoreboard) {

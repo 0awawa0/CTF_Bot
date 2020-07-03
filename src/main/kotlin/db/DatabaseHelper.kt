@@ -1,8 +1,15 @@
 package db
 
+import db.entities.PlayerEntity
+import db.tables.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
+import java.util.*
+import kotlin.collections.HashMap
 
 
 const val DATABASE_FOLDER = ""
@@ -15,12 +22,22 @@ class DatabaseHelper {
 
     companion object {
 
+        private val database: Database by lazy {
+            Database.connect("jdbc:sqlite:db/data.db", "org.sqlite.JDBC")
+        }
+
+
         lateinit var players: HashMap<Long, Player>
+        val playersFromDb: HashMap<Long, PlayerEntity> = HashMap()
         lateinit var tasks: HashMap<Long, Task>
 
 
         fun init() {
-            players = parsePlayersFileToHashmap()
+            transaction(db = database) {
+                SchemaUtils.create(PlayersTable)
+                SchemaUtils.create(TasksTable)
+            }
+//            players = parsePlayersFileToHashmap()
             tasks = parseTasksFileToHashmap()
             val file = File("./tasks")
             if (!file.exists()) {
@@ -28,42 +45,41 @@ class DatabaseHelper {
             }
         }
 
-
-        private fun parsePlayersFileToHashmap(): HashMap<Long, Player> {
-            val folder = File(DATABASE_FOLDER)
-            val file = File(DATABASE_PLAYERS_FILE)
-            if (!folder.exists()) {
-                folder.mkdir()
-                file.createNewFile()
-                return HashMap()
-            }
-
-            if (!file.exists()) {
-                file.createNewFile()
-                return HashMap()
-            }
-
-            val result = HashMap<Long, Player>()
-            val fileReader = FileReader(file)
-            val playersList = fileReader.readLines()
-            for (player in playersList) {
-                val (id, username, score, tasks) = player.split(":|:")
-                val taskList = arrayListOf<Long>()
-                if (tasks.isNotEmpty()) {
-                    for (task in tasks.split(","))
-                        taskList.add(task.toLong())
-                }
-
-                result[id.toLong()] = Player(
-                        id.toLong(),
-                        username,
-                        score.toInt(),
-                        taskList
-                )
-            }
-
-            return result
-        }
+//        private fun parsePlayersFileToHashmap(): HashMap<Long, Player> {
+//            val folder = File(DATABASE_FOLDER)
+//            val file = File(DATABASE_PLAYERS_FILE)
+//            if (!folder.exists()) {
+//                folder.mkdir()
+//                file.createNewFile()
+//                return HashMap()
+//            }
+//
+//            if (!file.exists()) {
+//                file.createNewFile()
+//                return HashMap()
+//            }
+//
+//            val result = HashMap<Long, Player>()
+//            val fileReader = FileReader(file)
+//            val playersList = fileReader.readLines()
+//            for (player in playersList) {
+//                val (id, username, score, tasks) = player.split(":|:")
+//                val taskList = arrayListOf<Long>()
+//                if (tasks.isNotEmpty()) {
+//                    for (task in tasks.split(","))
+//                        taskList.add(task.toLong())
+//                }
+//
+//                result[id.toLong()] = Player(
+//                        id.toLong(),
+//                        username,
+//                        score.toInt(),
+//                        taskList
+//                )
+//            }
+//
+//            return result
+//        }
 
 
         private fun parseTasksFileToHashmap(): HashMap<Long, Task> {
@@ -92,23 +108,49 @@ class DatabaseHelper {
             return result
         }
 
-
-        fun getPlayerById(id: Long): Player? {
-            return players[id]
+        fun addNewPlayer(id: Long, userName: String) {
+            val d = Date()
+            val startTime = d.time
+            transaction(db = database) {
+                PlayerEntity.new(id) {
+                    this.userName = userName
+                    this.score = 0
+                    this.solvedTasks = ""
+                }
+            }
+            val stopTime = d.time
+            print(startTime - stopTime)
         }
 
+
+        fun getPlayerById(id: Long): PlayerEntity? {
+            return transaction(db = database) { PlayerEntity.findById(id) }
+        }
 
         fun getTaskById(id: Long): Task? {
             return tasks[id]
         }
 
+        fun checkPlayerInDatabase(id: Long): Boolean {
+            return transaction(db = database) { PlayerEntity.findById(id) != null }
+        }
 
-        fun getScoreboard(): Array<Pair<String, Int>> {
-            val scoreboard = ArrayList<Pair<String, Int>>()
-            for (player in players.values) {
-                scoreboard.add(Pair(player.userName, player.score))
+        fun getSolvedTasksForPlayer(id: Long): List<Long> {
+            return transaction(db = database) {
+                PlayerEntity.findById(id)
+                    ?.solvedTasks
+                    ?.split("|")
+                    ?.map { it.toLong() }
+                    ?.toList()
+                    ?: emptyList()
             }
-            return scoreboard.sortedBy { it.second }.toTypedArray()
+        }
+
+
+        fun getScoreboard(): List<Pair<String, Int>> {
+            return transaction(db = database) {
+                PlayerEntity.all().sortedBy { it.score }.map { Pair(it.userName, it.score) }
+            }
         }
 
 
@@ -129,15 +171,6 @@ class DatabaseHelper {
             for (player in players.values) {
                 fileWriter.write("${player.userId}:|:${player.userName}:|:${player.score}:|:${player.solvedTasks.joinToString(",")}\n")
             }
-            fileWriter.close()
-        }
-
-
-        fun insertNewPlayer(player: Player) {
-            players[player.userId] = player
-            val file = File(DATABASE_PLAYERS_FILE)
-            val fileWriter = FileWriter(file, true)
-            fileWriter.append("${player.userId}:|:${player.userName}:|:${player.score}:|:${player.solvedTasks.joinToString(",")}\n")
             fileWriter.close()
         }
     }

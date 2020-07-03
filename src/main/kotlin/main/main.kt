@@ -27,7 +27,7 @@ fun main(args: Array<String> = emptyArray()) {
     ApiContextInitializer.init()
     main.mW = MainWindow()
     val frame = JFrame("DonNU CTF Bot")
-    frame.contentPane = main.mW.root
+    frame.contentPane = mW.root
     frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     frame.size = Dimension(1000, 800)
 
