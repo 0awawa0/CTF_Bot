@@ -6,6 +6,7 @@ import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
 import org.telegram.telegrambots.meta.generics.BotSession
+import ui.Application
 import ui.MainWindow
 import java.awt.Dimension
 import java.io.FileReader
@@ -25,7 +26,10 @@ fun main(args: Array<String> = emptyArray()) {
 
     val botApi = TelegramBotsApi()
     ApiContextInitializer.init()
-    main.mW = MainWindow()
+
+    tornadofx.launch<Application>(args)
+
+    mW = MainWindow()
     val frame = JFrame("DonNU CTF Bot")
     frame.contentPane = mW.root
     frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
