@@ -12,7 +12,7 @@ import java.util.*
 import kotlin.collections.HashMap
 
 
-const val DATABASE_FOLDER = ""
+const val DATABASE_FOLDER = "./db"
 const val DATABASE_PLAYERS_FILE = "$DATABASE_FOLDER/players.txt"
 const val DATABASE_TASKS_FILE = "$DATABASE_FOLDER/tasks.txt"
 const val DATABASE_LOG_FILE = "$DATABASE_FOLDER/log.txt"
@@ -140,9 +140,11 @@ class DatabaseHelper {
                 PlayerEntity.findById(id)
                     ?.solvedTasks
                     ?.split("|")
+                    ?.filter { it.isNotEmpty() }
                     ?.map { it.toLong() }
                     ?.toList()
                     ?: emptyList()
+
             }
         }
 

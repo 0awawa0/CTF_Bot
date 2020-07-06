@@ -1,6 +1,7 @@
 package bot
 
 import db.DatabaseHelper
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
@@ -23,9 +24,11 @@ class MessageMaker {
                         msgText = "Это задание ты уже решил, поздравляю! А теперь займись другими!"
                     } else {
                         msgText = "Верно! +${task.cost}"
-                        player.score += task.cost
-                        player.solvedTasks += "${task.id}|"
-                        DatabaseHelper.updatePlayersDatabase()
+                        transaction {
+                            player.score += task.cost
+                            player.solvedTasks += "${task.id}|"
+                        }
+//                        DatabaseHelper.updatePlayersDatabase()
                     }
 
                     val msg = SendMessage()
