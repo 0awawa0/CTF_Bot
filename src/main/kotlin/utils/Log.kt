@@ -1,7 +1,8 @@
 package utils
 
 import db.DATABASE_LOG_FILE
-import main.mW
+import tornadofx.find
+import ui.Application
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
@@ -12,7 +13,7 @@ fun info(tag: String, msg: String) {
     val logMsg = "${dateFormat.format(Date())}: $tag: \\I: $msg"
     println(logMsg)
     writeToLogFile(logMsg)
-    mW.log.append("$logMsg\n")
+    Application.instance.logMessage(logMsg)
 }
 
 fun debug(tag: String, msg: String) {
@@ -20,7 +21,7 @@ fun debug(tag: String, msg: String) {
     val logMsg = "${dateFormat.format(Date())}: $tag: \\D: $msg"
     println(logMsg)
     writeToLogFile(logMsg)
-    mW.log.append("$logMsg\n")
+    Application.instance.logMessage(logMsg)
 }
 
 fun error(tag: String, msg: String) {
@@ -28,7 +29,7 @@ fun error(tag: String, msg: String) {
     val logMsg = "${dateFormat.format(Date())}: $tag: \\E: $msg"
     println(logMsg)
     writeToLogFile(logMsg)
-    mW.log.append("$logMsg\n")
+    Application.instance.logMessage(logMsg)
 }
 
 fun writeToLogFile(msg: String) {

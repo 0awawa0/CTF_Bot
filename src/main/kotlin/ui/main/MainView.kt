@@ -3,22 +3,23 @@ package ui.main
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.layout.BorderPane
-import javafx.scene.layout.Pane
-import javafx.scene.layout.VBox
+import javafx.scene.layout.Priority
 import javafx.scene.text.Font
 import tornadofx.*
 
 class MainView : View("CTF Bot") {
 
     private val borderPane = BorderPane()
-    private val startBotButton = button {
+
+    val startBotButton = button {
         text = "Start bot"
         font = Font(14.0)
         borderpaneConstraints {
             marginBottom = 10.0
         }
     }
-    private val startTestingButton = button {
+
+    val startTestingButton = button {
         text = "Start testing bot"
         font = Font(14.0)
         borderpaneConstraints {
@@ -33,8 +34,19 @@ class MainView : View("CTF Bot") {
             marginRight = 15.0
         }
     }
-    private val tfTestingPassword = textfield {
+
+    val tfTestingPassword = textfield {
         font = Font(12.0)
+    }
+
+    val taLog = textarea {
+        this.maxHeight = Double.MAX_VALUE
+        this.maxWidth = Double.MAX_VALUE
+        vboxConstraints {
+            marginTop = 25.0
+            vgrow = Priority.ALWAYS
+            fitToParentWidth()
+        }
     }
 
     override val root = vbox {
@@ -44,13 +56,10 @@ class MainView : View("CTF Bot") {
         borderPane.center = tfTestingPassword
         borderPane.right = startTestingButton
 
-        prefWidth = 600.0
-        prefHeight = 400.0
-
-        primaryStage.isResizable = false
         startBotButton.prefWidthProperty().bind(borderPane.widthProperty())
 
         this.padding = Insets(10.0)
         add(borderPane)
+        add(taLog)
     }
 }
