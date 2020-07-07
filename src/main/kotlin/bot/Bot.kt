@@ -9,7 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException
-import utils.info
+import utils.Logger
 
 
 const val MSG_START = "/start"
@@ -48,7 +48,7 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
 
     private fun answerMessage(message: Message) {
 
-        info(tag, "Received message from Chat id: ${message.chatId} User: ${message.chat.firstName}. Message: ${message.text}")
+        Logger.info(tag, "Received message from Chat id: ${message.chatId} User: ${message.chat.firstName}. Message: ${message.text}")
 
         if (testing && message.chatId !in authorizedForTesting) {
             val command = message.text.split(" ").find { it.startsWith("/") }!!
@@ -67,7 +67,7 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
                     execute(MessageMaker.getPasswordRequestMessage(message.chatId))
                 }
             } catch (e: TelegramApiException) {
-                utils.error(tag, e.toString())
+                Logger.error(tag, e.toString())
             }
             return
         }
@@ -88,7 +88,7 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
                     }
             )
         } catch (e: TelegramApiException) {
-            utils.error(tag, e.toString())
+            Logger.error(tag, e.toString())
         }
     }
 
@@ -112,7 +112,7 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
             val command = callback.data.split(" ").find { it.startsWith("/") }!!
             val content = callback.data.replace(command, "").trim()
 
-            info(tag, "Received message from Chat id: ${callback.message.chatId} User: ${callback.message.chat.firstName}. Callback data: ${callback.data}")
+            Logger.info(tag, "Received message from Chat id: ${callback.message.chatId} User: ${callback.message.chat.firstName}. Callback data: ${callback.data}")
             if (command == DATA_FILE) {
                 execute(MessageMaker.getFileMessage(callback.message.chatId, content.toLong()))
                 return
@@ -130,7 +130,7 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
             )
 
         } catch (e: TelegramApiException) {
-            utils.error(tag, e.toString())
+            Logger.error(tag, e.toString())
         }
     }
 }

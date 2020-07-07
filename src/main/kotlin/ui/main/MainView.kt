@@ -7,10 +7,15 @@ import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
 import javafx.scene.text.Font
 import javafx.stage.Stage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import tornadofx.*
 import ui.players.PlayersView
+import utils.LogListener
+import utils.Logger
 
-class MainView : View("CTF Bot") {
+class MainView : View("CTF Bot"), LogListener {
 
     private val presenter = MainPresenter(this)
 
@@ -110,12 +115,13 @@ class MainView : View("CTF Bot") {
         playersButton.action {
             Stage().apply {
                 this.title = "Players"
-                this.scene = Scene(PlayersView().root, 300.0, 200.0)
+                this.scene = Scene(PlayersView().root, 500.0, 300.0)
+                this.minWidth = 500.0
+                this.minHeight = 300.0
             }.show()
         }
+        Logger.registerLogListener(this)
     }
 
-    fun logMessage(message: String) {
-        taLog.appendText(message)
-    }
+    override fun onLog(message: String) { taLog.appendText("$message\n") }
 }

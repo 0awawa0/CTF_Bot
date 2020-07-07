@@ -25,10 +25,11 @@ class MessageMaker {
                     } else {
                         msgText = "Верно! +${task.cost}"
                         transaction {
-                            player.score += task.cost
+                            player.currentScore += task.cost
+                            player.seasonScore += task.cost
                             player.solvedTasks += "${task.id}|"
+                            DatabaseHelper.playersController.update()
                         }
-//                        DatabaseHelper.updatePlayersDatabase()
                     }
 
                     val msg = SendMessage()
@@ -56,7 +57,7 @@ class MessageMaker {
                 DatabaseHelper.addNewPlayer(chatId, userName ?: firstName)
             }
 
-            val msgText = "Ку, ${userName ?: firstName}! Твой текущий счёт: ${player?.score}\nДля управления используй кнопки. Чтобы сдать флаг напиши /flag \"твой флаг\""
+            val msgText = "Ку, ${userName ?: firstName}! Твой текущий счёт: ${player?.currentScore ?: 0}. Твой счёт за сезон: ${player?.seasonScore ?: 0}\nДля управления используй кнопки. Чтобы сдать флаг напиши /flag \"твой флаг\""
             val buttonRow1 = listOf<InlineKeyboardButton>(
                     InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
                     InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)

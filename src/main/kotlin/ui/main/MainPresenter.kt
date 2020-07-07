@@ -5,6 +5,7 @@ import db.DatabaseHelper
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
 import org.telegram.telegrambots.meta.generics.BotSession
+import utils.Logger
 import java.io.FileReader
 
 class MainPresenter(private val view: MainView) {
@@ -20,11 +21,10 @@ class MainPresenter(private val view: MainView) {
 
     fun startBot() {
         bot = Bot(token = token, botName = botName)
-        DatabaseHelper.init()
         try {
             botSession = botApi.registerBot(bot)
         } catch (e: TelegramApiRequestException) {
-            utils.error("Main", e.message.toString())
+            Logger.error("Main", e.message.toString())
         }
     }
 
@@ -39,9 +39,7 @@ class MainPresenter(private val view: MainView) {
         try {
             botSession = botApi.registerBot(bot)
         } catch (e: TelegramApiRequestException) {
-            utils.error("Main", e.message.toString())
+            Logger.error("Main", e.message.toString())
         }
     }
-
-    fun logMessage(message: String) { view.logMessage("$message\n") }
 }

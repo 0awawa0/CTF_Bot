@@ -1,13 +1,20 @@
 package db
 
 import db.entities.PlayerEntity
+import db.models.PlayerModel
 import db.tables.*
+import javafx.collections.ObservableList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import tornadofx.Controller
+import tornadofx.asObservable
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -22,65 +29,27 @@ class DatabaseHelper {
 
     companion object {
 
-        private val database: Database by lazy {
+        val database: Database by lazy {
             Database.connect("jdbc:sqlite:db/data.db", "org.sqlite.JDBC")
         }
 
+        val playersController = PlayersController()
 
-        lateinit var players: HashMap<Long, Player>
-        val playersFromDb: HashMap<Long, PlayerEntity> = HashMap()
         lateinit var tasks: HashMap<Long, Task>
 
-
         fun init() {
-            transaction(db = database) {
-                SchemaUtils.create(PlayersTable)
-                SchemaUtils.create(TasksTable)
+            GlobalScope.launch(Dispatchers.IO) {
+                transaction(db = database) {
+                    SchemaUtils.create(PlayersTable)
+                    SchemaUtils.create(TasksTable)
+                }
             }
-//            players = parsePlayersFileToHashmap()
             tasks = parseTasksFileToHashmap()
             val file = File("./tasks")
             if (!file.exists()) {
                 file.mkdir()
             }
         }
-
-//        private fun parsePlayersFileToHashmap(): HashMap<Long, Player> {
-//            val folder = File(DATABASE_FOLDER)
-//            val file = File(DATABASE_PLAYERS_FILE)
-//            if (!folder.exists()) {
-//                folder.mkdir()
-//                file.createNewFile()
-//                return HashMap()
-//            }
-//
-//            if (!file.exists()) {
-//                file.createNewFile()
-//                return HashMap()
-//            }
-//
-//            val result = HashMap<Long, Player>()
-//            val fileReader = FileReader(file)
-//            val playersList = fileReader.readLines()
-//            for (player in playersList) {
-//                val (id, username, score, tasks) = player.split(":|:")
-//                val taskList = arrayListOf<Long>()
-//                if (tasks.isNotEmpty()) {
-//                    for (task in tasks.split(","))
-//                        taskList.add(task.toLong())
-//                }
-//
-//                result[id.toLong()] = Player(
-//                        id.toLong(),
-//                        username,
-//                        score.toInt(),
-//                        taskList
-//                )
-//            }
-//
-//            return result
-//        }
-
 
         private fun parseTasksFileToHashmap(): HashMap<Long, Task> {
             val folder = File(DATABASE_FOLDER)
@@ -109,17 +78,17 @@ class DatabaseHelper {
         }
 
         fun addNewPlayer(id: Long, userName: String) {
-            val d = Date()
-            val startTime = d.time
-            transaction(db = database) {
-                PlayerEntity.new(id) {
-                    this.userName = userName
-                    this.score = 0
-                    this.solvedTasks = ""
+            GlobalScope.launch(Dispatchers.IO) {
+                transaction(db = database) {
+                    val player = PlayerEntity.new(id) {
+                        this.userName = userName
+                        this.currentScore = 0
+                        this.seasonScore = 0
+                        this.solvedTasks = ""
+                    }
+                    playersController.add(PlayerModel().apply { item = player })
                 }
             }
-            val stopTime = d.time
-            print(startTime - stopTime)
         }
 
 
@@ -151,8 +120,12 @@ class DatabaseHelper {
 
         fun getScoreboard(): List<Pair<String, Int>> {
             return transaction(db = database) {
-                PlayerEntity.all().sortedBy { it.score }.map { Pair(it.userName, it.score) }
+                PlayerEntity.all().sortedBy { it.currentScore }.map { Pair(it.userName, it.currentScore) }
             }
+        }
+
+        fun getAllPlayers(): List<PlayerEntity> {
+            return transaction(db = database) { PlayerEntity.all().toList() }
         }
 
 
@@ -167,13 +140,54 @@ class DatabaseHelper {
             return files ?: emptyArray()
         }
 
-
-        fun updatePlayersDatabase() {
-            val fileWriter = FileWriter(DATABASE_PLAYERS_FILE)
-            for (player in players.values) {
-                fileWriter.write("${player.userId}:|:${player.userName}:|:${player.score}:|:${player.solvedTasks.joinToString(",")}\n")
+        fun refreshCurrentScores() {
+            GlobalScope.launch(Dispatchers.IO) {
+                transaction {
+                    val players = PlayerEntity.all()
+                    players.map {
+                        it.currentScore = 0
+                    }
+                    playersController.update(players.toList())
+                }
             }
-            fileWriter.close()
+        }
+
+        fun refreshAllScores() {
+            GlobalScope.launch(Dispatchers.IO) {
+                transaction {
+                    val players = PlayerEntity.all()
+                    players.map {
+                        it.currentScore = 0
+                        it.seasonScore = 0
+                        it.solvedTasks = ""
+                    }
+                    playersController.update(players.toList())
+                }
+            }
+        }
+    }
+
+    class PlayersController: Controller() {
+        val playersList: ObservableList<PlayerModel> by lazy {
+            transaction(db = database) {
+                PlayerEntity.all().map {
+                    PlayerModel().apply {
+                        item = it
+                    }
+                }
+            }.asObservable()
+        }
+
+        fun add(player: PlayerModel) { playersList.add(player) }
+        fun update() {
+            playersList.setAll(transaction {
+                PlayerEntity.all().map {
+                    PlayerModel().apply { item = it }
+                }
+            })
+        }
+        fun update(players: List<PlayerEntity>) {
+            playersList.setAll(players.map { PlayerModel().apply { item = it }})
         }
     }
 }

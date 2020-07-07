@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.Table
 
 object PlayersTable: LongIdTable() {
     val userName = varchar("userName", 128)
-    val score = integer("score")
+    val currentScore = integer("currentScore")
+    val seasonScore = integer("seasonScore")
     val solvedTasks = text("solvedTasks")
 }
