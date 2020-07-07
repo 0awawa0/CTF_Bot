@@ -13,7 +13,7 @@ fun info(tag: String, msg: String) {
     val logMsg = "${dateFormat.format(Date())}: $tag: \\I: $msg"
     println(logMsg)
     writeToLogFile(logMsg)
-    Application.instance.logMessage(logMsg)
+//    Application.instance.logMessage(logMsg)
 }
 
 fun debug(tag: String, msg: String) {
@@ -21,7 +21,7 @@ fun debug(tag: String, msg: String) {
     val logMsg = "${dateFormat.format(Date())}: $tag: \\D: $msg"
     println(logMsg)
     writeToLogFile(logMsg)
-    Application.instance.logMessage(logMsg)
+//    Application.instance.logMessage(logMsg)
 }
 
 fun error(tag: String, msg: String) {
@@ -29,7 +29,7 @@ fun error(tag: String, msg: String) {
     val logMsg = "${dateFormat.format(Date())}: $tag: \\E: $msg"
     println(logMsg)
     writeToLogFile(logMsg)
-    Application.instance.logMessage(logMsg)
+//    Application.instance.logMessage(logMsg)
 }
 
 fun writeToLogFile(msg: String) {

@@ -2,16 +2,39 @@ package ui.main
 
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.Scene
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
 import javafx.scene.text.Font
+import javafx.stage.Stage
 import tornadofx.*
+import ui.players.PlayersView
 
 class MainView : View("CTF Bot") {
 
+    private val presenter = MainPresenter(this)
+
     private val borderPane = BorderPane()
 
-    val startBotButton = button {
+    private val playersButton = button {
+        text = "Players"
+        font = Font(14.0)
+        maxWidth = 400.0
+        vboxConstraints {
+            fitToParentWidth()
+        }
+    }
+
+    private val tasksButton = button {
+        text = "Tasks"
+        font = Font(14.0)
+        maxWidth = 400.0
+        vboxConstraints {
+            fitToParentWidth()
+        }
+    }
+
+    private val startBotButton = button {
         text = "Start bot"
         font = Font(14.0)
         borderpaneConstraints {
@@ -19,7 +42,7 @@ class MainView : View("CTF Bot") {
         }
     }
 
-    val startTestingButton = button {
+    private val startTestingButton = button {
         text = "Start testing bot"
         font = Font(14.0)
         borderpaneConstraints {
@@ -35,11 +58,11 @@ class MainView : View("CTF Bot") {
         }
     }
 
-    val tfTestingPassword = textfield {
+    private val tfTestingPassword = textfield {
         font = Font(12.0)
     }
 
-    val taLog = textarea {
+    private val taLog = textarea {
         this.maxHeight = Double.MAX_VALUE
         this.maxWidth = Double.MAX_VALUE
         vboxConstraints {
@@ -56,10 +79,43 @@ class MainView : View("CTF Bot") {
         borderPane.center = tfTestingPassword
         borderPane.right = startTestingButton
 
-        startBotButton.prefWidthProperty().bind(borderPane.widthProperty())
+        val header = hbox {
+            add(borderPane)
+            add(vbox {
+                add(playersButton)
+                add(tasksButton)
+                minWidth = 100.0
+                maxWidth = 200.0
+                hgrow = Priority.SOMETIMES
+                spacing = 10.0
+                hboxConstraints {
+                    marginLeft = 15.0
+                    alignment = Pos.CENTER
+                }
+            })
+            borderPane.prefWidthProperty().bind(this.widthProperty())
+        }
 
         this.padding = Insets(10.0)
-        add(borderPane)
+        add(header)
         add(taLog)
+
+        header.fitToParentWidth()
+        startBotButton.prefWidthProperty().bind(borderPane.widthProperty())
+    }
+
+    init {
+        startBotButton.action { presenter.startBot() }
+        startTestingButton.action { presenter.startTestingBot(tfTestingPassword.text) }
+        playersButton.action {
+            Stage().apply {
+                this.title = "Players"
+                this.scene = Scene(PlayersView().root, 300.0, 200.0)
+            }.show()
+        }
+    }
+
+    fun logMessage(message: String) {
+        taLog.appendText(message)
     }
 }
