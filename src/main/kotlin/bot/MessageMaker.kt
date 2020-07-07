@@ -17,16 +17,16 @@ class MessageMaker {
         fun getFlagMessage(chatId: Long, flag: String): SendMessage {
             val player = DatabaseHelper.getPlayerById(chatId)!!
             val msgText: String
-            for (task in DatabaseHelper.tasks.values) {
+            for (task in DatabaseHelper.getAllTasks()) {
                 if (flag == task.flag) {
                     val solvedTasks = player.solvedTasks.split("|")
                     if (solvedTasks.contains(task.id.toString())) {
                         msgText = "Это задание ты уже решил, поздравляю! А теперь займись другими!"
                     } else {
-                        msgText = "Верно! +${task.cost}"
+                        msgText = "Верно! +${task.price}"
                         transaction {
-                            player.currentScore += task.cost
-                            player.seasonScore += task.cost
+                            player.currentScore += task.price
+                            player.seasonScore += task.price
                             player.solvedTasks += "${task.id}|"
                             DatabaseHelper.playersController.update()
                         }
@@ -91,12 +91,12 @@ class MessageMaker {
             val msgText = "Список заданий: "
             val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
             if (DatabaseHelper.checkPlayerInDatabase(chatId)) {
-                for (task in DatabaseHelper.tasks.values) {
-                    val taskSolved = task.id in DatabaseHelper.getSolvedTasksForPlayer(chatId)
+                for (task in DatabaseHelper.getAllTasks()) {
+                    val taskSolved = task.id.value in DatabaseHelper.getSolvedTasksForPlayer(chatId)
                     buttonsList.add(listOf(
                             InlineKeyboardButton()
                                     .setText(
-                                            "${task.category} - ${task.cost}: ${task.name} ${if (taskSolved) "\uD83D\uDDF8" else ""}"
+                                            "${task.category} - ${task.price}: ${task.name} ${if (taskSolved) "\uD83D\uDDF8" else ""}"
                                     )
                                     .setCallbackData("/task ${task.id}")
                     ))
@@ -135,7 +135,7 @@ class MessageMaker {
         fun getTaskMessage(chatId: Long, taskId: Long): SendMessage {
             val files = DatabaseHelper.getTaskFiles(taskId)
             val task = DatabaseHelper.getTaskById(taskId)!!
-            var msgText = "${task.name}           ${task.cost}\n"
+            var msgText = "${task.name}           ${task.price}\n"
             val msg = SendMessage()
             val textFile = files.find { it.name == "text.txt" }
             val content = files.find { it.nameWithoutExtension == task.name }

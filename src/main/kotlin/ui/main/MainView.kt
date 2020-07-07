@@ -12,6 +12,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import tornadofx.*
 import ui.players.PlayersView
+import ui.tasks.TasksView
 import utils.LogListener
 import utils.Logger
 
@@ -118,6 +119,14 @@ class MainView : View("CTF Bot"), LogListener {
                 this.scene = Scene(PlayersView().root, 500.0, 300.0)
                 this.minWidth = 500.0
                 this.minHeight = 300.0
+            }.show()
+        }
+        tasksButton.action {
+            Stage().apply {
+                this.title = "Tasks"
+                this.scene = Scene(TasksView().root, 700.0, 500.0)
+                this.minWidth = 700.0
+                this.minHeight = 500.0
             }.show()
         }
         Logger.registerLogListener(this)

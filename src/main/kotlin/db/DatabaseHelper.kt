@@ -1,7 +1,9 @@
 package db
 
 import db.entities.PlayerEntity
+import db.entities.TaskEntity
 import db.models.PlayerModel
+import db.models.TaskModel
 import db.tables.*
 import javafx.collections.ObservableList
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,7 @@ class DatabaseHelper {
         }
 
         val playersController = PlayersController()
+        val tasksController = TasksController()
 
         lateinit var tasks: HashMap<Long, Task>
 
@@ -91,13 +94,40 @@ class DatabaseHelper {
             }
         }
 
+        fun addNewTask(
+            category: String,
+            name: String,
+            description: String,
+            price: Int,
+            flag: String,
+            filesDirectory: String
+        ) {
+           GlobalScope.launch(Dispatchers.IO) {
+               transaction(db = database) {
+                   val task = TaskEntity.new {
+                       this.category = category
+                       this.name = name
+                       this.description = description
+                       this.price = price
+                       this.flag = flag
+                       this.filesDirectory = filesDirectory
+                   }
+                   tasksController.tasksList.add(TaskModel().apply { item = task })
+               }
+           }
+        }
+
 
         fun getPlayerById(id: Long): PlayerEntity? {
             return transaction(db = database) { PlayerEntity.findById(id) }
         }
 
-        fun getTaskById(id: Long): Task? {
-            return tasks[id]
+        fun getTaskById(id: Long): TaskEntity? {
+            return transaction(db = database) { TaskEntity.findById(id) }
+        }
+
+        fun getAllTasks(): List<TaskEntity> {
+            return transaction (db = database) { TaskEntity.all().toList() }
         }
 
         fun checkPlayerInDatabase(id: Long): Boolean {
@@ -113,7 +143,6 @@ class DatabaseHelper {
                     ?.map { it.toLong() }
                     ?.toList()
                     ?: emptyList()
-
             }
         }
 
@@ -188,6 +217,18 @@ class DatabaseHelper {
         }
         fun update(players: List<PlayerEntity>) {
             playersList.setAll(players.map { PlayerModel().apply { item = it }})
+        }
+    }
+
+    class TasksController: Controller() {
+        val tasksList: ObservableList<TaskModel> by lazy {
+            transaction(db = database) {
+                TaskEntity.all().map {
+                    TaskModel().apply {
+                        item = it
+                    }
+                }.asObservable()
+            }
         }
     }
 }

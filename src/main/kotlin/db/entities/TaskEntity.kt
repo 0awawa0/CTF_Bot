@@ -9,6 +9,8 @@ class TaskEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<TaskEntity>(TasksTable)
     var category by TasksTable.category
     var name by TasksTable.name
-    var cost by TasksTable.cost
+    var description by TasksTable.description
+    var price by TasksTable.price
     var flag by TasksTable.flag
+    var filesDirectory by TasksTable.filesDirectory
 }
