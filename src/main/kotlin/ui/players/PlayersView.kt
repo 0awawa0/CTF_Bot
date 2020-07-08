@@ -65,7 +65,7 @@ class PlayersView: View("Players") {
     }
 
     private val btDeleteAllPlayers = button {
-        text = "Delete all users"
+        text = "Delete all players"
         font = Font(14.0)
         action {
             presenter.deleteAllPlayers()
