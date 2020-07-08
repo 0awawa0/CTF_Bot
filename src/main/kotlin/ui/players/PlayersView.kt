@@ -53,7 +53,18 @@ class PlayersView: View("Players") {
         }
     }
 
-    private val btDeleteAllUsers = button {
+    private val btDeletePlayer = button {
+        text = "Delete player"
+        font = Font(14.0)
+        action {
+            when(val model = playersTable.tableView.selectedItem) {
+                null -> return@action
+                else -> presenter.deletePlayer(model)
+            }
+        }
+    }
+
+    private val btDeleteAllPlayers = button {
         text = "Delete all users"
         font = Font(14.0)
         action {
@@ -85,11 +96,13 @@ class PlayersView: View("Players") {
 
         add(btRefreshCurrentScores)
         add(btRefreshAllScores)
-        add(btDeleteAllUsers)
+        add(btDeletePlayer)
+        add(btDeleteAllPlayers)
 
         btRefreshCurrentScores.fitToParentWidth()
         btRefreshAllScores.fitToParentWidth()
-        btDeleteAllUsers.fitToParentWidth()
+        btDeletePlayer.fitToParentWidth()
+        btDeleteAllPlayers.fitToParentWidth()
 
         maxHeight = 150.0
     }
@@ -108,9 +121,7 @@ class PlayersView: View("Players") {
         players.fitToParentWidth()
         players.fitToParentHeight()
         btSaveChanges.fitToParentWidth()
-//        btSaveChanges.fitToParentHeight()
         btRollback.fitToParentWidth()
-//        btRollback.fitToParentHeight()
     }
 
     init {

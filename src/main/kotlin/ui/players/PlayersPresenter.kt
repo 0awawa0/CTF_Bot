@@ -28,6 +28,11 @@ class PlayersPresenter(private val view: PlayersView) {
         }
     }
 
+    fun deletePlayer(model: PlayerModel?) {
+        GlobalScope.launch(Dispatchers.IO) {
+            DatabaseHelper.deletePlayer(model)
+        }
+    }
     fun deleteAllPlayers() {
         GlobalScope.launch(Dispatchers.IO) {
             DatabaseHelper.deleteAllPlayers()

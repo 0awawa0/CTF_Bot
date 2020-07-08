@@ -71,6 +71,13 @@ class DatabaseHelper {
             }
         }
 
+        fun deletePlayer(model: PlayerModel?) {
+            transaction {
+                model?.item?.delete()
+            }
+            playersController.playersList.remove(model)
+        }
+
         fun deleteAllPlayers() {
             transaction(db = database) {
                 PlayerEntity.all().forEach { it.delete() }
