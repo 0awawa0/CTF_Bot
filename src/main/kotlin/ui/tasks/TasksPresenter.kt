@@ -2,6 +2,7 @@ package ui.tasks
 
 import db.DatabaseHelper
 import db.models.TaskModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import tornadofx.TableColumnDirtyState
@@ -9,7 +10,7 @@ import tornadofx.TableColumnDirtyState
 class TasksPresenter(private val view: TasksView) {
 
     fun loadTasksList() {
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.IO) {
             val tasksList = DatabaseHelper.tasksController.tasksList
             view.onTasksListReady(tasksList)
         }
@@ -24,7 +25,7 @@ class TasksPresenter(private val view: TasksView) {
         files: String,
         ctfName: String
     ) {
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.IO) {
             DatabaseHelper.addNewTask(
                 category,
                 name,
@@ -38,7 +39,7 @@ class TasksPresenter(private val view: TasksView) {
     }
 
     fun deleteTask(model: TaskModel) {
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.IO) {
             DatabaseHelper.deleteTask(model)
         }
     }

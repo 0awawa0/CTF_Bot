@@ -1,11 +1,14 @@
 package ui.players
 
-import db.DatabaseHelper
 import db.models.PlayerModel
+import javafx.collections.ObservableList
 import javafx.geometry.Insets
+import javafx.geometry.Pos
 import javafx.scene.control.TableView
 import javafx.scene.text.Font
 import tornadofx.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class PlayersView: View("Players") {
 
@@ -15,35 +18,80 @@ class PlayersView: View("Players") {
 
     private val players = tableview<PlayerModel>{
         playersTable = editModel
-        items = DatabaseHelper.playersController.playersList
         columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
 
-        column("Username", PlayerModel::userName)
-        column("Current score", PlayerModel::currentScore)
-        column("Season score", PlayerModel::seasonScore)
-        column("Solved tasks", PlayerModel::solvedTasks)
+        column("Username", PlayerModel::userName).makeEditable()
+        column("Current score", PlayerModel::currentScore).makeEditable()
+        column("Season score", PlayerModel::seasonScore).makeEditable()
+        column("Solved tasks", PlayerModel::solvedTasks).makeEditable()
+        column("Last right answer", PlayerModel::lastRightAnswer) {
+            value {
+                SimpleDateFormat("dd.MM.YYYY HH:mm:ss").format(Date(it.value.lastRightAnswer.value))
+            }
+        }
+
+        enableCellEditing()
+        enableDirtyTracking()
+
+        onEditCommit {
+            enableButtons()
+        }
     }
 
-    private val refreshCurrentScoresButton = button {
+    private val btRefreshCurrentScores = button {
         text = "Refresh current scores"
         font = Font(14.0)
         action {
-            DatabaseHelper.refreshCurrentScores()
+            presenter.refreshCurrentScores()
         }
     }
-    private val refreshAllScoresButton = button {
+    private val btRefreshAllScores = button {
         text = "Refresh all scores"
         font = Font(14.0)
         action {
-            DatabaseHelper.refreshAllScores()
+            presenter.refreshAllScores()
         }
     }
 
+    private val btDeleteAllUsers = button {
+        text = "Delete all users"
+        font = Font(14.0)
+        action {
+            presenter.deleteAllPlayers()
+        }
+    }
+
+    private val btRollback = button {
+        text = "Cancel changes"
+        font = Font(14.0)
+        action {
+            playersTable.rollback()
+            disableButtons()
+        }
+    }
+
+    private val btSaveChanges = button {
+        text = "Save changes"
+        font = Font(14.0)
+        action {
+            presenter.updateDatabase(playersTable.items.asSequence())
+            disableButtons()
+        }
+    }
     private val buttons = hbox {
         spacing = 15.0
 
-        add(refreshCurrentScoresButton)
-        add(refreshAllScoresButton)
+        alignment = Pos.CENTER
+
+        add(btRefreshCurrentScores)
+        add(btRefreshAllScores)
+        add(btDeleteAllUsers)
+
+        btRefreshCurrentScores.fitToParentWidth()
+        btRefreshAllScores.fitToParentWidth()
+        btDeleteAllUsers.fitToParentWidth()
+
+        maxHeight = 150.0
     }
 
     override val root = vbox {
@@ -52,7 +100,33 @@ class PlayersView: View("Players") {
 
         add(buttons)
         add(players)
+        add(btSaveChanges)
+        add(btRollback)
 
+        buttons.fitToParentWidth()
+        buttons.fitToParentHeight()
         players.fitToParentWidth()
+        players.fitToParentHeight()
+        btSaveChanges.fitToParentWidth()
+//        btSaveChanges.fitToParentHeight()
+        btRollback.fitToParentWidth()
+//        btRollback.fitToParentHeight()
     }
+
+    init {
+        disableButtons()
+        presenter.loadPlayersList()
+    }
+
+    private fun enableButtons() {
+        btSaveChanges.isDisable = false
+        btRollback.isDisable = false
+    }
+
+    private fun disableButtons() {
+        btSaveChanges.isDisable = true
+        btRollback.isDisable = true
+    }
+
+    fun onPlayersListReady(playersList: ObservableList<PlayerModel>) { players.items = playersList }
 }

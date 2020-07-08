@@ -9,4 +9,5 @@ class PlayerModel: ItemViewModel<PlayerEntity>() {
     val currentScore = bind(PlayerEntity::currentScore)
     val seasonScore = bind(PlayerEntity::seasonScore)
     val solvedTasks = bind(PlayerEntity::solvedTasks)
+    val lastRightAnswer = bind(PlayerEntity::lastRightAnswer)
 }

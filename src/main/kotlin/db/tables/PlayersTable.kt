@@ -1,8 +1,6 @@
 package db.tables
 
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.Table
 
 
 object PlayersTable: LongIdTable() {
@@ -10,4 +8,5 @@ object PlayersTable: LongIdTable() {
     val currentScore = integer("currentScore")
     val seasonScore = integer("seasonScore")
     val solvedTasks = text("solvedTasks")
+    val lastRightAnswer = long("lastRightAnswer")
 }

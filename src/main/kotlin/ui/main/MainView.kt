@@ -8,9 +8,6 @@ import javafx.scene.layout.Priority
 import javafx.scene.text.Font
 import javafx.scene.text.TextAlignment
 import javafx.stage.Stage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import tornadofx.*
 import ui.players.PlayersView
 import ui.tasks.TasksView

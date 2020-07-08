@@ -6,10 +6,6 @@ import db.models.PlayerModel
 import db.models.TaskModel
 import db.tables.*
 import javafx.collections.ObservableList
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -17,17 +13,13 @@ import tornadofx.Controller
 import tornadofx.TableColumnDirtyState
 import tornadofx.asObservable
 import java.io.File
-import java.io.FileReader
-import java.util.*
-import kotlin.collections.HashMap
 
 
 const val DATABASE_FOLDER = "./db"
-const val DATABASE_PLAYERS_FILE = "$DATABASE_FOLDER/players.txt"
-const val DATABASE_TASKS_FILE = "$DATABASE_FOLDER/tasks.txt"
 const val DATABASE_LOG_FILE = "$DATABASE_FOLDER/log.txt"
-const val TASKS_FOLDER = "./tasks"
 
+// Helper class to perform actions with database. All calls are blocking due to usage of database transactions.
+//   If one needs to make non-blocking calls, it should implement asynchronous calls by itself.
 class DatabaseHelper {
 
     companion object {
@@ -39,60 +31,51 @@ class DatabaseHelper {
         val playersController = PlayersController()
         val tasksController = TasksController()
 
-        lateinit var tasks: HashMap<Long, Task>
-
         fun init() {
-            GlobalScope.launch(Dispatchers.IO) {
-                transaction(db = database) {
-                    SchemaUtils.create(PlayersTable)
-                    SchemaUtils.create(TasksTable)
-                }
+            transaction(db = database) {
+                SchemaUtils.create(PlayersTable)
+                SchemaUtils.create(TasksTable)
             }
-            tasks = parseTasksFileToHashmap()
-            val file = File("./tasks")
-            if (!file.exists()) {
-                file.mkdir()
-            }
-        }
-
-        private fun parseTasksFileToHashmap(): HashMap<Long, Task> {
-            val folder = File(DATABASE_FOLDER)
-            val file = File(DATABASE_TASKS_FILE)
-            if (!folder.exists()) {
-                folder.mkdir()
-                file.createNewFile()
-                return HashMap()
-            }
-
-            if (!file.exists()) {
-                file.createNewFile()
-                return HashMap()
-            }
-
-            val result = HashMap<Long, Task>()
-            val fileReader = FileReader(file)
-            val tasksList = fileReader.readLines()
-            for (task in tasksList) {
-                if (task.isEmpty()) continue
-                val (id, category, name, cost, flag) = task.split(":|:")
-                result[id.toLong()] = Task(id.toLong(), category, name, cost.toInt(), flag)
-            }
-            fileReader.close()
-            return result
         }
 
         fun addNewPlayer(id: Long, userName: String) {
-            GlobalScope.launch(Dispatchers.IO) {
-                transaction(db = database) {
-                    val player = PlayerEntity.new(id) {
-                        this.userName = userName
-                        this.currentScore = 0
-                        this.seasonScore = 0
-                        this.solvedTasks = ""
-                    }
-                    playersController.add(PlayerModel().apply { item = player })
+            transaction(db = database) {
+                val player = PlayerEntity.new(id) {
+                    this.userName = userName
+                    this.currentScore = 0
+                    this.seasonScore = 0
+                    this.solvedTasks = ""
+                    this.lastRightAnswer = 0
                 }
+                playersController.add(PlayerModel().apply { item = player })
             }
+        }
+
+        fun getPlayerById(id: Long): PlayerEntity? {
+            return transaction(db = database) { PlayerEntity.findById(id) }
+        }
+
+        fun checkPlayerInDatabase(id: Long): Boolean {
+            return transaction(db = database) { PlayerEntity.findById(id) != null }
+        }
+
+        fun getSolvedTasksForPlayer(id: Long): List<Long> {
+            return transaction(db = database) {
+                PlayerEntity.findById(id)
+                    ?.solvedTasks
+                    ?.split("|")
+                    ?.filter { it.isNotEmpty() }
+                    ?.map { it.toLong() }
+                    ?.toList()
+                    ?: emptyList()
+            }
+        }
+
+        fun deleteAllPlayers() {
+            transaction(db = database) {
+                PlayerEntity.all().forEach { it.delete() }
+            }
+            playersController.playersList.removeAll(playersController.playersList)
         }
 
         fun addNewTask(
@@ -104,25 +87,18 @@ class DatabaseHelper {
             filesDirectory: String,
             ctfName: String
         ) {
-            GlobalScope.launch(Dispatchers.IO) {
-                transaction(db = database) {
-                    val task = TaskEntity.new {
-                        this.category = category
-                        this.name = name
-                        this.description = description
-                        this.price = price
-                        this.flag = flag
-                        this.filesDirectory = filesDirectory
-                        this.ctfName = ctfName
-                    }
-                    tasksController.tasksList.add(TaskModel().apply { item = task })
+            transaction(db = database) {
+                val task = TaskEntity.new {
+                    this.category = category
+                    this.name = name
+                    this.description = description
+                    this.price = price
+                    this.flag = flag
+                    this.filesDirectory = filesDirectory
+                    this.ctfName = ctfName
                 }
+                tasksController.tasksList.add(TaskModel().apply { item = task })
             }
-        }
-
-
-        fun getPlayerById(id: Long): PlayerEntity? {
-            return transaction(db = database) { PlayerEntity.findById(id) }
         }
 
         fun getTaskById(id: Long): TaskEntity? {
@@ -146,26 +122,10 @@ class DatabaseHelper {
             return transaction (db = database) { TaskEntity.all().toList() }
         }
 
-        fun checkPlayerInDatabase(id: Long): Boolean {
-            return transaction(db = database) { PlayerEntity.findById(id) != null }
-        }
 
-        fun getSolvedTasksForPlayer(id: Long): List<Long> {
+        fun getScoreboard(): List<Triple<String, Int, Int>> {
             return transaction(db = database) {
-                PlayerEntity.findById(id)
-                    ?.solvedTasks
-                    ?.split("|")
-                    ?.filter { it.isNotEmpty() }
-                    ?.map { it.toLong() }
-                    ?.toList()
-                    ?: emptyList()
-            }
-        }
-
-
-        fun getScoreboard(): List<Pair<String, Int>> {
-            return transaction(db = database) {
-                PlayerEntity.all().sortedBy { it.currentScore }.map { Pair(it.userName, it.currentScore) }
+                PlayerEntity.all().sortedByDescending { it.currentScore }.map { Triple(it.userName, it.currentScore, it.seasonScore) }
             }
         }
 
@@ -185,29 +145,28 @@ class DatabaseHelper {
             return files ?: emptyArray()
         }
 
+        // Sets current users' scores to 0, list of solved tasks and season score remains
         fun refreshCurrentScores() {
-            GlobalScope.launch(Dispatchers.IO) {
-                transaction {
-                    val players = PlayerEntity.all()
-                    players.map {
-                        it.currentScore = 0
-                    }
-                    playersController.update(players.toList())
+            transaction {
+                val players = PlayerEntity.all()
+                players.map {
+                    it.currentScore = 0
                 }
+                playersController.update(players.toList())
             }
         }
 
+        // Renews users list, doesn't delete users from database but sets their fields to default values
         fun refreshAllScores() {
-            GlobalScope.launch(Dispatchers.IO) {
-                transaction {
-                    val players = PlayerEntity.all()
-                    players.map {
-                        it.currentScore = 0
-                        it.seasonScore = 0
-                        it.solvedTasks = ""
-                    }
-                    playersController.update(players.toList())
+            transaction {
+                val players = PlayerEntity.all()
+                players.map {
+                    it.currentScore = 0
+                    it.seasonScore = 0
+                    it.solvedTasks = ""
+                    it.lastRightAnswer = 0
                 }
+                playersController.update(players.toList())
             }
         }
     }
@@ -233,6 +192,15 @@ class DatabaseHelper {
         }
         fun update(players: List<PlayerEntity>) {
             playersList.setAll(players.map { PlayerModel().apply { item = it }})
+        }
+
+        fun commitChanges(changes: Sequence<Map.Entry<PlayerModel, TableColumnDirtyState<PlayerModel>>>) {
+            transaction {
+                changes.filter { it.value.isDirty }.forEach {
+                    it.key.commit()
+                    it.value.commit()
+                }
+            }
         }
     }
 

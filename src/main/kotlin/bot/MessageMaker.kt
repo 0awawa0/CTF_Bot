@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import java.io.FileReader
+import java.util.*
 
 
 class MessageMaker {
@@ -32,6 +33,7 @@ class MessageMaker {
                             player.currentScore += task.price
                             player.seasonScore += task.price
                             player.solvedTasks += "${task.id}|"
+                            player.lastRightAnswer = Date().time
                             DatabaseHelper.playersController.update()
                         }
                     }
@@ -130,12 +132,38 @@ class MessageMaker {
             val scoreboard = DatabaseHelper.getScoreboard()
             var msgText = """
                 <b>$ctfName</b>
-                
-                Таблица лидеров:
-                """
+                |
+                |Таблица лидеров:
+                |
+                """.trimMargin()
             var i = 1
+            val maxLength = 20
             for (position in scoreboard) {
-                msgText += "$i.  ${position.first}               ${position.second}\n"
+                val userName = if (position.first.length > 20)
+                    position.first.slice(0 until maxLength - 3) + "..."
+                else
+                    position.first.let {
+                        var name = it
+                        while (name.length < 20)
+                            name += " "
+                        name
+                    }
+
+                val currentScore = position.second.toString().let {
+                    var score = "Текущий: $it"
+                    while (score.length < 20)
+                        score = " $score"
+                    score
+                }
+
+                val seasonScore = position.third.toString().let {
+                    var score = "Сезон: $it"
+                    while (score.length < 20)
+                        score = " $score"
+                    score
+                }
+
+                msgText += "$i.  $userName $currentScore  $seasonScore\n"
                 i++
             }
 

@@ -10,4 +10,5 @@ class PlayerEntity(id: EntityID<Long>): LongEntity(id) {
     var currentScore by PlayersTable.currentScore
     var seasonScore by PlayersTable.seasonScore
     var solvedTasks by PlayersTable.solvedTasks
+    var lastRightAnswer by PlayersTable.lastRightAnswer
 }

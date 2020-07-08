@@ -231,8 +231,6 @@ class TasksView: View("Tasks") {
         add(btRollback)
         btRollback.fitToParentWidth()
 
-        disableButtons()
-
         tasks.fitToParentWidth()
     }
 
@@ -249,6 +247,7 @@ class TasksView: View("Tasks") {
     }
 
     init {
+        disableButtons()
         presenter.loadTasksList()
     }
 }
