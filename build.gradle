@@ -31,6 +31,9 @@ dependencies {
     implementation "org.telegram:telegrambots:4.8.1"
     implementation 'com.intellij:forms_rt:7.0.3'
 
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+
     // Database
     implementation "org.jetbrains.exposed:exposed-core:0.24.1"
     implementation "org.jetbrains.exposed:exposed-dao:0.24.1"

@@ -4,24 +4,39 @@
 Telegram bot that is being used to organize CTF trainings in Donetsk National University.
 
 ## Usage
-0) Download the bot .jar file [CTF_Bot.jar](out/artifacts/CTF_Bot_jar/CTF_Bot.jar) or build bot from sources. To build bot from sources you should clone project, open it in IntelliJ IDEA and click
-
-    Build -> Build Artifacts -> CTF_Bot:jar  
+0) Download the bot .jar file [CTF_Bot.jar](out/artifacts/CTF_Bot_jar/CTF_Bot.jar) or build bot from sources.
 1) Create folder "db" in the folder where bot is placed.
-2) Put there file "tasks.txt" where all tasks are listed in the following format:
-
-	taskId:|:taskCategory:|:taskName:|:taskCost:|:taskFlag
-	
-	Example:
-	
-	2:|:Crypto:|:bad_crypto:|:300:|:donnuCTF{d0n7_us3_y0ur_0wn_cryp70}
-3) Create folder "tasks" in the folder where bot is placed.
-4) For every task in "tasks.txt" create folder with name equals to task name.
-5) In every folder put two files. First - "text.txt" with task description in it. Second - zip file with name "{taskName}.zip".
-6) Put BotCredentials file to the folder where bot is placed filled as folows:
+2) Put BotCredentials file to the folder where bot is placed filled as folows:
    
     token:|:<i>your_bot_token</i>\
     botName:|:<i>your_bot_name</i>
-7) Run the CTF_Bot.jar and press "Start bot" or enter testing password and press "Start testing bot"
+3) Run the CTF_Bot.jar.
     
-Nor task directory neither task files are neccessary, although you should have at least one.
+## GUI
+
+### Main window
+![MainWindow](screenshots/MainWindow.png)
+
+Top text field is for CTF event name. The CTF name will be used by bot to look for tasks in database.
+
+"Start bot" button will start Telegram bot.
+
+"Start testing bot" button will start the bot with testing password from "Testing password" field. Players will get access to bot features only after they will send this password to the bot.
+
+"Players" and "Tasks" buttons will open Players window and Tasks window respectively.
+
+### Players window
+![PlayersWindow](screenshots/PlayersWindow.png)
+
+"Refresh current scores" button sets "Current score" field for all users to 0. Other fields will remain untouched.
+
+"Refresh all scores" button sets all fields for all users to default values (except of "Username" obviously).
+
+"Delete player" button deletes currently selected user from database. Note that the program will not ask any confirmation for that and there are no way to restore data after that, so be careful with that.
+
+"Delete all players" button completely cleans all data about players from database. And it will not ask confirmation as well as "Delete player" button.
+
+"Save changes" button and "Cancel changes" button are used to save changed player info or cancel that changes. So when you change some values in the table you still need to press "Save changes" to actually change database. Changed but not committed changes are highlighted, you can see it on the screenshot below.
+
+![ChangedPlayersTable](screenshots/ChangedPlayersTable.png)
+
