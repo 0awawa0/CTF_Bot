@@ -1,13 +1,13 @@
 package ui.tasks
 
-import db.DatabaseHelper
 import db.models.TaskModel
+import javafx.collections.ObservableList
 import javafx.geometry.Insets
+import javafx.geometry.Pos
 import javafx.scene.control.TableView
 import javafx.scene.text.Font
 import javafx.stage.DirectoryChooser
 import tornadofx.*
-import java.nio.file.FileSystem
 import java.nio.file.Paths
 
 
@@ -18,63 +18,91 @@ class TasksView: View("Tasks") {
 
     private val tasks = tableview<TaskModel>{
         tasksTable = editModel
-        items = DatabaseHelper.tasksController.tasksList
         columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
 
-        column("Category", TaskModel::category)
-        column("Name", TaskModel::name)
-        column("Description", TaskModel::description)
-        column("Price", TaskModel::price)
-        column("Flag", TaskModel::flag)
-        column("Files directory", TaskModel::filesDirectory)
-        column("CTF name", TaskModel::ctfName)
+        column("Category", TaskModel::category).makeEditable()
+        column("Name", TaskModel::name).makeEditable()
+        column("Description", TaskModel::description).makeEditable()
+        column("Price", TaskModel::price).makeEditable()
+        column("Flag", TaskModel::flag).makeEditable()
+        column("Files directory", TaskModel::filesDirectory).makeEditable()
+        column("CTF name", TaskModel::ctfName).makeEditable()
+
+        enableCellEditing()
+        enableDirtyTracking()
+
+        onEditCommit {
+            enableButtons()
+        }
     }
 
     private val lblCtfName = label {
         text = "CTF name"
         font = Font(16.0)
+        maxWidth = 350.0
     }
-    private val tfCtfName = textfield { font = Font(13.0) }
+    private val tfCtfName = textfield {
+        font = Font(13.0)
+    }
 
     private val lblCategory = label {
         text = "Category"
         font = Font(16.0)
+        maxWidth = 350.0
     }
-    private val tfCategory = textfield { font = Font(13.0) }
+    private val tfCategory = textfield {
+        font = Font(13.0)
+    }
 
     private val lblName = label {
         text = "Name"
         font = Font(16.0)
+        maxWidth = 350.0
     }
-    private val tfName = textfield { font = Font(13.0) }
+    private val tfName = textfield {
+        font = Font(13.0)
+    }
 
     private val lblDescription = label {
         text = "Description"
         font = Font(16.0)
+        maxWidth = 350.0
     }
-    private val taDescription = textarea { font = Font(13.0) }
+    private val taDescription = textarea {
+        font = Font(13.0)
+    }
 
     private val lblPrice = label {
         text = "Price"
         font = Font(16.0)
+        maxWidth = 350.0
     }
-    private val tfPrice = textfield { font = Font(13.0) }
+    private val tfPrice = textfield {
+        font = Font(13.0)
+    }
 
     private val lblFlag = label {
         text = "Flag"
         font = Font(16.0)
+        maxWidth = 350.0
     }
-    private val tfFlag = textfield { font = Font(13.0) }
+    private val tfFlag = textfield {
+        font = Font(13.0)
+    }
 
-    private val lblFiles = label { font = Font(16.0) }
+    private val lblFiles = label {
+        font = Font(16.0)
+    }
     private val btFiles = button {
         text = "Add files directory"
         font = Font(13.0)
+        maxWidth = 350.0
 
         action {
             lblFiles.text = DirectoryChooser()
-                .showDialog(primaryStage)
-                .absolutePath.replace(Paths.get("").toAbsolutePath().toString(), ".")
+                .showDialog(currentStage)
+                ?.absolutePath
+                ?.replace(Paths.get("").toAbsolutePath().toString(), ".") ?: ""
 
         }
     }
@@ -84,7 +112,7 @@ class TasksView: View("Tasks") {
         font = Font(13.0)
 
         action {
-            DatabaseHelper.addNewTask(
+            presenter.addNewTask(
                 tfCategory.text,
                 tfName.text,
                 taDescription.text,
@@ -93,6 +121,37 @@ class TasksView: View("Tasks") {
                 lblFiles.text,
                 tfCtfName.text
             )
+        }
+    }
+
+    private val btSaveChanges = button {
+        text = "Save database changes"
+        font = Font(13.0)
+        action {
+            presenter.updateDatabase(tasksTable.items.asSequence())
+            disableButtons()
+        }
+    }
+
+    private val btRollback = button {
+        text = "Cancel changes"
+        font = Font(13.0)
+        action {
+            tasksTable.rollback()
+            disableButtons()
+        }
+    }
+
+    private val btDeleteTask = button {
+        text = "Delete task"
+        font = Font(13.0)
+        maxWidth = 350.0
+
+        action {
+            when(val model = tasksTable.tableView.selectedItem) {
+                null -> return@action
+                else -> presenter.deleteTask(model)
+            }
         }
     }
 
@@ -120,11 +179,41 @@ class TasksView: View("Tasks") {
         btAddTask.gridpaneConstraints {
             columnSpan = 2
         }
+
+        lblCtfName.fitToParentWidth()
+        tfCtfName.fitToParentWidth()
+        lblCategory.fitToParentWidth()
+        tfCategory.fitToParentWidth()
+        lblName.fitToParentWidth()
+        tfName.fitToParentWidth()
+        lblDescription.fitToParentWidth()
+        taDescription.fitToParentWidth()
+        lblPrice.fitToParentWidth()
+        tfPrice.fitToParentWidth()
+        lblFlag.fitToParentWidth()
+        tfFlag.fitToParentWidth()
+        lblFiles.fitToParentWidth()
+        btFiles.fitToParentWidth()
         btAddTask.fitToParentWidth()
     }
 
+    private val additionalButtonsBox = vbox {
+        alignment = Pos.TOP_CENTER
+
+        add(btDeleteTask)
+        btDeleteTask.fitToParentWidth()
+
+        maxWidth = 400.0
+    }
+
     private val header = hbox {
+        spacing = 10.0
+
         add(newTaskBox)
+        add(additionalButtonsBox)
+
+        newTaskBox.fitToParentWidth()
+        additionalButtonsBox.fitToParentWidth()
     }
 
     override val root = vbox {
@@ -134,6 +223,32 @@ class TasksView: View("Tasks") {
         add(header)
         add(tasks)
 
+        header.fitToParentWidth()
+
+        add(btSaveChanges)
+        btSaveChanges.fitToParentWidth()
+
+        add(btRollback)
+        btRollback.fitToParentWidth()
+
+        disableButtons()
+
         tasks.fitToParentWidth()
+    }
+
+    fun onTasksListReady(tasksList: ObservableList<TaskModel>) { tasks.items = tasksList }
+
+    private fun enableButtons() {
+        btSaveChanges.isDisable = false
+        btRollback.isDisable = false
+    }
+
+    private fun disableButtons() {
+        btSaveChanges.isDisable = true
+        btRollback.isDisable = true
+    }
+
+    init {
+        presenter.loadTasksList()
     }
 }

@@ -14,6 +14,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import tornadofx.Controller
+import tornadofx.TableColumnDirtyState
 import tornadofx.asObservable
 import java.io.File
 import java.io.FileReader
@@ -103,20 +104,20 @@ class DatabaseHelper {
             filesDirectory: String,
             ctfName: String
         ) {
-           GlobalScope.launch(Dispatchers.IO) {
-               transaction(db = database) {
-                   val task = TaskEntity.new {
-                       this.category = category
-                       this.name = name
-                       this.description = description
-                       this.price = price
-                       this.flag = flag
-                       this.filesDirectory = filesDirectory
-                       this.ctfName = ctfName
-                   }
-                   tasksController.tasksList.add(TaskModel().apply { item = task })
-               }
-           }
+            GlobalScope.launch(Dispatchers.IO) {
+                transaction(db = database) {
+                    val task = TaskEntity.new {
+                        this.category = category
+                        this.name = name
+                        this.description = description
+                        this.price = price
+                        this.flag = flag
+                        this.filesDirectory = filesDirectory
+                        this.ctfName = ctfName
+                    }
+                    tasksController.tasksList.add(TaskModel().apply { item = task })
+                }
+            }
         }
 
 
@@ -126,6 +127,19 @@ class DatabaseHelper {
 
         fun getTaskById(id: Long): TaskEntity? {
             return transaction(db = database) { TaskEntity.findById(id) }
+        }
+
+        fun getTasksForCtf(ctfName: String): List<TaskEntity> {
+            return transaction (db = database) {
+                TaskEntity.find { TasksTable.ctfName eq ctfName }.toList()
+            }
+        }
+
+        fun deleteTask(model: TaskModel?) {
+            transaction {
+                model?.item?.delete()
+            }
+            tasksController.tasksList.remove(model)
         }
 
         fun getAllTasks(): List<TaskEntity> {
@@ -230,6 +244,15 @@ class DatabaseHelper {
                         item = it
                     }
                 }.asObservable()
+            }
+        }
+
+        fun commitChanges(changes: Sequence<Map.Entry<TaskModel, TableColumnDirtyState<TaskModel>>>) {
+            transaction {
+                changes.filter { it.value.isDirty }.forEach {
+                    it.key.commit()
+                    it.value.commit()
+                }
             }
         }
     }

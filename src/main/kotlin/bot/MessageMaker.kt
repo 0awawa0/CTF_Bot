@@ -103,7 +103,7 @@ class MessageMaker {
             val msgText = "<b>$ctfName</b>\n\nСписок заданий: "
             val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
             if (DatabaseHelper.checkPlayerInDatabase(chatId)) {
-                for (task in DatabaseHelper.getAllTasks()) {
+                for (task in DatabaseHelper.getTasksForCtf(ctfName)) {
                     val taskSolved = task.id.value in DatabaseHelper.getSolvedTasksForPlayer(chatId)
                     buttonsList.add(listOf(
                             InlineKeyboardButton()
@@ -153,7 +153,7 @@ class MessageMaker {
         fun getTaskMessage(chatId: Long, taskId: Long): SendMessage {
             val files = DatabaseHelper.getTaskFiles(taskId)
             val task = DatabaseHelper.getTaskById(taskId)!!
-            var msgText = "<b>$ctfName</b>\n\n${task.name}           ${task.price}\n\n${task.description}"
+            val msgText = "<b>$ctfName</b>\n\n${task.name}           ${task.price}\n\n${task.description}"
             val msg = SendMessage()
             msg.enableHtml(true)
 
