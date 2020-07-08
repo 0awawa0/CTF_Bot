@@ -11,4 +11,5 @@ object TasksTable: LongIdTable() {
     val price = integer("price")
     val flag = varchar("flag", 128)
     val filesDirectory = varchar("files", 1024)
+    val ctfName = varchar("competitionName", 128)
 }

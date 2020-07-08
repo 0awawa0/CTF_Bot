@@ -11,4 +11,5 @@ class TaskModel: ItemViewModel<TaskEntity>() {
     val price = bind(TaskEntity::price)
     val flag = bind(TaskEntity::flag)
     val filesDirectory = bind(TaskEntity::filesDirectory)
+    val ctfName = bind(TaskEntity::ctfName)
 }

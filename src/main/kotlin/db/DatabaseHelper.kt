@@ -100,7 +100,8 @@ class DatabaseHelper {
             description: String,
             price: Int,
             flag: String,
-            filesDirectory: String
+            filesDirectory: String,
+            ctfName: String
         ) {
            GlobalScope.launch(Dispatchers.IO) {
                transaction(db = database) {
@@ -111,6 +112,7 @@ class DatabaseHelper {
                        this.price = price
                        this.flag = flag
                        this.filesDirectory = filesDirectory
+                       this.ctfName = ctfName
                    }
                    tasksController.tasksList.add(TaskModel().apply { item = task })
                }
@@ -159,8 +161,8 @@ class DatabaseHelper {
 
 
         fun getTaskFiles(id: Long): Array<File> {
-            val task = getTaskById(id)
-            val directory = File("$TASKS_FOLDER/${task?.name}")
+            val task = getTaskById(id) ?: return emptyArray()
+            val directory = File(task.filesDirectory)
             if (!directory.exists()) {
                 return emptyArray()
             }

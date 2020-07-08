@@ -6,6 +6,7 @@ import javafx.scene.Scene
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Priority
 import javafx.scene.text.Font
+import javafx.scene.text.TextAlignment
 import javafx.stage.Stage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -19,6 +20,16 @@ import utils.Logger
 class MainView : View("CTF Bot"), LogListener {
 
     private val presenter = MainPresenter(this)
+
+    private val lblCtfName = label {
+        text = "CTF name"
+        font = Font(18.0)
+        textAlignment = TextAlignment.CENTER
+    }
+
+    private val tfCtfName = textfield {
+        font = Font(14.0)
+    }
 
     private val borderPane = BorderPane()
 
@@ -80,6 +91,14 @@ class MainView : View("CTF Bot"), LogListener {
 
     override val root = vbox {
 
+        spacing = 15.0
+
+        add(lblCtfName)
+        lblCtfName.fitToParentWidth()
+        lblCtfName.alignment = Pos.CENTER
+
+        add(tfCtfName)
+
         borderPane.top = startBotButton
         borderPane.left = lblTestingPassword
         borderPane.center = tfTestingPassword
@@ -111,8 +130,8 @@ class MainView : View("CTF Bot"), LogListener {
     }
 
     init {
-        startBotButton.action { presenter.startBot() }
-        startTestingButton.action { presenter.startTestingBot(tfTestingPassword.text) }
+        startBotButton.action { presenter.startBot(tfCtfName.text) }
+        startTestingButton.action { presenter.startTestingBot(tfCtfName.text, tfTestingPassword.text) }
         playersButton.action {
             Stage().apply {
                 this.title = "Players"

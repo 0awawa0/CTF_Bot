@@ -14,6 +14,10 @@ class MessageMaker {
 
     companion object {
 
+//        This chars must be escaped in markdown
+//        '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
+        var ctfName = ""
+
         fun getFlagMessage(chatId: Long, flag: String): SendMessage {
             val player = DatabaseHelper.getPlayerById(chatId)!!
             val msgText: String
@@ -21,7 +25,7 @@ class MessageMaker {
                 if (flag == task.flag) {
                     val solvedTasks = player.solvedTasks.split("|")
                     if (solvedTasks.contains(task.id.toString())) {
-                        msgText = "Это задание ты уже решил, поздравляю! А теперь займись другими!"
+                        msgText = "<b>$ctfName</b>\n\nЭто задание ты уже решил, поздравляю! А теперь займись другими!"
                     } else {
                         msgText = "Верно! +${task.price}"
                         transaction {
@@ -33,6 +37,7 @@ class MessageMaker {
                     }
 
                     val msg = SendMessage()
+                    msg.enableHtml(true)
                     msg.text = msgText
                     msg.chatId = chatId.toString()
                     msg.replyMarkup = InlineKeyboardMarkup(
@@ -43,7 +48,8 @@ class MessageMaker {
             }
 
             val msg = SendMessage()
-            msg.text = "Ты не прав, подумай ещё."
+            msg.text = "<b>$ctfName</b>\n\nТы не прав, подумай ещё."
+            msg.enableHtml(true)
             msg.chatId = chatId.toString()
             msg.replyMarkup = InlineKeyboardMarkup(
                     listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
@@ -57,7 +63,12 @@ class MessageMaker {
                 DatabaseHelper.addNewPlayer(chatId, userName ?: firstName)
             }
 
-            val msgText = "Ку, ${userName ?: firstName}! Твой текущий счёт: ${player?.currentScore ?: 0}. Твой счёт за сезон: ${player?.seasonScore ?: 0}\nДля управления используй кнопки. Чтобы сдать флаг напиши /flag \"твой флаг\""
+            val msgText = """<b>$ctfName</b>
+                |
+                |Ку, <i>${userName ?: firstName}</i>! Твой текущий счёт: ${player?.currentScore ?: 0}. Твой счёт за сезон: ${player?.seasonScore ?: 0}
+                |Для управления используй кнопки. Чтобы сдать флаг напиши /flag "твой флаг"
+                |""".trimMargin()
+
             val buttonRow1 = listOf<InlineKeyboardButton>(
                     InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
                     InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)
@@ -66,6 +77,7 @@ class MessageMaker {
 
             val msg = SendMessage()
             msg.chatId = chatId.toString()
+            msg.enableHtml(true)
             msg.text = msgText
             msg.replyMarkup = InlineKeyboardMarkup(buttonsTable)
             return msg
@@ -88,7 +100,7 @@ class MessageMaker {
 
 
         fun getTasksMessage(chatId: Long): SendMessage {
-            val msgText = "Список заданий: "
+            val msgText = "<b>$ctfName</b>\n\nСписок заданий: "
             val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
             if (DatabaseHelper.checkPlayerInDatabase(chatId)) {
                 for (task in DatabaseHelper.getAllTasks()) {
@@ -106,6 +118,7 @@ class MessageMaker {
             }
 
             val msg = SendMessage()
+            msg.enableHtml(true)
             msg.chatId = chatId.toString()
             msg.text = msgText
             msg.replyMarkup = InlineKeyboardMarkup(buttonsList)
@@ -115,7 +128,11 @@ class MessageMaker {
 
         fun getScoreboardMessage(chatId: Long): SendMessage {
             val scoreboard = DatabaseHelper.getScoreboard()
-            var msgText = "Таблица лидеров:\n"
+            var msgText = """
+                <b>$ctfName</b>
+                
+                Таблица лидеров:
+                """
             var i = 1
             for (position in scoreboard) {
                 msgText += "$i.  ${position.first}               ${position.second}\n"
@@ -124,6 +141,7 @@ class MessageMaker {
 
             val msg = SendMessage()
             msg.chatId = chatId.toString()
+            msg.enableHtml(true)
             msg.text = msgText
             msg.replyMarkup = InlineKeyboardMarkup().setKeyboard(
                     listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
@@ -135,24 +153,17 @@ class MessageMaker {
         fun getTaskMessage(chatId: Long, taskId: Long): SendMessage {
             val files = DatabaseHelper.getTaskFiles(taskId)
             val task = DatabaseHelper.getTaskById(taskId)!!
-            var msgText = "${task.name}           ${task.price}\n"
+            var msgText = "<b>$ctfName</b>\n\n${task.name}           ${task.price}\n\n${task.description}"
             val msg = SendMessage()
-            val textFile = files.find { it.name == "text.txt" }
-            val content = files.find { it.nameWithoutExtension == task.name }
-
-            if (textFile != null) {
-                val fileReader = FileReader(textFile)
-                msgText += fileReader.readText()
-                fileReader.close()
-            }
+            msg.enableHtml(true)
 
             msg.chatId = chatId.toString()
             msg.text = msgText
 
             val buttons = arrayListOf<List<InlineKeyboardButton>>()
 
-            if (content != null) {
-                buttons.add(listOf(InlineKeyboardButton().setText(content.name).setCallbackData("$DATA_FILE $taskId")))
+            for (file in files) {
+                buttons.add(listOf(InlineKeyboardButton().setText(file.name).setCallbackData("$DATA_FILE $taskId ${file.name}")))
             }
 
             buttons.add(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
@@ -161,8 +172,8 @@ class MessageMaker {
             return msg
         }
 
-        fun getFileMessage(chatId: Long, taskId: Long): SendDocument {
-            val contentFile = DatabaseHelper.getTaskFiles(taskId).find { it.nameWithoutExtension == DatabaseHelper.getTaskById(taskId)!!.name}!!
+        fun getFileMessage(chatId: Long, taskId: Long, fileName: String): SendDocument {
+            val contentFile = DatabaseHelper.getTaskFiles(taskId).find { it.name == fileName}!!
             val msg = SendDocument()
             msg.chatId = chatId.toString()
             msg.document = InputFile(contentFile, contentFile.name)

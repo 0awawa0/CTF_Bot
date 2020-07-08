@@ -20,7 +20,59 @@ const val DATA_SCOREBOARD = "/scoreboard"
 const val DATA_TASKS = "/tasks"
 const val DATA_TASK = "/task"
 const val DATA_FILE = "/file"
-class Bot(private val testing: Boolean = false, private val testingPassword: String = "", private val token: String, private val botName: String): TelegramLongPollingBot() {
+class Bot private constructor(
+    private val testing: Boolean = false,
+    private val testingPassword: String = "",
+    private val token: String,
+    private val botName: String,
+    val ctfName: String
+): TelegramLongPollingBot() {
+
+
+    class Builder {
+        private var testing = false
+        private var testingPassword = ""
+        private var token = ""
+        private var botName = ""
+        private var ctfName = ""
+
+        fun setTesting(testing: Boolean): Builder {
+            this.testing = testing
+            return this
+        }
+
+        fun setTestingPassword(testingPassword: String): Builder {
+            this.testingPassword = testingPassword
+            return this
+        }
+
+        fun setToken(token: String): Builder {
+            this.token = token
+            return this
+        }
+
+        fun setBotName(botName: String): Builder {
+            this.botName = botName
+            return this
+        }
+
+        fun setCtfName(ctfName: String): Builder {
+            this.ctfName = ctfName
+            return this
+        }
+
+        fun build(): Bot {
+            return Bot(
+                testing,
+                testingPassword,
+                token,
+                botName,
+                ctfName
+            )
+        }
+    }
+
+    init { MessageMaker.ctfName = ctfName }
 
     private val authorizedForTesting = ArrayList<Long>()
     private val tag = "Bot"
@@ -81,11 +133,11 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
 
         try {
             execute(
-                    when (command) {
-                        MSG_START -> MessageMaker.getMenuMessage(message.chat.firstName, message.chatId, message.chat.userName)
-                        MSG_FLAG -> MessageMaker.getFlagMessage(message.chatId, content)
-                        else -> MessageMaker.getUnknownMessage(message.chatId)
-                    }
+                when (command) {
+                    MSG_START -> MessageMaker.getMenuMessage(message.chat.firstName, message.chatId, message.chat.userName)
+                    MSG_FLAG -> MessageMaker.getFlagMessage(message.chatId, content)
+                    else -> MessageMaker.getUnknownMessage(message.chatId)
+                }
             )
         } catch (e: TelegramApiException) {
             Logger.error(tag, e.toString())
@@ -114,19 +166,21 @@ class Bot(private val testing: Boolean = false, private val testingPassword: Str
 
             Logger.info(tag, "Received message from Chat id: ${callback.message.chatId} User: ${callback.message.chat.firstName}. Callback data: ${callback.data}")
             if (command == DATA_FILE) {
-                execute(MessageMaker.getFileMessage(callback.message.chatId, content.toLong()))
+                val taskId = content.split(" ")[0].toLong()
+                val fileName = content.split(" ")[1]
+                execute(MessageMaker.getFileMessage(callback.message.chatId, taskId, fileName))
                 return
             }
 
             execute(
-                    when (command) {
+                when (command) {
 
-                        DATA_SCOREBOARD -> MessageMaker.getScoreboardMessage(callback.message.chatId)
-                        DATA_TASKS -> MessageMaker.getTasksMessage(callback.message.chatId)
-                        DATA_TASK -> MessageMaker.getTaskMessage(callback.message.chatId, content.toLong())
-                        DATA_MENU -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
-                        else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
-                    }
+                    DATA_SCOREBOARD -> MessageMaker.getScoreboardMessage(callback.message.chatId)
+                    DATA_TASKS -> MessageMaker.getTasksMessage(callback.message.chatId)
+                    DATA_TASK -> MessageMaker.getTaskMessage(callback.message.chatId, content.toLong())
+                    DATA_MENU -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
+                    else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
+                }
             )
 
         } catch (e: TelegramApiException) {

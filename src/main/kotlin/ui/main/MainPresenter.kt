@@ -19,8 +19,13 @@ class MainPresenter(private val view: MainView) {
     private val botName = botCredentials[1].split(":|:")[1].trim()
 
 
-    fun startBot() {
-        bot = Bot(token = token, botName = botName)
+    fun startBot(ctfName: String) {
+        bot = Bot.Builder()
+            .setToken(token)
+            .setBotName(botName)
+            .setCtfName(ctfName)
+            .build()
+
         try {
             botSession = botApi.registerBot(bot)
         } catch (e: TelegramApiRequestException) {
@@ -28,13 +33,15 @@ class MainPresenter(private val view: MainView) {
         }
     }
 
-    fun startTestingBot(password: String) {
-        bot = Bot(
-            true,
-            password,
-            token = token,
-            botName = botName
-        )
+    fun startTestingBot(ctfName: String, password: String) {
+        bot = Bot.Builder()
+            .setTesting(true)
+            .setTestingPassword(password)
+            .setToken(token)
+            .setBotName(botName)
+            .setCtfName(ctfName)
+            .build()
+
         DatabaseHelper.init()
         try {
             botSession = botApi.registerBot(bot)

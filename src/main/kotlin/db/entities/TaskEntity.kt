@@ -13,4 +13,5 @@ class TaskEntity(id: EntityID<Long>): LongEntity(id) {
     var price by TasksTable.price
     var flag by TasksTable.flag
     var filesDirectory by TasksTable.filesDirectory
+    var ctfName by TasksTable.ctfName
 }
