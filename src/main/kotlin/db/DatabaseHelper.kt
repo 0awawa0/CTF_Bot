@@ -1,5 +1,6 @@
 package db
 
+import bot.MessageMaker
 import db.entities.PlayerEntity
 import db.entities.TaskEntity
 import db.models.PlayerModel
@@ -13,6 +14,7 @@ import tornadofx.Controller
 import tornadofx.TableColumnDirtyState
 import tornadofx.asObservable
 import java.io.File
+import java.util.*
 
 
 const val DATABASE_FOLDER = "./db"
@@ -23,6 +25,11 @@ const val DATABASE_LOG_FILE = "$DATABASE_FOLDER/log.txt"
 class DatabaseHelper {
 
     companion object {
+
+        const val FLAG_RESULT_SUCCESS = 0
+        const val FLAG_RESULT_ALREADY_SOLVED = 1
+        const val FLAG_RESULT_WRONG = 2
+        const val FLAG_RESULT_ERROR = 8
 
         val database: Database by lazy {
             Database.connect("jdbc:sqlite:db/data.db", "org.sqlite.JDBC")
@@ -49,6 +56,32 @@ class DatabaseHelper {
                 }
                 playersController.add(PlayerModel().apply { item = player })
             }
+        }
+
+
+        fun onPlayerPassedFlag(playerId: Long, flag: String): Int {
+            val player = getPlayerById(playerId) ?: return FLAG_RESULT_ERROR
+
+            for (task in getTasksForCtf(MessageMaker.ctfName)) {
+                if (flag == task.flag) {
+                    val solvedTasks = player.solvedTasks.split("|")
+                    return if (solvedTasks.contains(task.id.toString())) {
+                        FLAG_RESULT_ALREADY_SOLVED
+                    } else {
+                        transaction {
+                            player.currentScore += task.price
+                            player.seasonScore += task.price
+                            player.solvedTasks += "${task.id}|"
+                            player.lastRightAnswer = Date().time
+
+                            playersController.update()
+                        }
+                        FLAG_RESULT_SUCCESS
+                    }
+                }
+            }
+
+            return FLAG_RESULT_WRONG
         }
 
         fun getPlayerById(id: Long): PlayerEntity? {

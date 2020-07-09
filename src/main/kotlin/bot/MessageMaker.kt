@@ -7,7 +7,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
-import java.io.FileReader
 import java.util.*
 
 
@@ -20,41 +19,33 @@ class MessageMaker {
         var ctfName = ""
 
         fun getFlagMessage(chatId: Long, flag: String): SendMessage {
-            val player = DatabaseHelper.getPlayerById(chatId)!!
-            val msgText: String
-            for (task in DatabaseHelper.getAllTasks()) {
-                if (flag == task.flag) {
-                    val solvedTasks = player.solvedTasks.split("|")
-                    if (solvedTasks.contains(task.id.toString())) {
-                        msgText = "<b>$ctfName</b>\n\nЭто задание ты уже решил, поздравляю! А теперь займись другими!"
-                    } else {
-                        msgText = "Верно! +${task.price}"
-                        transaction {
-                            player.currentScore += task.price
-                            player.seasonScore += task.price
-                            player.solvedTasks += "${task.id}|"
-                            player.lastRightAnswer = Date().time
-                            DatabaseHelper.playersController.update()
-                        }
-                    }
 
-                    val msg = SendMessage()
-                    msg.enableHtml(true)
-                    msg.text = msgText
-                    msg.chatId = chatId.toString()
-                    msg.replyMarkup = InlineKeyboardMarkup(
-                            listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
-                    )
-                    return msg
+            var msgText = ""
+
+            when (DatabaseHelper.onPlayerPassedFlag(chatId, flag)) {
+                DatabaseHelper.FLAG_RESULT_SUCCESS -> {
+                    msgText = "<b>$ctfName</b>\n\nВерный флаг, задание засчитано! Продолжай в том же духе!"
+                }
+
+                DatabaseHelper.FLAG_RESULT_WRONG -> {
+                    msgText = "<b>$ctfName</b>\n\nТы не прав, подумай ещё."
+                }
+
+                DatabaseHelper.FLAG_RESULT_ALREADY_SOLVED -> {
+                    msgText = "<b>$ctfName</b>\n\nЭтот флаг ты уже сдал, поздравляю! А теперь займись другими!"
+                }
+
+                DatabaseHelper.FLAG_RESULT_ERROR -> {
+                    return getErrorMessage(chatId)
                 }
             }
 
             val msg = SendMessage()
-            msg.text = "<b>$ctfName</b>\n\nТы не прав, подумай ещё."
             msg.enableHtml(true)
+            msg.text = msgText
             msg.chatId = chatId.toString()
             msg.replyMarkup = InlineKeyboardMarkup(
-                    listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+                listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
             )
             return msg
         }

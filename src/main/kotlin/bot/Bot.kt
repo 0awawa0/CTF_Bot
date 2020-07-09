@@ -25,7 +25,7 @@ class Bot private constructor(
     private val testingPassword: String = "",
     private val token: String,
     private val botName: String,
-    val ctfName: String
+    private val ctfName: String
 ): TelegramLongPollingBot() {
 
 
@@ -103,8 +103,8 @@ class Bot private constructor(
         Logger.info(tag, "Received message from Chat id: ${message.chatId} User: ${message.chat.firstName}. Message: ${message.text}")
 
         if (testing && message.chatId !in authorizedForTesting) {
-            val command = message.text.split(" ").find { it.startsWith("/") }!!
-            val content = message.text.replace(command, "").trim()
+            val command = message.text.split(" ").find { it.startsWith("/") }
+            val content = message.text.replace(command ?: "", "").trim()
 
             try {
                 if (command == MSG_TESTING_PASSWORD) {
@@ -166,8 +166,9 @@ class Bot private constructor(
 
             Logger.info(tag, "Received message from Chat id: ${callback.message.chatId} User: ${callback.message.chat.firstName}. Callback data: ${callback.data}")
             if (command == DATA_FILE) {
-                val taskId = content.split(" ")[0].toLong()
-                val fileName = content.split(" ")[1]
+                val splat = content.split(" ")
+                val taskId = splat[0].toLong()
+                val fileName = splat.subList(1, splat.size).joinToString(separator = " ")
                 execute(MessageMaker.getFileMessage(callback.message.chatId, taskId, fileName))
                 return
             }
