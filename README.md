@@ -1,7 +1,7 @@
 # CTF Bot
 
 ## Description
-Telegram bot that is being used to organize CTF trainings in Donetsk National University.
+Telegram bot that is used to organize CTF trainings in Donetsk National University.
 
 ## Usage
 0) Download the bot .jar file [CTF_Bot.jar](out/artifacts/CTF_Bot_jar/CTF_Bot.jar) or build bot from sources.
