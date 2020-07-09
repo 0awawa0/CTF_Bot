@@ -1,20 +1,20 @@
 package bot
 
+import bot.features.numbers.NumbersUtils
 import db.DatabaseHelper
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
-import java.util.*
+import java.lang.Exception
 
 
 class MessageMaker {
 
     companion object {
 
-//        This chars must be escaped in markdown
+        //        This chars must be escaped in markdown
 //        '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
         var ctfName = ""
 
@@ -63,8 +63,8 @@ class MessageMaker {
                 |""".trimMargin()
 
             val buttonRow1 = listOf<InlineKeyboardButton>(
-                    InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
-                    InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)
+                InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
+                InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)
             )
             val buttonsTable = listOf(buttonRow1)
 
@@ -99,11 +99,11 @@ class MessageMaker {
                 for (task in DatabaseHelper.getTasksForCtf(ctfName)) {
                     val taskSolved = task.id.value in DatabaseHelper.getSolvedTasksForPlayer(chatId)
                     buttonsList.add(listOf(
-                            InlineKeyboardButton()
-                                    .setText(
-                                            "${task.category} - ${task.price}: ${task.name} ${if (taskSolved) "\uD83D\uDDF8" else ""}"
-                                    )
-                                    .setCallbackData("/task ${task.id}")
+                        InlineKeyboardButton()
+                            .setText(
+                                "${task.category} - ${task.price}: ${task.name} ${if (taskSolved) "\uD83D\uDDF8" else ""}"
+                            )
+                            .setCallbackData("/task ${task.id}")
                     ))
                 }
             } else {
@@ -163,7 +163,7 @@ class MessageMaker {
             msg.enableHtml(true)
             msg.text = msgText
             msg.replyMarkup = InlineKeyboardMarkup().setKeyboard(
-                    listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+                listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
             )
             return msg
         }
@@ -206,7 +206,7 @@ class MessageMaker {
             val msg = SendMessage()
             msg.chatId = chatId.toString()
             msg.replyMarkup = InlineKeyboardMarkup(
-                    listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+                listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
             )
             msg.text = msgText
             return msg
@@ -220,6 +220,166 @@ class MessageMaker {
             msg.chatId = chatId.toString()
             msg.text = msgText
             msg.replyMarkup = InlineKeyboardMarkup(buttonsTable)
+
+            return msg
+        }
+
+        fun getConvertMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            var msgText = ""
+            val numbers = content.split(" ")
+
+            for (number in numbers) {
+                if (number.startsWith("0b")) {
+                    msgText += """
+                        Binary: $number
+                        Hex: 0x${NumbersUtils.binToHex(number.replace("0b", ""))}
+                        Decimal: ${NumbersUtils.binToDec(number.replace("0b", ""))}
+                        
+                        
+                        
+                    """.trimIndent()
+                } else {
+
+                    if (number.startsWith("0x")) {
+                        msgText += """
+                        Binary: 0b${NumbersUtils.hexToBin(number.replace("0x", ""))}
+                        Hex: $number
+                        Decimal: ${NumbersUtils.hexToDec(number.replace("0x", ""))}
+                        
+                        
+                        
+                    """.trimIndent()
+                    } else {
+                        val longVal = try {
+                            number.toLong()
+                        } catch (e: Exception) {
+                            -1L
+                        }
+
+                        msgText += """
+                            Binary: 0b${NumbersUtils.decToBin(longVal)}
+                            Hex: 0x${NumbersUtils.decToHex(longVal)}
+                            Decimal: $number
+
+
+
+                            """.trimIndent()
+                    }
+                }
+            }
+
+            msg.chatId = chatId.toString()
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
+
+        fun getToHexMessage(chatId: Long, content: String): SendMessage {
+
+            val msg = SendMessage()
+            var msgText = ""
+            val numbers = content.split(" ")
+
+            for (number in numbers) {
+                msgText += if (number.startsWith("0b")) {
+                    "0x${NumbersUtils.binToHex(number.replace("0b", "")).toUpperCase()} "
+                } else {
+                    if (number.startsWith("0x")) {
+                        "$number "
+                    } else {
+                        val longVal = try {
+                            number.toLong()
+                        } catch (e: Exception) {
+                            -1L
+                        }
+                        "0x${NumbersUtils.decToHex(longVal).toUpperCase()} "
+                    }
+                }
+            }
+
+            msg.chatId = chatId.toString()
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
+
+        fun getToDecMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            var msgText = ""
+            val numbers = content.split(" ")
+
+            for (number in numbers) {
+                msgText += if (number.startsWith("0b")) {
+                    "${NumbersUtils.binToDec(number.replace("0b", ""))} "
+                } else {
+                    if (number.startsWith("0x")) {
+                        "${NumbersUtils.hexToDec(number.replace("0x", ""))} "
+                    } else {
+                        "$number "
+                    }
+                }
+            }
+
+            msg.chatId = chatId.toString()
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
+
+        fun getToBinMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            var msgText = ""
+            val numbers = content.split(" ")
+
+            for (number in numbers) {
+                msgText += if (number.startsWith("0b")) {
+                    "$number "
+                } else {
+                    if (number.startsWith("0x")) {
+                        "0b${NumbersUtils.hexToBin(number.replace("0x", ""))} "
+                    } else {
+                        val longVal = try {
+                            number.toLong()
+                        } catch (e: Exception) {
+                            -1L
+                        }
+
+                        "0b${NumbersUtils.decToBin(longVal)} "
+                    }
+                }
+            }
+
+            msg.chatId = chatId.toString()
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
 
             return msg
         }

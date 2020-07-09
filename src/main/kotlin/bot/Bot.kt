@@ -15,11 +15,17 @@ import utils.Logger
 const val MSG_START = "/start"
 const val MSG_FLAG = "/flag"
 const val MSG_TESTING_PASSWORD = "/testing_password"
+const val MSG_CONVERT = "/convert"
+const val MSG_TO_HEX = "/toHex"
+const val MSG_TO_DEC = "/toDec"
+const val MSG_TO_BIN = "/toBin"
 const val DATA_MENU = "/menu"
 const val DATA_SCOREBOARD = "/scoreboard"
 const val DATA_TASKS = "/tasks"
 const val DATA_TASK = "/task"
 const val DATA_FILE = "/file"
+
+
 class Bot private constructor(
     private val testing: Boolean = false,
     private val testingPassword: String = "",
@@ -136,6 +142,10 @@ class Bot private constructor(
                 when (command) {
                     MSG_START -> MessageMaker.getMenuMessage(message.chat.firstName, message.chatId, message.chat.userName)
                     MSG_FLAG -> MessageMaker.getFlagMessage(message.chatId, content)
+                    MSG_CONVERT -> MessageMaker.getConvertMessage(message.chatId, content)
+                    MSG_TO_HEX -> MessageMaker.getToHexMessage(message.chatId, content)
+                    MSG_TO_BIN -> MessageMaker.getToBinMessage(message.chatId, content)
+                    MSG_TO_DEC -> MessageMaker.getToDecMessage(message.chatId, content)
                     else -> MessageMaker.getUnknownMessage(message.chatId)
                 }
             )
