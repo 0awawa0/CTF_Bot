@@ -66,7 +66,10 @@ class MessageMaker {
                 InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
                 InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)
             )
-            val buttonsTable = listOf(buttonRow1)
+            val buttonRow2 = listOf<InlineKeyboardButton>(
+                InlineKeyboardButton().setText("Доступные команды").setCallbackData(DATA_COMMANDS)
+            )
+            val buttonsTable = listOf(buttonRow1, buttonRow2)
 
             val msg = SendMessage()
             msg.chatId = chatId.toString()
@@ -373,6 +376,30 @@ class MessageMaker {
 
             msg.chatId = chatId.toString()
             msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
+
+        fun getCommandsHelpMessage(chatId: Long): SendMessage {
+            val msg = SendMessage()
+            msg.chatId = chatId.toString()
+            msg.text = """
+                Список команд, поддерживаемых ботом. Заметьте, что бот распознаёт десятичные, двоичные и шестнадцатеричные числа. Двоичные числа должны иметь префикс '0b', а шестнадцатеричные '0x'.
+                В массивах числа должны быть разделены пробелом. Числа ограничены диапазоном [0:9223372036854775807]
+                
+                /flag <string> - проверяет флаг. Если переданная строка является флагом к какому-либо заданию, это задание будет зачтено как решенное.
+                /convert <array of numbers> - переводит массив чисел в двоичную, десятичную и шестнадцатеричную системы счисления.
+                /toHex <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
+                /toDec <array of numbers> - переводит массив чисел в десятичную систему счисления.
+                /toBin <array of numbers> - переводит массив чисел в двоичную систему счисления.
+            """.trimIndent()
             msg.replyMarkup = InlineKeyboardMarkup(
                 listOf(
                     listOf(

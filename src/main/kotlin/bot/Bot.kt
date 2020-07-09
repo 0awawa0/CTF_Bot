@@ -24,7 +24,7 @@ const val DATA_SCOREBOARD = "/scoreboard"
 const val DATA_TASKS = "/tasks"
 const val DATA_TASK = "/task"
 const val DATA_FILE = "/file"
-
+const val DATA_COMMANDS = "/commands"
 
 class Bot private constructor(
     private val testing: Boolean = false,
@@ -89,7 +89,7 @@ class Bot private constructor(
 
     override fun onUpdateReceived(update: Update?) {
 
-        if (update == null) return;
+        if (update == null) return
         GlobalScope.launch {
             if (update.hasMessage()) {
                 if (update.message.hasText()) {
@@ -190,6 +190,7 @@ class Bot private constructor(
                     DATA_TASKS -> MessageMaker.getTasksMessage(callback.message.chatId)
                     DATA_TASK -> MessageMaker.getTaskMessage(callback.message.chatId, content.toLong())
                     DATA_MENU -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
+                    DATA_COMMANDS -> MessageMaker.getCommandsHelpMessage(callback.message.chatId)
                     else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
                 }
             )
