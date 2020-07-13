@@ -323,6 +323,19 @@ class MessageMaker {
             return msg
         }
 
+//        fun getToCharsMessage(chatId: Long, content: String): SendMessage {
+//            val msg = SendMessage()
+//            var msgText = ""
+//            val numbers = content.split(" ")
+//
+//            for (number in numbers) {
+//                val char = Helper.anyToDec(number).toLong()
+//                if (char != -1L) {
+//
+//                }
+//            }
+//        }
+
         fun getCommandsHelpMessage(chatId: Long): SendMessage {
             val msg = SendMessage()
             msg.chatId = chatId.toString()
