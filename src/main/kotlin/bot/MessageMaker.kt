@@ -1,6 +1,7 @@
 package bot
 
 import bot.features.numbers.NumbersUtils
+import bot.utils.Helper
 import db.DatabaseHelper
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -233,43 +234,13 @@ class MessageMaker {
             val numbers = content.split(" ")
 
             for (number in numbers) {
-                if (number.startsWith("0b")) {
-                    msgText += """
-                        Binary: $number
-                        Hex: 0x${NumbersUtils.binToHex(number.replace("0b", ""))}
-                        Decimal: ${NumbersUtils.binToDec(number.replace("0b", ""))}
-                        
-                        
-                        
-                    """.trimIndent()
-                } else {
-
-                    if (number.startsWith("0x")) {
-                        msgText += """
-                        Binary: 0b${NumbersUtils.hexToBin(number.replace("0x", ""))}
-                        Hex: $number
-                        Decimal: ${NumbersUtils.hexToDec(number.replace("0x", ""))}
-                        
-                        
-                        
-                    """.trimIndent()
-                    } else {
-                        val longVal = try {
-                            number.toLong()
-                        } catch (e: Exception) {
-                            -1L
-                        }
-
-                        msgText += """
-                            Binary: 0b${NumbersUtils.decToBin(longVal)}
-                            Hex: 0x${NumbersUtils.decToHex(longVal)}
-                            Decimal: $number
-
-
-
-                            """.trimIndent()
-                    }
-                }
+                msgText += """
+                    Binary: ${Helper.anyToBin(number)}
+                    Hex: ${Helper.anyToHex(number)}
+                    Decimal: ${Helper.anyToDec(number)}
+                    
+                    
+                """.trimIndent()
             }
 
             msg.chatId = chatId.toString()
@@ -292,20 +263,7 @@ class MessageMaker {
             val numbers = content.split(" ")
 
             for (number in numbers) {
-                msgText += if (number.startsWith("0b")) {
-                    "0x${NumbersUtils.binToHex(number.replace("0b", "")).toUpperCase()} "
-                } else {
-                    if (number.startsWith("0x")) {
-                        "$number "
-                    } else {
-                        val longVal = try {
-                            number.toLong()
-                        } catch (e: Exception) {
-                            -1L
-                        }
-                        "0x${NumbersUtils.decToHex(longVal).toUpperCase()} "
-                    }
-                }
+                msgText += Helper.anyToHex(number)
             }
 
             msg.chatId = chatId.toString()
@@ -327,15 +285,7 @@ class MessageMaker {
             val numbers = content.split(" ")
 
             for (number in numbers) {
-                msgText += if (number.startsWith("0b")) {
-                    "${NumbersUtils.binToDec(number.replace("0b", ""))} "
-                } else {
-                    if (number.startsWith("0x")) {
-                        "${NumbersUtils.hexToDec(number.replace("0x", ""))} "
-                    } else {
-                        "$number "
-                    }
-                }
+                msgText += Helper.anyToDec(number)
             }
 
             msg.chatId = chatId.toString()
@@ -357,21 +307,7 @@ class MessageMaker {
             val numbers = content.split(" ")
 
             for (number in numbers) {
-                msgText += if (number.startsWith("0b")) {
-                    "$number "
-                } else {
-                    if (number.startsWith("0x")) {
-                        "0b${NumbersUtils.hexToBin(number.replace("0x", ""))} "
-                    } else {
-                        val longVal = try {
-                            number.toLong()
-                        } catch (e: Exception) {
-                            -1L
-                        }
-
-                        "0b${NumbersUtils.decToBin(longVal)} "
-                    }
-                }
+                msgText += Helper.anyToBin(number)
             }
 
             msg.chatId = chatId.toString()
