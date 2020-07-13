@@ -53,3 +53,13 @@ Other fields are speaking by themselves.
 "Add task" button creates actually adds task to database according to filled fields.
 
 Other buttons functionality is similar to Players window functionality
+
+
+## Bot commands
+Also bot has additional features that can be helpful during CTF. They can be used by commands:
+
+<b>Bot can process positive integer hex, bin and decimal values. Hex values must be prefixed by `0x` and bin values must be prefixed by `0b`. If error occurs during number processing, bot will return -1.</b>
+1. `/convert <array_of_numbers>` - converts numbers array to binary, hexadecimal and decimal values.
+2. `/toBin <array_of_numbers>` - converts numbers array to binary.
+3. `/toHex <array_of_numbers>` - converts numbers array to hexadecimal.
+4. `/toDec <array_of_numbers>` - converts numbers array to decimal.
