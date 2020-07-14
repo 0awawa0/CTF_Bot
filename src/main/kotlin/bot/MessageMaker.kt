@@ -323,18 +323,30 @@ class MessageMaker {
             return msg
         }
 
-//        fun getToCharsMessage(chatId: Long, content: String): SendMessage {
-//            val msg = SendMessage()
-//            var msgText = ""
-//            val numbers = content.split(" ")
-//
-//            for (number in numbers) {
-//                val char = Helper.anyToDec(number).toLong()
-//                if (char != -1L) {
-//
-//                }
-//            }
-//        }
+        fun getToCharsMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            var msgText = ""
+            val numbers = content.split(" ")
+
+            for (number in numbers) {
+                val char = Helper.anyToDec(number).trim().toLong()
+                if (char != -1L) {
+                    msgText += NumbersUtils.numToChar(char)
+                }
+            }
+
+            msg.chatId = chatId.toString()
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
 
         fun getCommandsHelpMessage(chatId: Long): SendMessage {
             val msg = SendMessage()

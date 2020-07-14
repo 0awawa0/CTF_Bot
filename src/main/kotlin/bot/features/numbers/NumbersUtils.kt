@@ -42,4 +42,6 @@ object NumbersUtils {
     fun hexToBin(value: String): String {
         return decToBin(hexToDec(value))
     }
+
+    fun numToChar(value: Long): Char { return value.toChar() }
 }
