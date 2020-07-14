@@ -360,6 +360,7 @@ class MessageMaker {
                 /toHex <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
                 /toDec <array of numbers> - переводит массив чисел в десятичную систему счисления.
                 /toBin <array of numbers> - переводит массив чисел в двоичную систему счисления.
+                /toChars <array of numbers> - переводит массив чисел в одну строку.
             """.trimIndent()
             msg.replyMarkup = InlineKeyboardMarkup(
                 listOf(
