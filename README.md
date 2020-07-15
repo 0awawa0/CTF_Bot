@@ -63,4 +63,4 @@ Also bot has additional features that can be helpful during CTF. They can be use
 2. `/toBin <array_of_numbers>` - converts numbers array to binary.
 3. `/toHex <array_of_numbers>` - converts numbers array to hexadecimal.
 4. `/toDec <array_of_numbers>` - converts numbers array to decimal.
-5. `/toChars <array_of_numbers>` - converts numbers array to single string.
+5. `/toString <array_of_numbers>` - converts numbers array to single string.

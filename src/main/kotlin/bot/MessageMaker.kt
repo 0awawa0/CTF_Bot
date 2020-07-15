@@ -8,7 +8,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
-import java.lang.Exception
 
 
 class MessageMaker {
@@ -323,7 +322,7 @@ class MessageMaker {
             return msg
         }
 
-        fun getToCharsMessage(chatId: Long, content: String): SendMessage {
+        fun getToStringMessage(chatId: Long, content: String): SendMessage {
             val msg = SendMessage()
             var msgText = ""
             val numbers = content.split(" ")
@@ -360,7 +359,7 @@ class MessageMaker {
                 /toHex <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
                 /toDec <array of numbers> - переводит массив чисел в десятичную систему счисления.
                 /toBin <array of numbers> - переводит массив чисел в двоичную систему счисления.
-                /toChars <array of numbers> - переводит массив чисел в одну строку.
+                /toString <array of numbers> - переводит массив чисел в одну строку.
             """.trimIndent()
             msg.replyMarkup = InlineKeyboardMarkup(
                 listOf(
