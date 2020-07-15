@@ -43,5 +43,5 @@ object NumbersUtils {
         return decToBin(hexToDec(value))
     }
 
-    fun numToChar(value: Long): Char { return value.toChar() }
+    fun numToChar(value: Long): Char { return if (value > 0) value.toChar() else '.'}
 }

@@ -119,9 +119,38 @@ fun testDecToHex() {
     println()
 }
 
+fun testNumToChar() {
+    println("Starting numToChar tests")
+
+    val testCases = arrayOf(
+        0xff000031L,
+        0x31L,
+        0x000031L,
+        50L,
+        0b110011L,
+        -1L
+    )
+
+    val asserts = arrayOf(
+        '1',
+        '1',
+        '1',
+        '2',
+        '3',
+        '.'
+    )
+
+    for (i in testCases.indices) {
+        assert(NumbersUtils.numToChar(testCases[i]) == asserts[i])
+        println("Test ${i + 1} succeed")
+    }
+    println()
+}
+
 fun main() {
     testBinToDec()
     testDecToBin()
     testHexToDec()
     testDecToHex()
+    testNumToChar()
 }

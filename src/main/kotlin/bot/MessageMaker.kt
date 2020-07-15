@@ -331,7 +331,13 @@ class MessageMaker {
                 val char = Helper.anyToDec(number).trim().toLong()
                 if (char != -1L) {
                     msgText += NumbersUtils.numToChar(char)
+                } else {
+                    msgText += "."
                 }
+            }
+
+            if (msgText.trim().isEmpty()) {
+                msgText = msgText.trim() + "."
             }
 
             msg.chatId = chatId.toString()
@@ -359,7 +365,7 @@ class MessageMaker {
                 /toHex <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
                 /toDec <array of numbers> - переводит массив чисел в десятичную систему счисления.
                 /toBin <array of numbers> - переводит массив чисел в двоичную систему счисления.
-                /toString <array of numbers> - переводит массив чисел в одну строку.
+                /toString <array of numbers> - переводит массив чисел в одну строку. Числа ограничены 16 битами. Если Передано число длиннее 16 бит, будут использованы младшие его 16 бит.
             """.trimIndent()
             msg.replyMarkup = InlineKeyboardMarkup(
                 listOf(
