@@ -6,12 +6,14 @@ Telegram bot that is used to organize CTF trainings in Donetsk National Universi
 ## Usage
 0) Download the bot .jar file [CTF_Bot.jar](out/artifacts/CTF_Bot_jar/CTF_Bot.jar) or build bot from sources.
 1) Create folder "db" in the folder where bot is placed.
-2) Put BotCredentials file to the folder where bot is placed filled as folows:
+2) If you have not register you bot yet, read documentation [Telegram APIs](https://core.telegram.org/api) or contact @BotFather bot through Telegram to register your bot. After registering your bot you will get <i>your_bot_token</i> and <i>your_bot_name</i>. Put BotCredentials file to the folder where bot is placed filled as follows:
    
     token:|:<i>your_bot_token</i>\
     botName:|:<i>your_bot_name</i>
-3) Run the CTF_Bot.jar. **Note that Java 8 is required. Although the program might run on more recent versions of JVM, using some features still can cause an error.**
     
+3) Run the CTF_Bot.jar. **Note that Java 8 is required. Although the program might run on more recent versions of JVM, using some features still can cause an error.**
+
+You don't need your own web server to make your bot reachable on the internet. That means bot running on your local machine will be reachable from all over the world. That makes hosting CTF competitions and trainings easier than ever.
 ## GUI
 
 ### Main window
@@ -30,7 +32,7 @@ Top text field is for CTF event name. The CTF name will be used by bot to look f
 
 "Send message to selected player" button sends message to player selected in the players table.
 
-"Send message to all" button sends message to all players in the database. Note that currently Telegram Bots API doesn't support broadcast messaging, so trying to send message to many chats immediately will cause an error 429. Therefore messages will be sent with 200 milliseconds interval, so broadcasting message to really big amount of players can take some time. For example, if you have 100 players in the database, it will take up to 20 seconds to send message to everybody.  
+"Send message to all" button sends message to all players in the database. **Note that currently Telegram Bots API doesn't support broadcast messaging, so trying to send message to many chats immediately will cause an error 429. Therefore messages will be sent with 200 milliseconds interval, so broadcasting message to really big amount of players can take some time. For example, if you have 100 players in the database, it will take up to 20 seconds to send message to everybody.**  
 
 "Refresh current scores" button sets "Current score" field for all users to 0. Other fields will remain untouched.
 
