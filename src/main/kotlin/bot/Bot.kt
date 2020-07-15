@@ -1,7 +1,9 @@
 package bot
 
 
+import db.DatabaseHelper
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery
@@ -200,6 +202,17 @@ class Bot private constructor(
 
         } catch (e: TelegramApiException) {
             Logger.error(tag, e.toString())
+        }
+    }
+
+    suspend fun sendMessageToPlayer(id: Long, text: String) {
+        execute(MessageMaker.getMessageToPlayer(id, text))
+    }
+
+    suspend fun sendMessageToAll(text: String) {
+        for (player in DatabaseHelper.getAllPlayers()) {
+            sendMessageToPlayer(player.id.value, text)
+            delay(200)
         }
     }
 }

@@ -353,6 +353,21 @@ class MessageMaker {
             return msg
         }
 
+        fun getMessageToPlayer(id: Long, text: String): SendMessage {
+            val msg = SendMessage()
+            msg.chatId = id.toString()
+            msg.text = text
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
+
         fun getCommandsHelpMessage(chatId: Long): SendMessage {
             val msg = SendMessage()
             msg.chatId = chatId.toString()

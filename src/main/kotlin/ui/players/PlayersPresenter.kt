@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import tornadofx.TableColumnDirtyState
+import ui.Application
 
 class PlayersPresenter(private val view: PlayersView) {
 
@@ -41,5 +42,19 @@ class PlayersPresenter(private val view: PlayersView) {
 
     fun updateDatabase(changes: Sequence<Map.Entry<PlayerModel, TableColumnDirtyState<PlayerModel>>>) {
         DatabaseHelper.playersController.commitChanges(changes)
+    }
+
+    fun sendMessageToSelectedPlayer(id: Long?, text: String) {
+        if (id == null) return
+
+        GlobalScope.launch {
+            Application.bot?.sendMessageToPlayer(id, text)
+        }
+    }
+
+    fun sendMessageToAll(text: String) {
+        GlobalScope.launch {
+            Application.bot?.sendMessageToAll(text)
+        }
     }
 }

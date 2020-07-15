@@ -132,9 +132,9 @@ class MainView : View("CTF Bot"), LogListener {
         playersButton.action {
             Stage().apply {
                 this.title = "Players"
-                this.scene = Scene(PlayersView().root, 500.0, 350.0)
-                this.minWidth = 500.0
-                this.minHeight = 350.0
+                this.scene = Scene(PlayersView().root, 800.0, 400.0)
+                this.minWidth = 800.0
+                this.minHeight = 400.0
             }.show()
         }
         tasksButton.action {

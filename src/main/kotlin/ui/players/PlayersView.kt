@@ -89,6 +89,49 @@ class PlayersView: View("Players") {
             disableButtons()
         }
     }
+
+    private val btSendMessageToSelected = button {
+        text = "Send message to selected player"
+        font = Font(14.0)
+        action {
+            presenter.sendMessageToSelectedPlayer(
+                playersTable.tableView.selectedItem?.item?.id?.value,
+                taMessage.text
+            )
+        }
+    }
+
+    private val btSendMessageToAll = button {
+        text = "Send message to all players"
+        font = Font(14.0)
+        action {
+            presenter.sendMessageToAll(
+                taMessage.text
+            )
+        }
+    }
+
+    private val taMessage = textarea {
+        font = Font(13.0)
+    }
+
+    private val messageBox = hbox {
+        spacing = 10.0
+        add(taMessage)
+        taMessage.fitToParentWidth()
+        taMessage.fitToParentHeight()
+        val btns = vbox {
+            spacing = 5.0
+            add(btSendMessageToSelected)
+            add(btSendMessageToAll)
+            alignment = Pos.CENTER
+        }
+        btns.fitToParentWidth()
+        btns.fitToParentHeight()
+        btns.maxWidth = 500.0
+
+        this.maxHeight = 400.0
+    }
     private val buttons = hbox {
         spacing = 15.0
 
@@ -111,11 +154,14 @@ class PlayersView: View("Players") {
         padding = Insets(10.0)
         spacing = 15.0
 
+        add(messageBox)
         add(buttons)
         add(players)
         add(btSaveChanges)
         add(btRollback)
 
+        messageBox.fitToParentWidth()
+        messageBox.fitToParentHeight()
         buttons.fitToParentWidth()
         buttons.fitToParentHeight()
         players.fitToParentWidth()

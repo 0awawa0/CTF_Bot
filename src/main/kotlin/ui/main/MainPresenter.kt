@@ -4,14 +4,13 @@ import bot.Bot
 import db.DatabaseHelper
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
-import org.telegram.telegrambots.meta.generics.BotSession
+import ui.Application
+import ui.Application.Companion.botSession
 import utils.Logger
 import java.io.FileReader
 
 class MainPresenter(private val view: MainView) {
 
-    private var bot: Bot? = null
-    private var botSession: BotSession? = null
     private val botApi = TelegramBotsApi()
 
     private val botCredentials = FileReader("./BotCredentials").readLines()
@@ -20,21 +19,21 @@ class MainPresenter(private val view: MainView) {
 
 
     fun startBot(ctfName: String) {
-        bot = Bot.Builder()
+        Application.bot = Bot.Builder()
             .setToken(token)
             .setBotName(botName)
             .setCtfName(ctfName)
             .build()
 
         try {
-            botSession = botApi.registerBot(bot)
+            botSession = botApi.registerBot(Application.bot)
         } catch (e: TelegramApiRequestException) {
             Logger.error("Main", e.message.toString())
         }
     }
 
     fun startTestingBot(ctfName: String, password: String) {
-        bot = Bot.Builder()
+        Application.bot = Bot.Builder()
             .setTesting(true)
             .setTestingPassword(password)
             .setToken(token)
@@ -44,7 +43,7 @@ class MainPresenter(private val view: MainView) {
 
         DatabaseHelper.init()
         try {
-            botSession = botApi.registerBot(bot)
+            botSession = botApi.registerBot(Application.bot)
         } catch (e: TelegramApiRequestException) {
             Logger.error("Main", e.message.toString())
         }
