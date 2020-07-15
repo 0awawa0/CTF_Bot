@@ -23,6 +23,7 @@ const val MSG_TO_DEC = "/toDec"
 const val MSG_TO_BIN = "/toBin"
 const val MSG_TO_STRING = "/toString"
 const val MSG_ROT = "/rot"
+const val MSG_CHECK_MAGIC = "/checkHeader"
 
 const val DATA_MENU = "/menu"
 const val DATA_SCOREBOARD = "/scoreboard"
@@ -153,6 +154,7 @@ class Bot private constructor(
                     MSG_TO_DEC -> MessageMaker.getToDecMessage(message.chatId, content)
                     MSG_TO_STRING -> MessageMaker.getToStringMessage(message.chatId, content)
                     MSG_ROT -> MessageMaker.getRotMessage(message.chatId, content)
+                    MSG_CHECK_MAGIC -> MessageMaker.getCheckMagicMessage(message.chatId, content)
                     else -> MessageMaker.getUnknownMessage(message.chatId)
                 }
             )

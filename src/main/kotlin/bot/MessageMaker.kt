@@ -1,5 +1,6 @@
 package bot
 
+import bot.features.magic.MagicNumbers
 import bot.features.numbers.NumbersUtils
 import bot.features.rot.Rot
 import bot.utils.Helper
@@ -9,7 +10,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
-import java.lang.NumberFormatException
 
 
 class MessageMaker {
@@ -390,6 +390,22 @@ class MessageMaker {
             } catch (e: Exception) {
                 msg.text = "-1"
             }
+
+            return msg
+        }
+
+        fun getCheckMagicMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            msg.chatId = chatId.toString()
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            msg.text = MagicNumbers.checkMagicNumber(content.trim())
 
             return msg
         }
