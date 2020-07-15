@@ -28,6 +28,10 @@ Top text field is for CTF event name. The CTF name will be used by bot to look f
 ### Players window
 ![PlayersWindow](screenshots/PlayersWindow.png)
 
+"Send message to selected player" button sends message to player selected in the players table.
+
+"Send message to all" button sends message to all players in the database. Note that currently Telegram Bots API doesn't support broadcast messaging, so trying to send message to many chats immediately will cause an error 429. Therefore messages will be sent with 200 milliseconds interval, so broadcasting message to really big amount of players can take some time. For example, if you have 100 players in the database, it will take up to 20 seconds to send message to everybody.  
+
 "Refresh current scores" button sets "Current score" field for all users to 0. Other fields will remain untouched.
 
 "Refresh all scores" button sets all fields for all users to default values (except of "Username" obviously).
