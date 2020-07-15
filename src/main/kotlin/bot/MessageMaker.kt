@@ -1,6 +1,7 @@
 package bot
 
 import bot.features.numbers.NumbersUtils
+import bot.features.rot.Rot
 import bot.utils.Helper
 import db.DatabaseHelper
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
@@ -8,6 +9,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
+import java.lang.NumberFormatException
 
 
 class MessageMaker {
@@ -368,6 +370,30 @@ class MessageMaker {
             return msg
         }
 
+        fun getRotMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            msg.chatId = chatId.toString()
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            val splat = content.trim().split(" ")
+
+            try {
+                val key = splat[0].toInt()
+                val text = splat.slice(1 until splat.size).joinToString(" ")
+                msg.text = Rot.rotate(text, key)
+            } catch (e: Exception) {
+                msg.text = "-1"
+            }
+
+            return msg
+        }
+
         fun getCommandsHelpMessage(chatId: Long): SendMessage {
             val msg = SendMessage()
             msg.chatId = chatId.toString()
@@ -376,11 +402,18 @@ class MessageMaker {
                 В массивах числа должны быть разделены пробелом. Числа ограничены диапазоном [0:9223372036854775807]
                 
                 /flag <string> - проверяет флаг. Если переданная строка является флагом к какому-либо заданию, это задание будет зачтено как решенное.
+                
                 /convert <array of numbers> - переводит массив чисел в двоичную, десятичную и шестнадцатеричную системы счисления.
+                
                 /toHex <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
+                
                 /toDec <array of numbers> - переводит массив чисел в десятичную систему счисления.
+                
                 /toBin <array of numbers> - переводит массив чисел в двоичную систему счисления.
-                /toString <array of numbers> - переводит массив чисел в одну строку. Числа ограничены 16 битами. Если Передано число длиннее 16 бит, будут использованы младшие его 16 бит.
+                
+                /toString <array of numbers> - переводит массив чисел в одну строку. Числа ограничены 16 битами. Если передано число длиннее 16 бит, будут использованы младшие его 16 бит.
+                
+                /rot <key> <text> - преобразует текст по алгоритму ROT13 (Шифрование Цезаря) с заданным ключом. Ключ может быть положительным или отрицательным.
             """.trimIndent()
             msg.replyMarkup = InlineKeyboardMarkup(
                 listOf(

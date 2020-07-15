@@ -70,3 +70,4 @@ Also bot has additional features that can be helpful during CTF. They can be use
 3. `/toHex <array_of_numbers>` - converts numbers array to hexadecimal.
 4. `/toDec <array_of_numbers>` - converts numbers array to decimal.
 5. `/toString <array_of_numbers>` - converts numbers array to single string.
+6. `/rot <key> <text>` - processes the text by ROT13 (Caesar encryption) algorithm with given key. Key can be positive or negative.
