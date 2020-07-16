@@ -397,16 +397,39 @@ class MessageMaker {
         fun getCheckMagicMessage(chatId: Long, content: String): SendMessage {
             val msg = SendMessage()
             msg.chatId = chatId.toString()
-            msg.replyMarkup = InlineKeyboardMarkup(
-                listOf(
+
+            val msgText = StringBuilder()
+            val replyMarkup = ArrayList<List<InlineKeyboardButton>>()
+
+            val magicCheck = MagicNumbers.findMagic(content.trim())
+
+            msgText.append("Результаты поиска")
+            for ((i, match) in magicCheck.withIndex()) {
+                replyMarkup.add(
                     listOf(
-                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                        InlineKeyboardButton().setText(
+                            "${i + 1}. ${match.first.formatName} - ${if (match.second) "Полное совпадение" else "Неполное совпадение"}"
+                        ).setCallbackData(match.first.callback)
                     )
                 )
-            )
+            }
 
-            msg.text = MagicNumbers.checkMagicNumber(content.trim())
+            msg.text = msgText.toString()
 
+            replyMarkup.add(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+            msg.replyMarkup = InlineKeyboardMarkup(replyMarkup)
+
+            return msg
+        }
+
+        fun getMagicData(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            msg.chatId = chatId.toString()
+            msg.enableHtml(true)
+            msg.text = MagicNumbers.getDataForMagic(content.trim())
+            msg.replyMarkup = InlineKeyboardMarkup(listOf(
+                listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU))
+            ))
             return msg
         }
 

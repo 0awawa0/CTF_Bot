@@ -23,7 +23,7 @@ const val MSG_TO_DEC = "/toDec"
 const val MSG_TO_BIN = "/toBin"
 const val MSG_TO_STRING = "/toString"
 const val MSG_ROT = "/rot"
-const val MSG_CHECK_MAGIC = "/checkHeader"
+const val MSG_CHECK_MAGIC = "/checkMagic"
 
 const val DATA_MENU = "/menu"
 const val DATA_SCOREBOARD = "/scoreboard"
@@ -32,12 +32,20 @@ const val DATA_TASK = "/task"
 const val DATA_FILE = "/file"
 const val DATA_COMMANDS = "/commands"
 
+const val DATA_JPEG_SIGNATURE = "/jpegSignature"
+const val DATA_JPEG_TAIL = "/jpegTail"
+const val DATA_PNG_SIGNATURE = "/pngSignature"
+const val DATA_PNG_HEADER = "/pngHeader"
+const val DATA_PNG_DATA = "/pngData"
+const val DATA_PNG_TAIL = "/pngTail"
+
+
 class Bot private constructor(
     private val testing: Boolean = false,
     private val testingPassword: String = "",
     private val token: String,
     private val botName: String,
-    private val ctfName: String
+    ctfName: String
 ): TelegramLongPollingBot() {
 
 
@@ -200,6 +208,10 @@ class Bot private constructor(
                     DATA_TASK -> MessageMaker.getTaskMessage(callback.message.chatId, content.toLong())
                     DATA_MENU -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
                     DATA_COMMANDS -> MessageMaker.getCommandsHelpMessage(callback.message.chatId)
+
+                    DATA_JPEG_SIGNATURE, DATA_JPEG_TAIL,
+                    DATA_PNG_SIGNATURE, DATA_PNG_HEADER,
+                    DATA_PNG_DATA, DATA_PNG_TAIL -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
                     else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
                 }
             )
