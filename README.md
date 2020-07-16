@@ -71,3 +71,5 @@ Also bot has additional features that can be helpful during CTF. They can be use
 4. `/toDec <array_of_numbers>` - converts numbers array to decimal.
 5. `/toString <array_of_numbers>` - converts numbers array to single string.
 6. `/rot <key> <text>` - processes the text by ROT13 (Caesar encryption) algorithm with given key. Key can be positive or negative.
+7. `/rotBruteForce <text>` - decrypts the text by ROT13 (Caesar encryption) algorithm with all possible variants of key.
+8. `/checkMagic <magic_number>` - helps to determine file type by it's magic number. Magic numbers must be given in hexadecimal format without '0x' prefix, example: ff d8. Not only first n bytes (aka file signature) of file are considered as magic number, but also other patterns that are specific for file type. For example, '49 44 41 54' is a data sector (IDAT) of PNG file.

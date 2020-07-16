@@ -3,6 +3,7 @@ package bot.features.rot
 
 object Rot {
 
+    const val ALPHABET_LENGTH = 26
     private const val alphabetLowerCase = "abcdefghijklmnopqrstuvwxyz"
     private const val alphabetUpperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 

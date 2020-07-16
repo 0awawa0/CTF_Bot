@@ -394,6 +394,26 @@ class MessageMaker {
             return msg
         }
 
+        fun getRotBruteMessage(chatId: Long, content: String): SendMessage {
+            val msg = SendMessage()
+            msg.chatId = chatId.toString()
+
+            val msgText = StringBuilder()
+            for (key in 0 until Rot.ALPHABET_LENGTH) {
+                msgText.append("Key: $key  Text: ${Rot.rotate(content, key)}\n")
+            }
+            msg.text = msgText.toString()
+            msg.replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    )
+                )
+            )
+
+            return msg
+        }
+
         fun getCheckMagicMessage(chatId: Long, content: String): SendMessage {
             val msg = SendMessage()
             msg.chatId = chatId.toString()
@@ -453,6 +473,10 @@ class MessageMaker {
                 /toString <array of numbers> - переводит массив чисел в одну строку. Числа ограничены 16 битами. Если передано число длиннее 16 бит, будут использованы младшие его 16 бит.
                 
                 /rot <key> <text> - преобразует текст по алгоритму ROT13 (Шифрование Цезаря) с заданным ключом. Ключ может быть положительным или отрицательным.
+                
+                /rotBruteForce <text> - расшифровывает текст по алгоритму ROT13 (Шифрование Цезаря) со всеми возможными вариантами ключа.
+                
+                /checkMagic <magic_number> - помогает определить тип файла по магическому числу. Магические числа должны быть указаны в шестнадцатеричном формате без префикса '0x', пример: ff d8. Магическими числами считаются не только сигнатуры файлов (первые n байт), но и другие, характерные для файлов последовательности. Например, "49 44 41 54" - сектор данных (IDAT) PNG файла.   
             """.trimIndent()
             msg.replyMarkup = InlineKeyboardMarkup(
                 listOf(
