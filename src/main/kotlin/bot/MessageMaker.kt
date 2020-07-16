@@ -12,6 +12,58 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 
 
+/**
+ * This class builds answers to users for bot to send.
+ * This file will probably be pretty big with lots of functions for particular case.
+ * And this class is designed to contain only functions. And all those functions should return something for bot to execute.
+ *
+ * Here is a list of all functions to simplify navigation:
+ *
+ * @see getFlagMessage - checks the flag and answer if it's right, wrong or user has already passed it earlier.
+ *
+ * @see getMenuMessage - greetings message
+ *
+ * @see getPasswordRequestMessage - asks user for password if bot is in testing mode and user is not authorized.
+ *
+ * @see getPasswordWrongMessage - tells user that the password he/she sent is incorrect, so it's not authorized.
+ *
+ * @see getTasksMessage - returns list of all tasks for current CTF competition
+ *
+ * @see getScoreboardMessage - returns list of users from database sorted by their current score.
+ *
+ * @see getTaskMessage - returns details for particular task by its id
+ *
+ * @see getFileMessage - returns file user has requested for particular task. File will be sent only if the files folder for task contains it.
+ *
+ * @see getErrorMessage - this message means that something bad has happened Receiving this message means that there is a bug in the code and it needs to be fixed.
+ *
+ * @see getUnknownMessage - sent if unknown command or callback data received by the user. Receiving this message mostly shouldn't mean a bug (though it could be), it's far more probably that there is a typo in a command.
+ *
+ * @see getConvertMessage - converts given array of numbers to binary, hexadecimal and decimal.
+ *
+ * @see getToHexMessage - converts given array of numbers to hexadecimal.
+ *
+ * @see getToDecMessage - converts given array of numbers to decimal
+ *
+ * @see getToBinMessage - converts given array of numbers to binary
+ *
+ * @see getToStringMessage - represent given array of numbers as single string. To convert number to
+ *              char Long#toChar() function is used. And it will process only least 16 bits of the number.
+ *
+ * @see getMessageToPlayer - returns message with given text to be sent to some particular player.
+ *
+ * @see getRotMessage - processes text by ROT13 algorithm with given key.
+ *
+ * @see getRotBruteMessage - processes text by ROT13 algorithm with all possible keys (there are 26 keys).
+ *
+ * @see getCheckMagicMessage - checks if given magic number is known for bot.
+            * @see MagicNumbers
+ *
+ * @see getMagicData - returns information about magic number
+            * @see MagicNumbers
+ *
+ * @see getCommandsHelpMessage - returns list of commands available to users with descriptions
+ */
 class MessageMaker {
 
     companion object {

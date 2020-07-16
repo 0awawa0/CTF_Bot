@@ -1,7 +1,6 @@
 package bot.features.numbers
 
 import java.lang.NumberFormatException
-import kotlin.math.pow
 
 
 object NumbersUtils {

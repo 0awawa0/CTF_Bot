@@ -40,6 +40,23 @@ const val DATA_PNG_HEADER = "/pngHeader"
 const val DATA_PNG_DATA = "/pngData"
 const val DATA_PNG_TAIL = "/pngTail"
 
+/**
+ *
+ * This class receives/sends messages from/to users. There is no complicated logic here, so I don't think it should be explained really accurate.
+ * These are four functions that can be interesting for one who reads this:
+ *
+ * @see onUpdateReceived - just checks if received update is a message or callback and calls answerMessage or answerCallback respectively
+ *
+ * @see answerMessage - is used to answer to simple messages from users.
+ *
+ * @see answerCallback - is used to answer to buttons clicks.
+ *
+ * @see sendMessageToPlayer - sends some text to particular user by its id
+ *
+ * @see sendMessageToAll - sends some text message to all users in database.
+ *
+ * @author Alexander "0awawa0" Pozdniakov
+ */
 
 class Bot private constructor(
     private val testing: Boolean = false,
@@ -123,7 +140,12 @@ class Bot private constructor(
 
         Logger.info(tag, "Received message from Chat id: ${message.chatId} User: ${message.chat.firstName}. Message: ${message.text}")
 
+        // Check if bot is in testing mode and user is authorized for testing it.
         if (testing && message.chatId !in authorizedForTesting) {
+
+            // If user is not authorized, check the command.
+            // If its a /testing_password, so check the password.
+            // Else, tell user that he/she is not authorized.
             val command = message.text.split(" ").find { it.startsWith("/") }
             val content = message.text.replace(command ?: "", "").trim()
 
@@ -145,14 +167,18 @@ class Bot private constructor(
             return
         }
 
+        // Every message must start with /, because they all are commands.
         if (!message.text.startsWith("/")) {
             execute(MessageMaker.getUnknownMessage(message.chatId))
             return
         }
+
+        // Split command and it's arguments
         val command = message.text.split(" ").find { it.startsWith("/") }!!
         val content = message.text.replace(command, "").trim()
 
         try {
+            // Build the answer for command and answer to user
             execute(
                 when (command) {
                     MSG_START -> MessageMaker.getMenuMessage(message.chat.firstName, message.chatId, message.chat.userName)
@@ -180,20 +206,25 @@ class Bot private constructor(
             answerToCallback.callbackQueryId = callback.id
             execute(answerToCallback)
 
+            // Check if the bot is in testing mode and user is authorized for testing
             if (testing && callback.message.chatId !in authorizedForTesting) {
                 execute(MessageMaker.getPasswordRequestMessage(callback.message.chatId))
                 return
             }
 
+            // Every callback data must start with / as it's a command
             if (!callback.data.startsWith("/")) {
                 execute(MessageMaker.getErrorMessage(callback.message.chatId))
                 return
             }
 
+            // Split the command and data
             val command = callback.data.split(" ").find { it.startsWith("/") }!!
             val content = callback.data.replace(command, "").trim()
 
             Logger.info(tag, "Received message from Chat id: ${callback.message.chatId} User: ${callback.message.chat.firstName}. Callback data: ${callback.data}")
+
+            // Build answer corresponding to the command and answer to user
             if (command == DATA_FILE) {
                 val splat = content.split(" ")
                 val taskId = splat[0].toLong()
