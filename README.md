@@ -4,7 +4,7 @@
 Telegram bot that is used to organize CTF trainings in Donetsk National University.
 
 ## Usage
-0) Download the bot .jar file [CTF_Bot.jar](out/artifacts/CTF_Bot_jar/CTF_Bot.jar) or build bot from sources.
+0) Download the bot .jar file https://github.com/0awawa0/CTF_Bot/releases or build bot from sources.
 1) Create folder "db" in the folder where bot is placed.
 2) If you have not register you bot yet, read documentation [Telegram APIs](https://core.telegram.org/api) or contact @BotFather bot through Telegram to register your bot. After registering your bot you will get <i>your_bot_token</i> and <i>your_bot_name</i>. Put BotCredentials file to the folder where bot is placed filled as follows:
    
