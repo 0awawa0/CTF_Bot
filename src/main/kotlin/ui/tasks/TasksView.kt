@@ -8,7 +8,6 @@ import javafx.scene.control.TableView
 import javafx.scene.text.Font
 import javafx.stage.DirectoryChooser
 import tornadofx.*
-import ui.Application
 import java.io.File
 import java.nio.file.Paths
 
