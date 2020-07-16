@@ -8,11 +8,14 @@ import javafx.scene.control.TableView
 import javafx.scene.text.Font
 import javafx.stage.DirectoryChooser
 import tornadofx.*
+import ui.Application
+import java.io.File
 import java.nio.file.Paths
 
 
 class TasksView: View("Tasks") {
 
+    private var lastPickedDirectory = ""
     private var tasksTable: TableViewEditModel<TaskModel> by singleAssign()
     private val presenter = TasksPresenter(this)
 
@@ -99,10 +102,19 @@ class TasksView: View("Tasks") {
         maxWidth = 350.0
 
         action {
-            lblFiles.text = DirectoryChooser()
-                .showDialog(currentStage)
-                ?.absolutePath
-                ?.replace(Paths.get("").toAbsolutePath().toString(), ".") ?: ""
+            val chooser = DirectoryChooser()
+            val initialDirectory = File(lastPickedDirectory)
+            chooser.initialDirectory = if (initialDirectory.exists())
+                initialDirectory
+            else
+                File(Paths.get("").toAbsolutePath().toString())
+
+            val selectedPath = chooser.showDialog(currentStage)?.absolutePath
+            if (selectedPath != null) { lastPickedDirectory = selectedPath }
+
+            lblFiles.text = selectedPath?.replace(Paths.get("")
+                .toAbsolutePath()
+                .toString(), ".") ?: ""
 
         }
     }
