@@ -158,7 +158,7 @@ class MessageMaker {
                     buttonsList.add(listOf(
                         InlineKeyboardButton()
                             .setText(
-                                "${task.category} - ${task.price}: ${task.name} ${if (taskSolved) "\uD83D\uDDF8" else ""}"
+                                "${task.category} - ${task.price}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
                             )
                             .setCallbackData("/task ${task.id}")
                     ))
