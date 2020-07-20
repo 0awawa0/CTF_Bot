@@ -21,7 +21,8 @@ object MagicNumbers {
         PSD_SIGNATURE("PSD сигнатура", DATA_PSD_SIGNATURE),
         RIFF_SIGNATURE("RIFF сигнатура", DATA_RIFF_SIGNATURE),
         WAVE_TAG("WAVE метка", DATA_WAVE_TAG),
-        AVI_TAG("AVI метка", DATA_AVI_TAG)
+        AVI_TAG("AVI метка", DATA_AVI_TAG),
+        BMP_SIGNATURE("BMP сигнатура", DATA_BMP_SIGNATURE)
     }
 
     private val mapMagicToSignatures = hashMapOf(
@@ -40,7 +41,8 @@ object MagicNumbers {
         Pair(Magic.PSD_SIGNATURE, "38 42 50 53"),
         Pair(Magic.RIFF_SIGNATURE, "52 49 46"),
         Pair(Magic.WAVE_TAG, "57 41 56 45"),
-        Pair(Magic.AVI_TAG, "41 56 49 20")
+        Pair(Magic.AVI_TAG, "41 56 49 20"),
+        Pair(Magic.BMP_SIGNATURE, "42 4D")
     )
 
     fun findMagic(magicNumber: String): ArrayList<Pair<Magic, Boolean>> {
@@ -241,6 +243,17 @@ object MagicNumbers {
                     Подробнее об AVI:
                     https://ru.wikipedia.org/wiki/Audio_Video_Interleave
                 """.trimIndent()
+
+                Magic.BMP_SIGNATURE -> """
+                    <b>42 4D</b>
+                    
+                    Сигнатура BMP изображения.
+                    
+                    Подробно о BMP:
+                    https://ru.wikipedia.org/wiki/BMP
+                """.trimIndent()
+
+
                 else -> "Нет данных\n"
             }
         }
