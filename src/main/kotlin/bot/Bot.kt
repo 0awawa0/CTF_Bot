@@ -7,9 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery
-import org.telegram.telegrambots.meta.api.objects.Message
-import org.telegram.telegrambots.meta.api.objects.Update
+import org.telegram.telegrambots.meta.api.objects.*
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 import utils.Logger
 
@@ -134,6 +132,7 @@ class Bot private constructor(
 
         if (update == null) return
         GlobalScope.launch {
+            Logger.info(tag, update.message.sticker.fileId)
             if (update.hasMessage()) {
                 if (update.message.hasText()) {
                     answerMessage(update.message)
@@ -188,12 +187,17 @@ class Bot private constructor(
         val command = message.text.split(" ").find { it.startsWith("/") }!!
         val content = message.text.replace(command, "").trim()
 
+        if (command == MSG_FLAG) {
+            execute(MessageMaker.getFlagSticker(message.chatId, content))
+            return
+        }
+
         try {
             // Build the answer for command and answer to user
             execute(
                 when (command) {
                     MSG_START -> MessageMaker.getMenuMessage(message.chat.firstName, message.chatId, message.chat.userName)
-                    MSG_FLAG -> MessageMaker.getFlagMessage(message.chatId, content)
+//                    MSG_FLAG -> MessageMaker.getFlagMessage(message.chatId, content)
                     MSG_CONVERT -> MessageMaker.getConvertMessage(message.chatId, content)
                     MSG_TO_HEX -> MessageMaker.getToHexMessage(message.chatId, content)
                     MSG_TO_BIN -> MessageMaker.getToBinMessage(message.chatId, content)

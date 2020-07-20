@@ -59,14 +59,14 @@ class DatabaseHelper {
         }
 
 
-        fun onPlayerPassedFlag(playerId: Long, flag: String): Int {
-            val player = getPlayerById(playerId) ?: return FLAG_RESULT_ERROR
+        fun onPlayerPassedFlag(playerId: Long, flag: String): Pair<Int, Int> {
+            val player = getPlayerById(playerId) ?: return Pair(FLAG_RESULT_ERROR, 0)
 
             for (task in getTasksForCtf(MessageMaker.ctfName)) {
                 if (flag == task.flag) {
                     val solvedTasks = player.solvedTasks.split("|")
                     return if (solvedTasks.contains(task.id.toString())) {
-                        FLAG_RESULT_ALREADY_SOLVED
+                        Pair(FLAG_RESULT_ALREADY_SOLVED, 0)
                     } else {
                         transaction {
                             player.currentScore += task.price
@@ -76,12 +76,12 @@ class DatabaseHelper {
 
                             playersController.update()
                         }
-                        FLAG_RESULT_SUCCESS
+                        Pair(FLAG_RESULT_SUCCESS, task.price)
                     }
                 }
             }
 
-            return FLAG_RESULT_WRONG
+            return Pair(FLAG_RESULT_WRONG, 0)
         }
 
         fun getPlayerById(id: Long): PlayerEntity? {
