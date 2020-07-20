@@ -39,6 +39,16 @@ const val DATA_PNG_SIGNATURE = "/pngSignature"
 const val DATA_PNG_HEADER = "/pngHeader"
 const val DATA_PNG_DATA = "/pngData"
 const val DATA_PNG_TAIL = "/pngTail"
+const val DATA_ZIP_SIGNATURE = "/zipSignature"
+const val DATA_RAR_SIGNATURE = "/rarSignature"
+const val DATA_ELF_SIGNATURE = "/elfSignature"
+const val DATA_CLASS_SIGNATURE = "/classSignature"
+const val DATA_PDF_SIGNATURE = "/pdfSignature"
+const val DATA_PDF_TAIL = "/pdfTail"
+const val DATA_PSD_SIGNATURE = "/psdSignature"
+const val DATA_RIFF_SIGNATURE = "/wavAviSignature"
+const val DATA_WAVE_TAG = "/waveTag"
+const val DATA_AVI_TAG = "/aviTag"
 
 /**
  *
@@ -244,7 +254,12 @@ class Bot private constructor(
 
                     DATA_JPEG_SIGNATURE, DATA_JPEG_TAIL,
                     DATA_PNG_SIGNATURE, DATA_PNG_HEADER,
-                    DATA_PNG_DATA, DATA_PNG_TAIL -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
+                    DATA_PNG_DATA, DATA_PNG_TAIL,
+                    DATA_ZIP_SIGNATURE, DATA_RAR_SIGNATURE,
+                    DATA_ELF_SIGNATURE, DATA_CLASS_SIGNATURE,
+                    DATA_PDF_SIGNATURE, DATA_PDF_TAIL,
+                    DATA_PSD_SIGNATURE, DATA_RIFF_SIGNATURE,
+                    DATA_WAVE_TAG, DATA_AVI_TAG -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
                     else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
                 }
             )
