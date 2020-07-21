@@ -48,6 +48,7 @@ const val DATA_RIFF_SIGNATURE = "/wavAviSignature"
 const val DATA_WAVE_TAG = "/waveTag"
 const val DATA_AVI_TAG = "/aviTag"
 const val DATA_BMP_SIGNATURE = "/bmpSignature"
+const val DATA_DOC_SIGNATURE = "/docSignature"
 
 /**
  *
@@ -264,7 +265,7 @@ class Bot private constructor(
                     DATA_PDF_SIGNATURE, DATA_PDF_TAIL,
                     DATA_PSD_SIGNATURE, DATA_RIFF_SIGNATURE,
                     DATA_WAVE_TAG, DATA_AVI_TAG,
-                    DATA_BMP_SIGNATURE -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
+                    DATA_BMP_SIGNATURE, DATA_DOC_SIGNATURE -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
                     else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
                 }
             )

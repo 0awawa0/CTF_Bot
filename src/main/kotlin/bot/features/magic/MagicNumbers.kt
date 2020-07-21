@@ -22,7 +22,8 @@ object MagicNumbers {
         RIFF_SIGNATURE("RIFF сигнатура", DATA_RIFF_SIGNATURE),
         WAVE_TAG("WAVE метка", DATA_WAVE_TAG),
         AVI_TAG("AVI метка", DATA_AVI_TAG),
-        BMP_SIGNATURE("BMP сигнатура", DATA_BMP_SIGNATURE)
+        BMP_SIGNATURE("BMP сигнатура", DATA_BMP_SIGNATURE),
+        DOC_SIGNATURE("DOC сигнатура", DATA_DOC_SIGNATURE)
     }
 
     private val mapMagicToSignatures = hashMapOf(
@@ -42,7 +43,8 @@ object MagicNumbers {
         Pair(Magic.RIFF_SIGNATURE, "52 49 46"),
         Pair(Magic.WAVE_TAG, "57 41 56 45"),
         Pair(Magic.AVI_TAG, "41 56 49 20"),
-        Pair(Magic.BMP_SIGNATURE, "42 4D")
+        Pair(Magic.BMP_SIGNATURE, "42 4D"),
+        Pair(Magic.DOC_SIGNATURE, "D0 CF 11 E0 A1 B1 1A E1")
     )
 
     fun findMagic(magicNumber: String): ArrayList<Pair<Magic, Boolean>> {
@@ -141,7 +143,7 @@ object MagicNumbers {
                     <b>50 4B</b>
                     
                     Сигнатура zip архива. Помимо сжатия файлов, этот архив используется различными приложениями.
-                    Так, файлы .jar, .doc, .ppt, .xls и многие другие имеют сигнатуру 50 4B и являются zip архивами, которые можно распаковать.
+                    Так, файлы .jar, .docx, .pptx, .xlsx и многие другие имеют сигнатуру 50 4B и являются zip архивами, которые можно распаковать.
                     Для работы с зашифрованными архивами можно использоать инструменты John The Ripper или hashcat. Также можно попытаться восстановить пароль к архиву с помощью различных онлайн инструментов.
                     
                     Подробнее про формат файла можно почитать тут:
@@ -251,6 +253,15 @@ object MagicNumbers {
                     
                     Подробно о BMP:
                     https://ru.wikipedia.org/wiki/BMP
+                """.trimIndent()
+
+                Magic.DOC_SIGNATURE -> """
+                    <b>D0 CF 11 E0 A1 B1 1A E1</b>
+                    
+                    Compound File Binary Format - формат для объединения нескольких файлов в одном файле на диске. Используется различными программами. В частности, раньше этот формат файла использовался в пакете Microsoft Office для создания файлов .doc, .ppt, .xls.
+                    
+                    Подробно о формате:
+                    https://en.wikipedia.org/wiki/Compound_File_Binary_Format
                 """.trimIndent()
 
 
