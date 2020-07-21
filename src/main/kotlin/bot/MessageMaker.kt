@@ -20,7 +20,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
  *
  * Here is a list of all functions to simplify navigation:
  *
- * @see getFlagMessage - checks the flag and answer if it's right, wrong or user has already passed it earlier.
+ * @see getFlagSticker - checks the flag and answers if it's right, wrong or user has already passed it earlier. Returns SendSticker
+ *
+ * @see getFlagMessage - checks the flag and answer if it's right, wrong or user has already passed it earlier. Returns SendMessage
  *
  * @see getMenuMessage - greetings message
  *
