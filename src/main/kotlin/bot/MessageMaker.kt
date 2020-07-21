@@ -58,10 +58,10 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
  * @see getRotBruteMessage - processes text by ROT13 algorithm with all possible keys (there are 26 keys).
  *
  * @see getCheckMagicMessage - checks if given magic number is known for bot.
-            * @see MagicNumbers
+ * @see MagicNumbers
  *
  * @see getMagicData - returns information about magic number
-            * @see MagicNumbers
+ * @see MagicNumbers
  *
  * @see getCommandsHelpMessage - returns list of commands available to users with descriptions
  */
@@ -73,7 +73,7 @@ class MessageMaker {
 //        '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
         var ctfName = ""
 
-        val niceStickers = arrayOf(
+        private val niceStickers = setOf(
             "CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA",
             "CAACAgIAAxkBAAIJR18VnEnsspEr1-c0nfuivqrsLF_4AAJ4CQAC8UK_BcyW4BnRNuwKGgQ",
             "CAACAgIAAxkBAAIJSF8VnFK_9gEmaVBryUw9QPXdIC1VAAINAgACNnYgDjJnEuNd-1iCGgQ",
@@ -92,7 +92,69 @@ class MessageMaker {
             "CAACAgIAAxkBAAIJS18VnJo3e3Ab31YJIBAY0DbWWXhWAAIkAwACz7vUDm0PI10rjwfcGgQ",
             "CAACAgIAAxkBAAIJSl8VnFo5nBLmgFhi_cM6efEShZqVAAL5BwACGELuCAh1fKDO8HNOGgQ",
             "CAACAgIAAxkBAAIJSV8VnFYVJRnEPBZhS3Eu7dWUD5QvAALzAgACnNbnCuAuBHGFD8ECGgQ",
-            "CAACAgIAAxkBAAIJSF8VnFK_9gEmaVBryUw9QPXdIC1VAAINAgACNnYgDjJnEuNd-1iCGgQ"
+            "CAACAgIAAxkBAAIJSF8VnFK_9gEmaVBryUw9QPXdIC1VAAINAgACNnYgDjJnEuNd-1iCGgQ",
+            "CAACAgIAAxkBAAIJWF8WfndKRVEEPtHafWczBHRjcnFXAAI2AgACz7vUDoh3s73RN0lHGgQ",
+            "CAACAgUAAxkBAAIJWV8WfoN1skrCCtKeQc2jiZH04zQaAAKHAwAC6QrIAypdTyYxR1EwGgQ",
+            "CAACAgIAAxkBAAIJWl8WfpblDWCMQptHaCcoMNvqOlqSAAJ0AQACihKqDqn6Ep_umnvhGgQ",
+            "CAACAgIAAxkBAAIJW18Wfp6MbnlP03waFSGOxGKGwftIAAL9CQACLw_wBrlfDQPsjDttGgQ",
+            "CAACAgIAAxkBAAIJXF8WfqVcu0_TGUjvTnom-2f6FWbJAAK0AgACW__yCmCB33V_fjhuGgQ",
+            "CAACAgIAAxkBAAIJXV8WfqrBeL4l4rCKeOE4g7D5czdEAALoAgACtXHaBlINrrZVgIJbGgQ",
+            "CAACAgIAAxkBAAIJXl8WfsLYOjRW-7UltRYl9Dmm9oI2AAL-AANWnb0K2gRhMC751_8aBA",
+            "CAACAgIAAxkBAAIJX18WfshmsxFruyhfiwasTdWvcx67AAL8AAMw1J0RU6XxJu0oNegaBA",
+            "CAACAgIAAxkBAAIJYF8WftVOWc6aFz_hTTVxJgggCjVXAAIgAAOWn4wOrP1BM_Sqb_kaBA",
+            "CAACAgIAAxkBAAIJYV8WfvQNewABa1o6xvFd_15l57iZQAACdAMAAvoLtgjV5oYGGtDaUBoE",
+            "CAACAgIAAxkBAAIJi18Wh9_7jkge3HN8iqY8k2f8xNT6AAIiAgACNnYgDjgrKIrs7Ue3GgQ",
+            "CAACAgIAAxkBAAIJjF8Wh-UNsbzRQratjVJbM4qjDe3xAALkAAPEe4QKEcIHSKqKDJQaBA",
+            "CAACAgIAAxkBAAIJjV8Wh-yWKz_qWTIZcOQ8LW6Hsk_NAAKVAAMfAUwVAfFU0Ca-WLcaBA",
+            "CAACAgIAAxkBAAIJjl8Wh_BJYm0aNMft2fD_56Q6QKfiAAImAwACz7vUDqRT7fQiGuLvGgQ",
+            "CAACAgIAAxkBAAIJj18Wh_ZBEj4O1SXCb3Dbb-hvPPmlAAJiCQACeVziCYqMcuA2PTO4GgQ",
+            "CAACAgIAAxkBAAIJkF8WiATgl_sq4wZXUP-mgKMTDBGmAAIfAAMNttIZUwyqkRgWjiAaBA",
+            "CAACAgIAAxkBAAIJkV8WiA0MQOITIucEncqGtw6VDAN9AAJrAAOWn4wOMuKqiPbhniUaBA",
+            "CAACAgIAAxkBAAIJkl8WiDPgckyWTmq3PGwwRpmQ16PXAAJXAAMfAUwVF6izXvNT8SwaBA",
+            "CAACAgIAAxkBAAIJk18WiD-wYWHHWJ0Uqt6t0jxK-WJ6AAJlAwAC7sShCkZUXth8bywsGgQ"
+        )
+
+        private val badStickers = setOf(
+            "CAACAgIAAxkBAAIJYl8WgCadydPEHsn8m3Zj11fUJe5cAAJTBAACa8TKCj3zLQSMAAHUshoE",
+            "CAACAgIAAxkBAAIJY18WgC9yX5XGzCEYPCJHXI9ELZqqAAIdAQACYyviCcmu_Eb_OpfCGgQ",
+            "CAACAgIAAxkBAAIJZF8WgDua5wQQ5HO1iKCvNrXG0B5dAAJYAQACYyviCUGY0kTDklu3GgQ",
+            "CAACAgIAAxkBAAIJZV8WgD9zNMm42QH4_baLrEqIPZylAAJgCQACeVziCSWHSkOIrb0eGgQ",
+            "CAACAgIAAxkBAAIJZl8WgETaBqdrWRh3toYcL9h11lYpAALjCAACCLcZAqhiD9a4x0BrGgQ",
+            "CAACAgUAAxkBAAIJZ18WgEdDX9OK5xUJz1STWuZUVX96AAJ9AwAC6QrIA60D0stxYv2mGgQ",
+            "CAACAgIAAxkBAAIJaF8WgFASM7bpj-j7_Uz-jyiHMI_lAAIMAQACVp29Cqpv9dJA3OI9GgQ",
+            "CAACAgIAAxkBAAIJaV8WgFzJl9AQTzXJIYcWXwcQcwMGAAJ9AAP3AsgPLsm7Ct3LIkkaBA",
+            "CAACAgIAAxkBAAIJal8WgGLg1NhN5ks7mVUTiEhOCmoXAAJ3AAPkoM4HJeKgUTKBHKsaBA",
+            "CAACAgIAAxkBAAIJa18WgG69hmc5a6d24vV6FHwJYJdBAAKhAgACLw_wBuuWE9yacw5aGgQ",
+            "CAACAgIAAxkBAAIJbF8WgHmNA1mVcNP1_jkowYdim_KfAALcBQAC-gu2CAVrbzSDr7IeGgQ",
+            "CAACAgMAAxkBAAIJbV8WgIOeyWFeeDslyHRKZsadXeSfAAKlBQACv4yQBIanELUTj1vxGgQ",
+            "CAACAgIAAxkBAAIJbl8WgJKvQCTheD8cOUSfxDu8EVGSAAL7AAO6wJUF9-eECGzvdbsaBA",
+            "CAACAgIAAxkBAAIJb18WgJgHzSe8-yozVHmWFops_Hd1AAJ-AAOc1ucKNwEqwAmfLPEaBA",
+            "CAACAgIAAxkBAAIJcF8WgJy6BMGp4CjRtzEtsWADzqj3AALbAwACRvusBFAotbLO5Xr6GgQ",
+            "CAACAgIAAxkBAAIJcV8WgKMTjJ7QAAEwWx4INPOEbwZdQAACdwADpkRIC2VG38pizwfDGgQ",
+            "CAACAgIAAxkBAAIJcl8WgKwmCFw_5Jk44QguB0pZMQGXAAJ2AAN8l30Le9tVTmzP0-8aBA",
+            "CAACAgIAAxkBAAIJc18WgLG0g1lL4c0dbqJ-MVl2xA9OAAIIAgAC3PKrB9wfMThSyktwGgQ",
+            "CAACAgIAAxkBAAIJdF8WgLyvm7scUeGkKo8CJ1Xs9a4KAAL9AAM2diAO4PMb1BfZQpMaBA",
+            "CAACAgIAAxkBAAIJdl8WglCb-0drPxdhlNmHCXdR_AE_AAIDAwAChmBXDtcEnzRXnuejGgQ",
+            "CAACAgIAAxkBAAIJd18WglWIu2WmKC7jklabf-d11GduAAIlAwACnNbnCgAB0udXwyXKPxoE",
+            "CAACAgIAAxkBAAIJeF8Wgls46s9Z1dTUBv8suIMNAprDAALlAAPEe4QKCJwD6jAVaaUaBA",
+            "CAACAgIAAxkBAAIJeV8WgmHTWK_n_yZPClEgDqUKomWpAAL1BwACYyviCa-zO_3ScB8TGgQ",
+            "CAACAgIAAxkBAAIJel8WgmeG9nQhdpkxoTQitp-9eKLfAAKMAAMfAUwVzVhIJLQKmaIaBA",
+            "CAACAgIAAxkBAAIJe18Wgm7D7YNSkwrbSi8OcjWXmCcQAAKGAQACihKqDtQEq1Y5m_yfGgQ",
+            "CAACAgUAAxkBAAIJfF8WgnguQm0k46yhyBSRwXZnYUJmAAJ4AwAC6QrIA9OAY5YOT1JnGgQ",
+            "CAACAgUAAxkBAAIJfV8Wgny-k8Iy2t3N5H8o8H24OhhqAALDAwAC6QrIA8UWW3R2DVzfGgQ",
+            "CAACAgUAAxkBAAIJfl8WgoJeGFhd8JxyES0cF73YwkjeAAKPAwAC6QrIAzdw6Tx8FEZIGgQ",
+            "CAACAgIAAxkBAAIJf18Wgo1OdW50dJtbc08k6ZCExEIhAALoAQACygMGC7r72N5wzGG7GgQ",
+            "CAACAgIAAxkBAAIJgF8Wgpgsfp31oJQoshX09Q6_K2RjAAKTAAP3AsgPJeWS_-k7iFUaBA",
+            "CAACAgIAAxkBAAIJgV8WgqRij08Nn3jUc-0wLSorHsLyAAL5AANWnb0KlWVuqyorGzYaBA",
+            "CAACAgIAAxkBAAIJgl8Wgq68brT5GC4zt-WPHcYYTDd6AAJHAANSiZEj2Audy00CRw0aBA",
+            "CAACAgIAAxkBAAIJg18WgrVhBCf-mVf9mx3ugRuaw7QqAAJlAAOWn4wOHfGZDqS0IikaBA",
+            "CAACAgIAAxkBAAIJhF8WgsCCF9Xv3oZXsuJhyGaCz9GIAAIgAAPkoM4HJUDHoipmCFQaBA",
+            "CAACAgIAAxkBAAIJhV8WgseGFo_xmIsB2uBQ3qAUgLWNAAI6AwACxKtoCxkNYQ8HmB4vGgQ",
+            "CAACAgIAAxkBAAIJhl8WgtXFYOYkRWmxjjZLy2uoScg3AALkAgACRxVoCeOpfo6tHHz-GgQ",
+            "CAACAgIAAxkBAAIJh18Wgt_mA7aRrzJzPAh995hVLlkLAAJDAAO2j0oJI4YMUY38hXsaBA",
+            "CAACAgIAAxkBAAIJiF8WguroLYVozNpYo9jyAw6PjCCJAALTAwACxKtoC5_3eyr8VMfsGgQ",
+            "CAACAgIAAxkBAAIJiV8WgvoQ_4OBLhzuTW87dLph0Uv3AAIqAAOhjEELUTaM8bmmvIMaBA",
+            "CAACAgIAAxkBAAIJil8Wgwh1N__fBLpG-4Dj3W5cm3sgAAIiBQACa8TKCnMzzBLXvW-LGgQ"
         )
 
         fun getFlagSticker(chatId: Long, flag: String): SendSticker {
@@ -103,17 +165,17 @@ class MessageMaker {
 
             when (result.first) {
                 DatabaseHelper.FLAG_RESULT_SUCCESS -> {
-                    sticker.setSticker("CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA")
+                    sticker.setSticker(niceStickers.random())
                     msgText = "Отично! +${result.second}"
                 }
 
                 DatabaseHelper.FLAG_RESULT_WRONG -> {
-                    sticker.setSticker("CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA")
+                    sticker.setSticker(badStickers.random())
                     msgText = "Ты не прав, подумай ещё"
                 }
 
                 DatabaseHelper.FLAG_RESULT_ALREADY_SOLVED -> {
-                    sticker.setSticker("CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA")
+                    sticker.setSticker(niceStickers.random())
                     msgText = "Этот флаг ты уже сдал"
                 }
             }

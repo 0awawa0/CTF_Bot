@@ -132,7 +132,6 @@ class Bot private constructor(
 
         if (update == null) return
         GlobalScope.launch {
-            Logger.info(tag, update.message.sticker.fileId)
             if (update.hasMessage()) {
                 if (update.message.hasText()) {
                     answerMessage(update.message)
