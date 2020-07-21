@@ -17,33 +17,48 @@ class MainPresenter(private val view: MainView) {
     private val token = botCredentials[0].split(":|:")[1].trim()
     private val botName = botCredentials[1].split(":|:")[1].trim()
 
+    private var botStarted = false
 
     fun startBot(ctfName: String) {
-        Application.bot = Bot.Builder()
-            .setToken(token)
-            .setBotName(botName)
-            .setCtfName(ctfName)
-            .build()
+        if (!botStarted) {
+            Application.bot = Bot.Builder()
+                .setToken(token)
+                .setBotName(botName)
+                .setCtfName(ctfName)
+                .build()
+        }
+        view.onBotStarted()
 
         try {
-            botSession = botApi.registerBot(Application.bot)
+            if (!botStarted) {
+                botSession = botApi.registerBot(Application.bot)
+            }
+            botStarted = true
+            Logger.info("Bot", "Bot started")
         } catch (e: TelegramApiRequestException) {
             Logger.error("Main", e.message.toString())
         }
     }
 
     fun startTestingBot(ctfName: String, password: String) {
-        Application.bot = Bot.Builder()
-            .setTesting(true)
-            .setTestingPassword(password)
-            .setToken(token)
-            .setBotName(botName)
-            .setCtfName(ctfName)
-            .build()
+        if (!botStarted) {
+            Application.bot = Bot.Builder()
+                .setTesting(true)
+                .setTestingPassword(password)
+                .setToken(token)
+                .setBotName(botName)
+                .setCtfName(ctfName)
+                .build()
+        }
 
+        view.onBotStarted()
         DatabaseHelper.init()
         try {
-            botSession = botApi.registerBot(Application.bot)
+            if (!botStarted) {
+                botSession = botApi.registerBot(Application.bot)
+            }
+            botStarted = true
+            Logger.info("Bot", "Bot started")
         } catch (e: TelegramApiRequestException) {
             Logger.error("Main", e.message.toString())
         }

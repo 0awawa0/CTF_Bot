@@ -148,5 +148,9 @@ class MainView : View("CTF Bot"), LogListener {
         Logger.registerLogListener(this)
     }
 
+    fun onBotStarted() {
+        startTestingButton.isDisable = true
+        startBotButton.isDisable = true
+    }
     override fun onLog(message: String) { taLog.appendText("$message\n") }
 }
