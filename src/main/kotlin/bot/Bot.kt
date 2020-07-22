@@ -49,6 +49,10 @@ const val DATA_WAVE_TAG = "/waveTag"
 const val DATA_AVI_TAG = "/aviTag"
 const val DATA_BMP_SIGNATURE = "/bmpSignature"
 const val DATA_DOC_SIGNATURE = "/docSignature"
+const val DATA_VMDK_SIGNATURE = "/vmdkSignature"
+const val DATA_TAR_SIGNATURE = "/tarSignature"
+const val DATA_7ZIP_SIGNATURE = "/7zSignature"
+const val DATA_GZ_SIGNATURE = "/gzSignature"
 
 /**
  *
@@ -265,7 +269,9 @@ class Bot private constructor(
                     DATA_PDF_SIGNATURE, DATA_PDF_TAIL,
                     DATA_PSD_SIGNATURE, DATA_RIFF_SIGNATURE,
                     DATA_WAVE_TAG, DATA_AVI_TAG,
-                    DATA_BMP_SIGNATURE, DATA_DOC_SIGNATURE -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
+                    DATA_BMP_SIGNATURE, DATA_DOC_SIGNATURE,
+                    DATA_VMDK_SIGNATURE, DATA_TAR_SIGNATURE,
+                    DATA_7ZIP_SIGNATURE, DATA_GZ_SIGNATURE -> MessageMaker.getMagicData(callback.message.chatId, callback.data)
                     else -> MessageMaker.getMenuMessage(callback.message.chat.firstName, callback.message.chatId, callback.message.chat.userName)
                 }
             )

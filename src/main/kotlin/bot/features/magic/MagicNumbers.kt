@@ -23,7 +23,11 @@ object MagicNumbers {
         WAVE_TAG("WAVE метка", DATA_WAVE_TAG),
         AVI_TAG("AVI метка", DATA_AVI_TAG),
         BMP_SIGNATURE("BMP сигнатура", DATA_BMP_SIGNATURE),
-        DOC_SIGNATURE("DOC сигнатура", DATA_DOC_SIGNATURE)
+        DOC_SIGNATURE("DOC сигнатура", DATA_DOC_SIGNATURE),
+        VMDK_SIGNATURE("VMDK сигнатура", DATA_VMDK_SIGNATURE),
+        TAR_SIGNATURE("TAR сигнатура", DATA_TAR_SIGNATURE),
+        SEVEN_Z_SIGNATURE("7Z сигнатура", DATA_7ZIP_SIGNATURE),
+        GZ_SIGNATURE("GZ сигнатура", DATA_GZ_SIGNATURE)
     }
 
     private val mapMagicToSignatures = hashMapOf(
@@ -44,7 +48,11 @@ object MagicNumbers {
         Pair(Magic.WAVE_TAG, "57 41 56 45"),
         Pair(Magic.AVI_TAG, "41 56 49 20"),
         Pair(Magic.BMP_SIGNATURE, "42 4D"),
-        Pair(Magic.DOC_SIGNATURE, "D0 CF 11 E0 A1 B1 1A E1")
+        Pair(Magic.DOC_SIGNATURE, "D0 CF 11 E0 A1 B1 1A E1"),
+        Pair(Magic.VMDK_SIGNATURE, "4B 44 4D"),
+        Pair(Magic.TAR_SIGNATURE, "75 73 74 61 72"),
+        Pair(Magic.SEVEN_Z_SIGNATURE, "37 7A BC AF 27 1C"),
+        Pair(Magic.GZ_SIGNATURE, "1F 8B")
     )
 
     fun findMagic(magicNumber: String): ArrayList<Pair<Magic, Boolean>> {
@@ -264,6 +272,41 @@ object MagicNumbers {
                     https://en.wikipedia.org/wiki/Compound_File_Binary_Format
                 """.trimIndent()
 
+                Magic.VMDK_SIGNATURE -> """
+                    <b>4B 44 4D</b>
+                    
+                    Сигнатура файла жесткого диска виртуальной машины, разработанный VMWare. Кроме виртуальных машин этой фирмы, этот формат файла поддерживается также программами DAEMON Tools Ultra, Sun xVM, QEMU, VirtualBox, Suse studio.
+                     
+                     Подробнее о формате (PDF файл):
+                     https://www.vmware.com/app/vmdk/?src=vmdk
+                """.trimIndent()
+
+                Magic.TAR_SIGNATURE -> """
+                    <b>75 73 74 61 72</b>
+
+                    Сигнатура .tar архива.
+                    
+                    Подробнее о формате:
+                    https://en.wikipedia.org/wiki/Tar_(computing)#UStar_format
+                """.trimIndent()
+
+                Magic.SEVEN_Z_SIGNATURE -> """
+                    <b>37 7A BC AF 27 1C</b>
+                    
+                    Сигнатура 7z архива.
+                    
+                    Подробнее о формате:
+                    https://www.romvault.com/Understanding7z.pdf
+                """.trimIndent()
+
+                Magic.GZ_SIGNATURE -> """
+                    <b>1F 8B</b>
+                    
+                    Сигнатура .gz архива.
+                    
+                    Подробнее о формате:
+                    https://tools.ietf.org/html/rfc1952
+                """.trimIndent()
 
                 else -> "Нет данных\n"
             }
