@@ -5,6 +5,7 @@ import tornadofx.ItemViewModel
 
 class TaskModel: ItemViewModel<TaskEntity>() {
 
+    val id = bind(TaskEntity::id)
     val category = bind(TaskEntity::category)
     val name = bind(TaskEntity::name)
     val description = bind(TaskEntity::description)

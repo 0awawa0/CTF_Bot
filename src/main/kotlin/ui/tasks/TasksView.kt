@@ -22,6 +22,7 @@ class TasksView: View("Tasks") {
         tasksTable = editModel
         columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
 
+        column("ID", TaskModel::id)
         column("Category", TaskModel::category).makeEditable()
         column("Name", TaskModel::name).makeEditable()
         column("Description", TaskModel::description).makeEditable()
