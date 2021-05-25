@@ -226,7 +226,7 @@ class MessageMaker {
         fun getMenuMessage(firstName: String, chatId: Long, userName: String?): SendMessage {
             val player = DatabaseHelper.getPlayerById(chatId)
             if (player == null) {
-                DatabaseHelper.addNewPlayer(chatId, userName ?: firstName)
+                DatabaseHelper.addPlayer(chatId, userName ?: firstName)
             }
 
             val msgText = """<b>$ctfName</b>

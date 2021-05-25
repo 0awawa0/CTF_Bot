@@ -1,7 +1,7 @@
 package ui.tasks
 
 import db.DatabaseHelper
-import db.models.TaskModel
+import db.TaskModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -39,9 +39,7 @@ class TasksPresenter(private val view: TasksView) {
     }
 
     fun deleteTask(model: TaskModel) {
-        GlobalScope.launch(Dispatchers.IO) {
-            DatabaseHelper.deleteTask(model)
-        }
+        model.item.delete()
     }
 
     fun updateDatabase(changes: Sequence<Map.Entry<TaskModel, TableColumnDirtyState<TaskModel>>>) {

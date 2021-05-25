@@ -1,7 +1,6 @@
 package ui.players
 
 import db.DatabaseHelper
-import db.models.PlayerModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch

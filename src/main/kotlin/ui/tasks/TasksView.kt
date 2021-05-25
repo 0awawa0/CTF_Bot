@@ -1,6 +1,5 @@
 package ui.tasks
 
-import db.models.TaskModel
 import javafx.collections.ObservableList
 import javafx.geometry.Insets
 import javafx.geometry.Pos

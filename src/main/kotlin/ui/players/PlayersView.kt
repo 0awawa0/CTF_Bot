@@ -1,13 +1,11 @@
 package ui.players
 
-import db.models.PlayerModel
 import javafx.collections.ObservableList
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.TableView
 import javafx.scene.text.Font
 import tornadofx.*
-import java.text.SimpleDateFormat
 import java.util.*
 
 class PlayersView: View("Players") {

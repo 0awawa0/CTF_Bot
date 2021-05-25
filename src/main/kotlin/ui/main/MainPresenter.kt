@@ -2,8 +2,11 @@ package ui.main
 
 import bot.Bot
 import db.DatabaseHelper
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
+import tornadofx.runLater
 import ui.Application
 import ui.Application.Companion.botSession
 import utils.Logger
@@ -20,23 +23,26 @@ class MainPresenter(private val view: MainView) {
     private var botStarted = false
 
     fun startBot(ctfName: String) {
-        if (!botStarted) {
-            Application.bot = Bot.Builder()
-                .setToken(token)
-                .setBotName(botName)
-                .setCtfName(ctfName)
-                .build()
-        }
-        view.onBotStarted()
-
-        try {
+        GlobalScope.launch {
             if (!botStarted) {
-                botSession = botApi.registerBot(Application.bot)
+                Application.bot = Bot.Builder()
+                    .setToken(token)
+                    .setBotName(botName)
+                    .setCtfName(ctfName)
+                    .build()
             }
-            botStarted = true
-            Logger.info("Bot", "Bot started")
-        } catch (e: TelegramApiRequestException) {
-            Logger.error("Main", e.message.toString())
+
+            try {
+                if (!botStarted) {
+                    botSession = botApi.registerBot(Application.bot)
+                }
+                botStarted = true
+                Logger.info("Bot", "Bot started")
+            } catch (e: TelegramApiRequestException) {
+                Logger.error("Main", e.message.toString())
+            }
+
+            runLater { view.onBotStarted() }
         }
     }
 
