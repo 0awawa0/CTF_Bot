@@ -3,11 +3,11 @@ package db
 import org.jetbrains.exposed.dao.id.LongIdTable
 
 
-object CompetitionsTable: LongIdTable() {
+object CompetitionsTable: LongIdTable(name = "Competitions") {
     val name = varchar("name", 128)
 }
 
-object TasksTable: LongIdTable() {
+object TasksTable: LongIdTable(name = "Tasks") {
     val category = varchar("category", 50)
     val name = varchar("name", 128)
     val description = text("description")
@@ -17,13 +17,13 @@ object TasksTable: LongIdTable() {
     val competition = reference("competition", CompetitionsTable)
 }
 
-object SolvesTable: LongIdTable() {
+object SolvesTable: LongIdTable(name = "Solves") {
     val player = reference("player", PlayersTable)
     val task = reference("task", TasksTable)
     val timestamp = long("timestamp")
 }
 
-object PlayersTable: LongIdTable() {
+object PlayersTable: LongIdTable(name = "Players") {
     val userName = varchar("userName", 128)
     val currentScore = integer("currentScore")
     val seasonScore = integer("seasonScore")

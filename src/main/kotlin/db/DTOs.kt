@@ -7,24 +7,25 @@ import javafx.beans.property.SimpleStringProperty
 import tornadofx.getValue
 import tornadofx.setValue
 
-data class CompetitionDTO(private val entity: CompetitionEntity) {
+data class CompetitionDTO(val entity: CompetitionEntity) {
+
+    val id = entity.id
+
     val nameProperty = SimpleStringProperty(entity.name)
     var name by nameProperty
 
-    fun commit() {
-        DatabaseHelper.perform {
-            entity.name = name
-        }
+    fun commit(): DatabaseHelper.DbOpResult<Boolean> {
+        return DatabaseHelper.updateCompetition(this)
     }
 
-    fun delete() {
-        DatabaseHelper.perform {
-            entity.delete()
-        }
+    fun delete(): DatabaseHelper.DbOpResult<Boolean> {
+        return DatabaseHelper.deleteCompetition(this)
     }
 }
 
-data class TaskDTO(private val entity: TaskEntity) {
+data class TaskDTO(val entity: TaskEntity) {
+    val id = entity.id
+
     val categoryProperty = SimpleStringProperty(entity.category)
     var category by categoryProperty
 
@@ -46,26 +47,18 @@ data class TaskDTO(private val entity: TaskEntity) {
     val competitionProperty = SimpleObjectProperty(entity.competition)
     var competition by competitionProperty
 
-    fun commit() {
-        DatabaseHelper.perform {
-            entity.category = category
-            entity.name = name
-            entity.description = description
-            entity.price = price
-            entity.flag = flag
-            entity.attachment = attachment
-            entity.competition = competition
-        }
+    fun commit(): DatabaseHelper.DbOpResult<Boolean> {
+        return DatabaseHelper.updateTask(this)
     }
 
-    fun delete() {
-        DatabaseHelper.perform {
-            entity.delete()
-        }
+    fun delete(): DatabaseHelper.DbOpResult<Boolean> {
+        return DatabaseHelper.deleteTask(this)
     }
 }
 
-data class PlayerDTO(private val entity: PlayerEntity) {
+data class PlayerDTO(val entity: PlayerEntity) {
+
+    val id = entity.id
 
     val userNameProperty = SimpleStringProperty(entity.userName)
     var userName by userNameProperty
@@ -76,23 +69,17 @@ data class PlayerDTO(private val entity: PlayerEntity) {
     val seasonScoreProperty = SimpleIntegerProperty(entity.seasonScore)
     var seasonScore by seasonScoreProperty
 
-    fun commit() {
-        DatabaseHelper.perform {
-            entity.userName = userName
-            entity.currentScore = currentScore
-            entity.seasonScore = seasonScore
-        }
+    fun commit(): DatabaseHelper.DbOpResult<Boolean> {
+        return DatabaseHelper.updatePlayer(this)
     }
 
-    fun delete() {
-        DatabaseHelper.perform {
-            entity.delete()
-        }
+    fun delete(): DatabaseHelper.DbOpResult<Boolean> {
+        return DatabaseHelper.deletePlayer(this)
     }
 }
 
-data class SolveDTO(private val entity: SolveEntity) {
-
+data class SolveDTO(val entity: SolveEntity) {
+    val id = entity.id
     val playerProperty = SimpleObjectProperty(entity.player)
     var player by playerProperty
 
@@ -101,18 +88,4 @@ data class SolveDTO(private val entity: SolveEntity) {
 
     val timestampProperty = SimpleLongProperty(entity.timestamp)
     var timestamp by timestampProperty
-
-    fun commit() {
-        DatabaseHelper.perform {
-            entity.player = player
-            entity.task = task
-            entity.timestamp = timestamp
-        }
-    }
-
-    fun delete() {
-        DatabaseHelper.perform {
-            entity.delete()
-        }
-    }
 }

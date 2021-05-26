@@ -1,16 +1,18 @@
 package db
 
+import javafx.collections.ObservableList
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.transactions.transaction
 import tornadofx.Controller
 import tornadofx.TableColumnDirtyState
 import tornadofx.asObservable
+import tornadofx.toObservable
 
 
 class CompetitionsController: Controller() {
-    val data by lazy {
-        DatabaseHelper.perform {
-            CompetitionEntity.all().map { CompetitionDTO(it) }.asObservable()
-        }
-    }
+    private var data: ObservableList<CompetitionDTO> = emptyList<CompetitionDTO>().toObservable()
+
+    fun setData(list: List<CompetitionDTO>) { data = list.toObservable() }
 
     fun add(competition: CompetitionDTO) { data.add(competition) }
 
@@ -23,12 +25,9 @@ class CompetitionsController: Controller() {
 }
 
 class TasksController: Controller() {
-    val data by lazy {
-        DatabaseHelper.perform {
-            TaskEntity.all().map { TaskDTO(it) }.asObservable()
-        }
-    }
+    private var data: ObservableList<TaskDTO> = emptyList<TaskDTO>().toObservable()
 
+    fun setData(list: List<TaskDTO>) { data = list.toObservable()}
     fun add(task: TaskDTO) { data.add(task) }
 
     fun commitChanges(changes: Sequence<Map.Entry<TaskDTO, TableColumnDirtyState<TaskDTO>>>) {
@@ -40,12 +39,9 @@ class TasksController: Controller() {
 }
 
 class PlayersController: Controller() {
-    val data by lazy {
-        DatabaseHelper.perform {
-            PlayerEntity.all().map { PlayerDTO(it) }.asObservable()
-        }
-    }
+    private var data: ObservableList<PlayerDTO> = emptyList<PlayerDTO>().toObservable()
 
+    fun setData(list: List<PlayerDTO>) { data = list.toObservable() }
     fun add(player: PlayerDTO) { data.add(player) }
 
     fun commitChanges(changes: Sequence<Map.Entry<PlayerDTO, TableColumnDirtyState<PlayerDTO>>>) {
@@ -57,11 +53,8 @@ class PlayersController: Controller() {
 }
 
 class SolvesController: Controller() {
-    val list by lazy {
-        DatabaseHelper.perform {
-            SolveEntity.all().map {
-                SolveDTO(it)
-            }.asObservable()
-        }
-    }
+    private var data: ObservableList<SolveDTO> = emptyList<SolveDTO>().toObservable()
+
+    fun setData(list: List<SolveDTO>) { data = list.toObservable() }
+    fun add(solve: SolveDTO) { data.add(solve) }
 }
