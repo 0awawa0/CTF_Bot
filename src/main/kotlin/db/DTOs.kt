@@ -4,6 +4,7 @@ import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleLongProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
+import kotlinx.coroutines.runBlocking
 import tornadofx.getValue
 import tornadofx.setValue
 
@@ -15,11 +16,11 @@ data class CompetitionDTO(val entity: CompetitionEntity) {
     var name by nameProperty
 
     fun commit(): DatabaseHelper.DbOpResult<Boolean> {
-        return DatabaseHelper.updateCompetition(this)
+        return runBlocking { DatabaseHelper.updateCompetition(this@CompetitionDTO) }
     }
 
     fun delete(): DatabaseHelper.DbOpResult<Boolean> {
-        return DatabaseHelper.deleteCompetition(this)
+        return runBlocking { DatabaseHelper.deleteCompetition(this@CompetitionDTO) }
     }
 }
 
@@ -48,11 +49,11 @@ data class TaskDTO(val entity: TaskEntity) {
     var competition by competitionProperty
 
     fun commit(): DatabaseHelper.DbOpResult<Boolean> {
-        return DatabaseHelper.updateTask(this)
+        return runBlocking { DatabaseHelper.updateTask(this@TaskDTO) }
     }
 
     fun delete(): DatabaseHelper.DbOpResult<Boolean> {
-        return DatabaseHelper.deleteTask(this)
+        return runBlocking { DatabaseHelper.deleteTask(this@TaskDTO) }
     }
 }
 
@@ -70,11 +71,11 @@ data class PlayerDTO(val entity: PlayerEntity) {
     var seasonScore by seasonScoreProperty
 
     fun commit(): DatabaseHelper.DbOpResult<Boolean> {
-        return DatabaseHelper.updatePlayer(this)
+        return runBlocking { DatabaseHelper.updatePlayer(this@PlayerDTO) }
     }
 
     fun delete(): DatabaseHelper.DbOpResult<Boolean> {
-        return DatabaseHelper.deletePlayer(this)
+        return runBlocking { DatabaseHelper.deletePlayer(this@PlayerDTO) }
     }
 }
 

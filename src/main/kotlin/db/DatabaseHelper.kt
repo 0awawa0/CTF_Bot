@@ -1,8 +1,7 @@
 package db
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
@@ -38,50 +37,192 @@ object DatabaseHelper {
     val tasksController by lazy { TasksController() }
     val solvesController by lazy { SolvesController() }
 
-    fun init(): DbOpResult<Boolean> {
-        try {
-            if (!File(DATABASE_FOLDER).exists()) { File(DATABASE_FOLDER).mkdir() }
-            transaction(db = database) {
-                SchemaUtils.create(CompetitionsTable, TasksTable, SolvesTable, PlayersTable)
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, exception = ex)
-        }
-    }
-
-    fun addCompetition(name: String): DbOpResult<CompetitionDTO> {
-        try {
-            val competition = transaction(db = database) {
-                return@transaction CompetitionEntity.new {
-                    this.name = name
+    suspend fun init(): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!File(DATABASE_FOLDER).exists()) {
+                    File(DATABASE_FOLDER).mkdir()
                 }
-            }
-            val dto = CompetitionDTO(competition)
-//            competitionsController.add(dto)
-            return DbOpResult(dto)
-        } catch (ex: Exception) {
-            return DbOpResult(null, ex)
-        }
-    }
-
-    fun addPlayer(id: Long, userName: String): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                val player = PlayerEntity.new(id) {
-                    this.userName = userName
-                    this.currentScore = 0
-                    this.seasonScore = 0
+                transaction(db = database) {
+                    SchemaUtils.create(CompetitionsTable, TasksTable, SolvesTable, PlayersTable)
                 }
-//                playersController.add(PlayerDTO(player))
+
+                competitionsController.setData(getAllCompetitions().result ?: emptyList())
+                tasksController.setData(getAllTasks().result ?: emptyList())
+                playersController.setData(getAllPlayers().result ?: emptyList())
+                solvesController.setData(getAllSolves().result ?: emptyList())
+
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, exception = ex)
             }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
         }
     }
 
-    fun addTask(
+    suspend fun getAllCompetitions(): DbOpResult<List<CompetitionDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                DbOpResult(transaction(db = database) {
+                    CompetitionEntity.all().map {
+                        CompetitionDTO(it)
+                    }
+                })
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getAllTasks(): DbOpResult<List<TaskDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                DbOpResult(transaction(db = database) {
+                    TaskEntity.all().map {
+                        TaskDTO(it)
+                    }
+                })
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getAllPlayers(): DbOpResult<List<PlayerDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                DbOpResult(transaction(db = database) {
+                    PlayerEntity.all().map {
+                        PlayerDTO(it)
+                    }
+                })
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getAllSolves(): DbOpResult<List<SolveDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                DbOpResult(transaction(db = database) {
+                    SolveEntity.all().map {
+                        SolveDTO(it)
+                    }
+                })
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getTask(id: Long): DbOpResult<TaskDTO> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = transaction(db = database) {
+                    TaskEntity.findById(id)
+                }
+                DbOpResult(if (result == null) null else TaskDTO(result))
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getTasks(competition: CompetitionDTO): DbOpResult<List<TaskDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = transaction(db = database) {
+                    return@transaction TaskEntity.all().filter { it.competition == competition.id }.map { TaskDTO(it) }
+                }
+                DbOpResult(result)
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getSolvedTasksForPlayer(player: PlayerDTO): DbOpResult<List<TaskDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = transaction(db = database) {
+                    TaskEntity.wrapRows(
+                        TasksTable.innerJoin(
+                            SolvesTable
+                        )
+                            .slice(TasksTable.columns)
+                            .select {
+                                (SolvesTable.task eq TasksTable.id) and (SolvesTable.player eq player.id)
+                            }
+                    ).map {
+                        TaskDTO(it)
+                    }
+                }
+                DbOpResult(result)
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun getPlayersSolvesForTask(task: TaskDTO): DbOpResult<List<PlayerDTO>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = transaction(db = database) {
+                    PlayerEntity.wrapRows(
+                        PlayersTable.innerJoin(SolvesTable)
+                            .slice(PlayersTable.columns)
+                            .select {
+                                (SolvesTable.player eq PlayersTable.id) eq (SolvesTable.task eq task.id)
+                            }
+                            .withDistinct()
+                    ).map {
+                        PlayerDTO(it)
+                    }
+                }
+                DbOpResult(result)
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun addCompetition(name: String): DbOpResult<CompetitionDTO> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val competition = transaction(db = database) {
+                    return@transaction CompetitionEntity.new {
+                        this.name = name
+                    }
+                }
+                val dto = CompetitionDTO(competition)
+                competitionsController.add(dto)
+                DbOpResult(dto)
+            } catch (ex: Exception) {
+                DbOpResult(null, ex)
+            }
+        }
+    }
+
+    suspend fun addPlayer(id: Long, userName: String): DbOpResult<PlayerDTO> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val player = transaction(db = database) {
+                    return@transaction PlayerEntity.new(id) {
+                        this.userName = userName
+                        this.currentScore = 0
+                        this.seasonScore = 0
+                    }
+                }
+                val dto = PlayerDTO(player)
+                playersController.add(dto)
+                DbOpResult(dto)
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
+            }
+        }
+    }
+
+    suspend fun addTask(
         category: String,
         name: String,
         description: String,
@@ -90,216 +231,159 @@ object DatabaseHelper {
         attachment: String,
         competition: CompetitionDTO,
     ): DbOpResult<TaskDTO> {
-        try {
-            val task = transaction(db = database) {
-                return@transaction TaskEntity.new() {
-                    this.category = category
-                    this.name = name
-                    this.description = description
-                    this.price = price
-                    this.flag = flag
-                    this.attachment = attachment
-                    this.competition = competition.id
-                }
-            }
-            val dto = TaskDTO(task)
-//            tasksController.add(dto)
-            return DbOpResult(dto)
-        } catch (ex: Exception) {
-            return DbOpResult(null, ex)
-        }
-    }
-
-    fun getCompetitions(): DbOpResult<List<CompetitionDTO>> {
-        try {
-            return DbOpResult(transaction(db = database) {
-                CompetitionEntity.all().map {
-                    CompetitionDTO(it)
-                }
-            })
-        } catch (ex: Exception) {
-            return DbOpResult(exception = ex)
-        }
-    }
-
-    fun onPlayerPassedFlag(competitionId: Long, playerId: Long, flag: String): DbOpResult<FlagCheckResult> {
-        try {
-            val result = transaction(db = database) {
-                val player = PlayerEntity.findById(playerId) ?: return@transaction FlagCheckResult.NoSuchPlayer
-                val result = TaskEntity.find {
-                    (TasksTable.competition eq competitionId) and (TasksTable.flag eq flag)
-                }
-
-                if (result.empty()) {
-                    return@transaction FlagCheckResult.Wrong
-                }
-
-                val task = result.first()
-                val solves = SolveEntity.find {
-                    (SolvesTable.player eq playerId) and (SolvesTable.task eq task.id)
-                }
-                if (solves.empty()) {
-                    SolveEntity.new {
-                        this.task = task.id
-                        this.player = player.id
-                        this.timestamp = Date().time
+        return withContext(Dispatchers.IO) {
+            try {
+                val task = transaction(db = database) {
+                    return@transaction TaskEntity.new() {
+                        this.category = category
+                        this.name = name
+                        this.description = description
+                        this.price = price
+                        this.flag = flag
+                        this.attachment = attachment
+                        this.competition = competition.id
                     }
-                    return@transaction FlagCheckResult.Success(task.price)
-                } else {
-                    return@transaction FlagCheckResult.Exists
                 }
+                val dto = TaskDTO(task)
+                tasksController.add(dto)
+                DbOpResult(dto)
+            } catch (ex: Exception) {
+                DbOpResult(null, ex)
             }
-            return DbOpResult(result)
-        } catch (ex: Exception) {
-            return DbOpResult(exception = ex)
         }
     }
 
-    fun checkPlayerExists(id: Long): DbOpResult<Boolean> {
-        try {
-            val result = transaction(db = database) {
-                return@transaction PlayersTable.select { PlayersTable.id eq id }.empty()
+    suspend fun updateCompetition(competition: CompetitionDTO): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                transaction(db = database) {
+                    competition.entity.name = competition.name
+                }
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, ex)
             }
-            return DbOpResult(result)
-        } catch (ex: Exception) {
-            return DbOpResult(null, ex)
         }
     }
 
-    fun getTask(id: Long): DbOpResult<TaskDTO> {
-        try {
-            val result = transaction(db = database) {
-                TaskEntity.findById(id)
+    suspend fun updateTask(task: TaskDTO): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                transaction(db = database) {
+                    task.entity.category = task.category
+                    task.entity.name = task.name
+                    task.entity.description = task.description
+                    task.entity.price = task.price
+                    task.entity.flag = task.flag
+                    task.entity.attachment = task.attachment
+                    task.entity.competition = task.competition
+                }
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, ex)
             }
-            return DbOpResult(if (result == null) null else TaskDTO(result))
-        } catch (ex: Exception) {
-            return DbOpResult(exception = ex)
         }
     }
 
-    fun getTasks(competition: CompetitionDTO): DbOpResult<List<TaskDTO>> {
-        try {
-            val result = transaction(db = database) {
-                return@transaction TaskEntity.all().filter { it.competition == competition.id }.map { TaskDTO(it) }
+    suspend fun updatePlayer(player: PlayerDTO): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                transaction(db = database) {
+                    player.entity.userName = player.userName
+                    player.entity.currentScore = player.currentScore
+                    player.entity.seasonScore = player.seasonScore
+                }
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, ex)
             }
-            return DbOpResult(result)
-        } catch (ex: Exception) {
-            return DbOpResult(exception = ex)
         }
     }
 
-    fun getSolvedTasksForPlayer(player: PlayerDTO): DbOpResult<List<TaskDTO>> {
-        try {
-            val result = transaction(db = database) {
-                TaskEntity.wrapRows(
-                    TasksTable.innerJoin(
-                        SolvesTable
-                    )
-                        .slice(TasksTable.columns)
-                        .select {
-                            (SolvesTable.task eq TasksTable.id) and (SolvesTable.player eq player.id)
+    suspend fun deleteCompetition(competition: CompetitionDTO): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                transaction(db = database) {
+                    competition.entity.delete()
+                }
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, ex)
+            }
+        }
+    }
+
+    suspend fun deleteTask(task: TaskDTO): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                transaction(db = database) {
+                    task.entity.delete()
+                }
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, ex)
+            }
+        }
+    }
+
+    suspend fun deletePlayer(player: PlayerDTO): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                transaction(db = database) {
+                    player.entity.delete()
+                }
+                DbOpResult(true)
+            } catch (ex: Exception) {
+                DbOpResult(false, ex)
+            }
+        }
+    }
+
+    suspend fun onPlayerPassedFlag(competitionId: Long, playerId: Long, flag: String): DbOpResult<FlagCheckResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = transaction(db = database) {
+                    val player = PlayerEntity.findById(playerId) ?: return@transaction FlagCheckResult.NoSuchPlayer
+                    val result = TaskEntity.find {
+                        (TasksTable.competition eq competitionId) and (TasksTable.flag eq flag)
+                    }
+
+                    if (result.empty()) {
+                        return@transaction FlagCheckResult.Wrong
+                    }
+
+                    val task = result.first()
+                    val solves = SolveEntity.find {
+                        (SolvesTable.player eq playerId) and (SolvesTable.task eq task.id)
+                    }
+                    if (solves.empty()) {
+                        SolveEntity.new {
+                            this.task = task.id
+                            this.player = player.id
+                            this.timestamp = Date().time
                         }
-                ).map {
-                    TaskDTO(it)
+                        return@transaction FlagCheckResult.Success(task.price)
+                    } else {
+                        return@transaction FlagCheckResult.Exists
+                    }
                 }
+                DbOpResult(result)
+            } catch (ex: Exception) {
+                DbOpResult(exception = ex)
             }
-            return DbOpResult(result)
-        } catch (ex: Exception) {
-            return DbOpResult(exception = ex)
         }
     }
 
-    fun getPlayersSolvesForTask(task: TaskDTO): DbOpResult<List<PlayerDTO>> {
-        try {
-            val result = transaction(db = database) {
-                PlayerEntity.wrapRows(
-                    PlayersTable.innerJoin(SolvesTable)
-                        .slice(PlayersTable.columns)
-                        .select {
-                            (SolvesTable.player eq PlayersTable.id) eq (SolvesTable.task eq task.id)
-                        }
-                        .withDistinct()
-                ).map {
-                    PlayerDTO(it)
+    suspend fun checkPlayerExists(id: Long): DbOpResult<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = transaction(db = database) {
+                    return@transaction PlayersTable.select { PlayersTable.id eq id }.empty()
                 }
+                DbOpResult(result)
+            } catch (ex: Exception) {
+                DbOpResult(null, ex)
             }
-            return DbOpResult(result)
-        } catch (ex: Exception) {
-            return DbOpResult(exception = ex)
-        }
-    }
-
-    fun updateCompetition(competition: CompetitionDTO): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                competition.entity.name = competition.name
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
-        }
-    }
-
-    fun updateTask(task: TaskDTO): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                task.entity.category = task.category
-                task.entity.name = task.name
-                task.entity.description = task.description
-                task.entity.price = task.price
-                task.entity.flag = task.flag
-                task.entity.attachment = task.attachment
-                task.entity.competition = task.competition
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
-        }
-    }
-
-    fun updatePlayer(player: PlayerDTO): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                player.entity.userName = player.userName
-                player.entity.currentScore = player.currentScore
-                player.entity.seasonScore = player.seasonScore
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
-        }
-    }
-
-    fun deleteCompetition(competition: CompetitionDTO): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                competition.entity.delete()
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
-        }
-    }
-
-    fun deleteTask(task: TaskDTO): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                task.entity.delete()
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
-        }
-    }
-
-    fun deletePlayer(player: PlayerDTO): DbOpResult<Boolean> {
-        try {
-            transaction(db = database) {
-                player.entity.delete()
-            }
-            return DbOpResult(true)
-        } catch (ex: Exception) {
-            return DbOpResult(false, ex)
         }
     }
 //
