@@ -19,6 +19,8 @@ class TaskEntity(id: EntityID<Long>): LongEntity(id) {
     var price by TasksTable.price
     var flag by TasksTable.flag
     var attachment by TasksTable.attachment
+    var dynamicScoring by TasksTable.dynamicScoring
+    var solvesCount by TasksTable.solvesCount
     var competition by TasksTable.competition
 }
 

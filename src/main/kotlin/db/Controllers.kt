@@ -1,60 +1,46 @@
 package db
 
 import javafx.collections.ObservableList
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.transactions.transaction
 import tornadofx.Controller
 import tornadofx.TableColumnDirtyState
-import tornadofx.asObservable
 import tornadofx.toObservable
 
+fun <T: BaseDTO> List<T>.asDbController(filter: (T) -> Boolean): DbController<T> {
+    return DbController(this.toObservable(), filter)
+}
 
-class CompetitionsController: Controller() {
-    private var data: ObservableList<CompetitionDTO> = emptyList<CompetitionDTO>().toObservable()
+class DbController<T: BaseDTO>(
+    private var data: ObservableList<T> = emptyList<T>().toObservable(),
+    private val filter: (T) -> Boolean
+): Controller(), DatabaseHelper.ChangeListener<T> {
 
-    fun setData(list: List<CompetitionDTO>) { data = list.toObservable() }
+    fun setData(list: List<T>) { data = list.filter(filter).toObservable() }
 
-    fun add(competition: CompetitionDTO) { data.add(competition) }
-
-    fun commitChanges(changes: Sequence<Map.Entry<CompetitionDTO, TableColumnDirtyState<CompetitionDTO>>>) {
+    fun commitChanges(changes: Sequence<Map.Entry<T, TableColumnDirtyState<T>>>) {
         changes.filter { it.value.isDirty }.forEach {
             it.key.commit()
             it.value.commit()
         }
     }
-}
 
-class TasksController: Controller() {
-    private var data: ObservableList<TaskDTO> = emptyList<TaskDTO>().toObservable()
-
-    fun setData(list: List<TaskDTO>) { data = list.toObservable()}
-    fun add(task: TaskDTO) { data.add(task) }
-
-    fun commitChanges(changes: Sequence<Map.Entry<TaskDTO, TableColumnDirtyState<TaskDTO>>>) {
-        changes.filter { it.value.isDirty }.forEach {
-            it.key.commit()
-            it.value.commit()
+    override fun onAdd(value: T) {
+        if (filter(value)) {
+            data.add(value)
         }
     }
-}
 
-class PlayersController: Controller() {
-    private var data: ObservableList<PlayerDTO> = emptyList<PlayerDTO>().toObservable()
-
-    fun setData(list: List<PlayerDTO>) { data = list.toObservable() }
-    fun add(player: PlayerDTO) { data.add(player) }
-
-    fun commitChanges(changes: Sequence<Map.Entry<PlayerDTO, TableColumnDirtyState<PlayerDTO>>>) {
-        changes.filter { it.value.isDirty }.forEach {
-            it.key.commit()
-            it.value.commit()
+    override fun onUpdate(value: T) {
+        val index = data.indexOfFirst { it.id == value.id }
+        if (index != -1) {
+            if (filter(value)) {
+                data[index] = value
+            } else {
+                data.removeAt(index)
+            }
         }
     }
-}
 
-class SolvesController: Controller() {
-    private var data: ObservableList<SolveDTO> = emptyList<SolveDTO>().toObservable()
-
-    fun setData(list: List<SolveDTO>) { data = list.toObservable() }
-    fun add(solve: SolveDTO) { data.add(solve) }
+    override fun onDelete(value: T) {
+        data.removeAll { it.id == value.id }
+    }
 }

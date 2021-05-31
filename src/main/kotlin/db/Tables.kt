@@ -14,6 +14,8 @@ object TasksTable: LongIdTable(name = "Tasks") {
     val price = integer("price")
     val flag = varchar("flag", 128)
     val attachment = varchar("attachment", 1024)
+    val dynamicScoring = bool("dynamic")
+    val solvesCount = integer("solvesCount")
     val competition = reference("competition", CompetitionsTable)
 }
 
