@@ -89,6 +89,10 @@ class DatabaseTest {
 
     @Test
     fun testFetchAddUpdateDeleteTask() {
-
+        runBlocking {
+            val competition = DatabaseHelper.addCompetition("Test competition").result!!
+            println("Fetching existing tasks")
+            var tasks = DatabaseHelper.getTasks(competition)
+        }
     }
 }

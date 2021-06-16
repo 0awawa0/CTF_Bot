@@ -2,14 +2,13 @@
 //
 //
 //import db.DatabaseHelper
-//import kotlinx.coroutines.GlobalScope
-//import kotlinx.coroutines.delay
-//import kotlinx.coroutines.launch
+//import kotlinx.coroutines.*
 //import org.telegram.telegrambots.bots.TelegramLongPollingBot
 //import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery
 //import org.telegram.telegrambots.meta.api.objects.*
 //import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 //import utils.Logger
+//import java.util.concurrent.Executors
 //
 //
 //const val MSG_START = "/start"
@@ -54,57 +53,22 @@
 //const val DATA_7ZIP_SIGNATURE = "/7zSignature"
 //const val DATA_GZ_SIGNATURE = "/gzSignature"
 //
-///**
-// *
-// * This class receives/sends messages from/to users. There is no complicated logic here, so I don't think it should be explained really accurate.
-// * These are four functions that can be interesting for one who reads this:
-// *
-// * @see onUpdateReceived - just checks if received update is a message or callback and calls answerMessage or answerCallback respectively
-// *
-// * @see answerMessage - is used to answer to simple messages from users.
-// *
-// * @see answerCallback - is used to answer to buttons clicks.
-// *
-// * @see sendMessageToPlayer - sends some text to particular user by its id
-// *
-// * @see sendMessageToAll - sends some text message to all users in database.
-// *
-// * @author Alexander "0awawa0" Pozdniakov
-// */
-//
 //class Bot private constructor(
 //    private val testing: Boolean = false,
 //    private val testingPassword: String = "",
 //    private val token: String,
 //    private val botName: String,
-//    ctfName: String
+//    private val ctfName: String
 //): TelegramLongPollingBot() {
 //
-//
-//    class Builder {
+//    class Builder(private val botName: String, private val token: String) {
 //        private var testing = false
 //        private var testingPassword = ""
-//        private var token = ""
-//        private var botName = ""
 //        private var ctfName = ""
 //
-//        fun setTesting(testing: Boolean): Builder {
+//        fun setTesting(testing: Boolean, password: String = ""): Builder {
 //            this.testing = testing
-//            return this
-//        }
-//
-//        fun setTestingPassword(testingPassword: String): Builder {
-//            this.testingPassword = testingPassword
-//            return this
-//        }
-//
-//        fun setToken(token: String): Builder {
-//            this.token = token
-//            return this
-//        }
-//
-//        fun setBotName(botName: String): Builder {
-//            this.botName = botName
+//            this.testingPassword = password
 //            return this
 //        }
 //
@@ -124,10 +88,10 @@
 //        }
 //    }
 //
-//    init { MessageMaker.ctfName = ctfName }
-//
 //    private val authorizedForTesting = ArrayList<Long>()
 //    private val tag = "Bot"
+//    private val threadPool = Executors.newCachedThreadPool()
+//    private val botScope = CoroutineScope(threadPool.asCoroutineDispatcher())
 //
 //    override fun getBotUsername(): String { return botName }
 //
@@ -136,21 +100,19 @@
 //    override fun onUpdateReceived(update: Update?) {
 //
 //        if (update == null) return
-//        GlobalScope.launch {
+//        botScope.launch {
 //            if (update.hasMessage()) {
 //                if (update.message.hasText()) {
 //                    answerMessage(update.message)
 //                }
 //            }
 //
-//            if (update.hasCallbackQuery()) {
-//                answerCallback(update.callbackQuery)
-//            }
+//            if (update.hasCallbackQuery()) answerCallback(update.callbackQuery)
 //        }
 //    }
 //
 //
-//    private fun answerMessage(message: Message) {
+//    private suspend fun answerMessage(message: Message) {
 //
 //        Logger.info(tag, "Received message from Chat id: ${message.chatId} User: ${message.chat.firstName}. Message: ${message.text}")
 //
