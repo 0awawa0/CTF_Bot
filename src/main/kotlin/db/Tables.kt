@@ -27,6 +27,11 @@ object SolvesTable: LongIdTable(name = "Solves") {
 
 object PlayersTable: LongIdTable(name = "Players") {
     val userName = varchar("userName", 128)
-    val currentScore = integer("currentScore")
     val seasonScore = integer("seasonScore")
+}
+
+object ScoresTable: LongIdTable(name = "Scores") {
+    val competition = reference("competition", CompetitionsTable)
+    val player = reference("player", PlayersTable)
+    val score = integer("score")
 }

@@ -28,8 +28,7 @@ class PlayerEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<PlayerEntity>(PlayersTable)
 
     var userName by PlayersTable.userName
-    var currentScore by PlayersTable.currentScore
-    var seasonScore by PlayersTable.seasonScore
+    var overallScore by PlayersTable.seasonScore
 }
 
 class SolveEntity(id: EntityID<Long>): LongEntity(id) {
@@ -38,5 +37,13 @@ class SolveEntity(id: EntityID<Long>): LongEntity(id) {
     var player by SolvesTable.player
     var task by SolvesTable.task
     var timestamp by SolvesTable.timestamp
+}
+
+class ScoreEntity(id: EntityID<Long>): LongEntity(id) {
+    companion object: LongEntityClass<ScoreEntity>(ScoresTable)
+
+    var competition by ScoresTable.competition
+    var player by ScoresTable.player
+    var score by ScoresTable.score
 }
 

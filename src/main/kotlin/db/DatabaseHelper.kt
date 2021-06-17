@@ -220,8 +220,7 @@ object DatabaseHelper {
             val player = performOn(database) {
                 PlayerDTO(PlayerEntity.new(id) {
                     this.userName = userName
-                    this.currentScore = 0
-                    this.seasonScore = 0
+                    this.overallScore = 0
                 })
             }
             playersListeners.forEach { it.onAdd(player) }
@@ -300,8 +299,7 @@ object DatabaseHelper {
         return try {
             performOn(database) {
                 player.entity.userName = player.userName
-                player.entity.currentScore = player.currentScore
-                player.entity.seasonScore = player.seasonScore
+                player.entity.overallScore = player.overallScore
             }
             playersListeners.forEach { it.onUpdate(player) }
             mPlayers.emit(getAllPlayers().result ?: emptyList())
@@ -353,40 +351,54 @@ object DatabaseHelper {
 
     suspend fun onPlayerPassedFlag(competitionId: Long, playerId: Long, flag: String): DbOpResult<FlagCheckResult> {
         try {
-            // Check player exists
-            val players = getAllPlayers()
-            if (players.result == null) return DbOpResult(exception = players.exception)
-            if (players.result.none { it.id.value == playerId }) return DbOpResult(FlagCheckResult.NoSuchPlayer)
+            val competitionDTO = performOn(database) {
+                CompetitionEntity.findById(competitionId)?.let { CompetitionDTO(it) }
+            } ?: return DbOpResult(FlagCheckResult.Wrong)
+
+            val playerDTO = performOn(database) {
+                PlayerEntity.findById(playerId)?.let { PlayerDTO(it) }
+            } ?: return DbOpResult(FlagCheckResult.NoSuchPlayer)
 
             // Verify flag is valid for any flag
-            val task = performOn(database) {
+            val taskDTO = performOn(database) {
                 TaskEntity.find {
-                    (TasksTable.competition eq competitionId) and (TasksTable.flag eq flag)
+                    (TasksTable.competition eq competitionDTO.id) and (TasksTable.flag eq flag)
                 }.firstOrNull()?.let { TaskDTO(it) }
             } ?: return DbOpResult(FlagCheckResult.Wrong)
 
             // Find all other solves for this task
-            val solves = getSolvesForTask(task)
+            val solves = getSolvesForTask(taskDTO)
             if (solves.result == null) return DbOpResult(exception = solves.exception)
 
             // Check if player already solved task
             if (solves.result.any { it.player.value == playerId }) return DbOpResult(FlagCheckResult.Exists)
 
+            taskDTO.solvesCount++
+            taskDTO.commit()
+
             // Update players table
-            val newTaskPrice = recalculateTaskPrice(
-                task.price,
-                if (task.dynamicScoring) task.solvesCount + 1
-                else 0
-            )
+            val newTaskPrice = if (taskDTO.dynamicScoring)
+                recalculateTaskPrice(taskDTO.price, taskDTO.solvesCount)
+            else taskDTO.price
+
             performOn(database) {
-                solves.result.forEach {
-                    val player = PlayerEntity.findById(it.player.value)
-                    player?.currentScore = player?.currentScore ?: 0 - task.price + newTaskPrice
+                for (solve in solves.result) {
+                    val player = PlayerEntity.findById(solve.player.value) ?: continue
+                    val score = ScoreEntity.find { PlayersTable.id eq player.id }.firstOrNull() ?: continue
+                    score.score = score.score - taskDTO.price + newTaskPrice
                 }
-                task.price = newTaskPrice
-                task.solvesCount = task.solvesCount + 1
-                val player = PlayerEntity.findById(playerId)
-                player?.currentScore = player?.currentScore ?: 0 + newTaskPrice
+                taskDTO.entity.price = newTaskPrice
+
+                val score = ScoreEntity.find { ScoresTable.player eq playerDTO.id }.firstOrNull()
+                if (score == null) {
+                    ScoreEntity.new {
+                        this.competition = competitionDTO.id
+                        this.player = playerDTO.id
+                        this.score = taskDTO.price
+                    }
+                } else {
+                    score.score += taskDTO.price
+                }
             }
 
             mSolves.emit(getAllSolves().result ?: emptyList())

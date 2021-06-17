@@ -74,11 +74,8 @@ data class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
     val userNameProperty = SimpleStringProperty(entity.userName)
     var userName by userNameProperty
 
-    val currentScoreProperty = SimpleIntegerProperty(entity.currentScore)
-    var currentScore by currentScoreProperty
-
-    val seasonScoreProperty = SimpleIntegerProperty(entity.seasonScore)
-    var seasonScore by seasonScoreProperty
+    val overallScoreProperty = SimpleIntegerProperty(entity.overallScore)
+    var overallScore by overallScoreProperty
 
     override fun commit(): DatabaseHelper.DbOpResult<Boolean> {
         return runBlocking { DatabaseHelper.updatePlayer(this@PlayerDTO) }
