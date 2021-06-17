@@ -253,6 +253,7 @@ object DatabaseHelper {
                     this.attachment = attachment
                     this.dynamicScoring = dynamicScoring
                     this.competition = competition.id
+                    this.solvesCount = 0
                 })
             }
             tasksListeners.forEach { it.onAdd(task) }
@@ -313,6 +314,7 @@ object DatabaseHelper {
     suspend fun deleteCompetition(competition: CompetitionDTO): DbOpResult<Boolean> {
         return try {
             performOn(database) {
+                TasksTable.deleteWhere { TasksTable.competition eq competition.id }
                 competition.entity.delete()
             }
             competitionsListeners.forEach { it.onDelete(competition) }

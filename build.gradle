@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.5.0'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.5.0'
     id 'org.openjfx.javafxplugin' version '0.0.9'
 }
 
@@ -36,6 +37,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-javafx:$coroutines_version"
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1")
     implementation "org.telegram:telegrambots:4.8.1"
     implementation 'com.intellij:forms_rt:7.0.3'
 
