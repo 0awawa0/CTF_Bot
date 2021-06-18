@@ -1,6 +1,6 @@
 package utils
 
-import db.DATABASE_LOG_FILE
+import database.DbHelper
 import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
@@ -10,6 +10,7 @@ import kotlin.collections.ArrayList
 
 object Logger {
 
+    const val LOG_FILE = "${DbHelper.DATABASE_FOLDER}/log.txt"
     private val logListeners = ArrayList<LogListener>()
 
     fun info(tag: String, msg: String) {
@@ -37,7 +38,7 @@ object Logger {
     }
 
     private fun writeToLogFile(msg: String) {
-        val file = File(DATABASE_LOG_FILE)
+        val file = File(LOG_FILE)
         val logWriter = FileWriter(file, true)
         logWriter.append("$msg\n")
         logWriter.close()

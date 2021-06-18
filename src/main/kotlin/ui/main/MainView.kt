@@ -1,22 +1,14 @@
 package ui.main
 
-import db.CompetitionDTO
+import database.CompetitionDTO
 import javafx.geometry.Insets
 import javafx.geometry.Pos
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.javafx.JavaFx
-import kotlinx.coroutines.launch
 import tornadofx.*
 import ui.competitions.CompetitionsView
 
 class MainView: View("CTF Bot") {
 
     private val viewModel = MainViewModel()
-    private val viewScope = CoroutineScope(Dispatchers.JavaFx)
-    private var flowJob: Job? = null
 
     private val menuBar = menubar {
         menu("Menu") {
@@ -64,14 +56,12 @@ class MainView: View("CTF Bot") {
 
     override fun onDock() {
         super.onDock()
-
-        flowJob = viewScope.launch {
-            viewModel.competitions.collect { competitionSelector.items = it.toObservable() }
-        }
+        viewModel.onViewDock()
+        competitionSelector.items = viewModel.competitions
     }
 
     override fun onUndock() {
-        flowJob?.cancel()
+        viewModel.onViewUndock()
         super.onUndock()
     }
 }

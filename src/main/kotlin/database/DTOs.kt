@@ -1,4 +1,4 @@
-package new_db
+package database
 
 abstract class BaseDTO {
     abstract val id: Long
@@ -6,7 +6,7 @@ abstract class BaseDTO {
     abstract suspend fun updateEntity()
 }
 
-class CompetitionDTO(private val entity: CompetitionEntity): BaseDTO() {
+class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
     override val id: Long = entity.id.value
 
     var name: String = entity.name
@@ -34,7 +34,7 @@ class CompetitionDTO(private val entity: CompetitionEntity): BaseDTO() {
     }
 }
 
-class PlayerDTO(private val entity: PlayerEntity): BaseDTO() {
+class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
     override val id: Long = entity.id.value
 
     var name: String = entity.name
@@ -51,10 +51,10 @@ class PlayerDTO(private val entity: PlayerEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { SolveDTO(it) }}
     }
 
-    suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): Long {
+    suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): ScoreDTO? {
         return getScores().find {
             it.getCompetition().id == competitionDTO.id
-        }?.score ?: 0L
+        }
     }
 
     suspend fun getTotalScore(): Long {
@@ -70,7 +70,7 @@ class PlayerDTO(private val entity: PlayerEntity): BaseDTO() {
     }
 }
 
-class TaskDTO(private val entity: TaskEntity): BaseDTO() {
+class TaskDTO(val entity: TaskEntity): BaseDTO() {
     override val id: Long = entity.id.value
 
     var category = entity.category
@@ -106,7 +106,7 @@ class TaskDTO(private val entity: TaskEntity): BaseDTO() {
     }
 }
 
-class SolveDTO(private val entity: SolveEntity): BaseDTO() {
+class SolveDTO(val entity: SolveEntity): BaseDTO() {
     override val id: Long = entity.id.value
 
     val timestamp = entity.timestamp
@@ -122,7 +122,7 @@ class SolveDTO(private val entity: SolveEntity): BaseDTO() {
     }
 }
 
-data class ScoreDTO(private val entity: ScoreEntity): BaseDTO() {
+data class ScoreDTO(val entity: ScoreEntity): BaseDTO() {
     override val id: Long = entity.id.value
 
     var score = entity.score

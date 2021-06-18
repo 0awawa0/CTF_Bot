@@ -1,4 +1,4 @@
-package new_db
+package database
 
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
@@ -34,22 +34,22 @@ class TaskEntity(id: EntityID<Long>): LongEntity(id) {
     var description by TasksTable.description
     var flag by TasksTable.flag
     var attachment by TasksTable.attachment
-    val competition by CompetitionEntity referencedOn  TasksTable.competition
+    var competition by CompetitionEntity referencedOn  TasksTable.competition
     val solves by SolveEntity referrersOn SolvesTable.task
 }
 
 class SolveEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<SolveEntity>(SolvesTable)
 
-    val task by TaskEntity referencedOn SolvesTable.task
-    val player by PlayerEntity referencedOn SolvesTable.player
-    val timestamp by SolvesTable.timestamp
+    var task by TaskEntity referencedOn SolvesTable.task
+    var player by PlayerEntity referencedOn SolvesTable.player
+    var timestamp by SolvesTable.timestamp
 }
 
 class ScoreEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<ScoreEntity>(ScoresTable)
 
-    val competition by CompetitionEntity referencedOn ScoresTable.competition
-    val player by PlayerEntity referencedOn ScoresTable.player
+    var competition by CompetitionEntity referencedOn ScoresTable.competition
+    var player by PlayerEntity referencedOn ScoresTable.player
     var score by ScoresTable.score
 }

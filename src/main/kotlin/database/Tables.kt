@@ -1,4 +1,4 @@
-package new_db
+package database
 
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption

@@ -1,7 +1,7 @@
 package ui.competitions
 
-import db.CompetitionDTO
-import db.TaskDTO
+import database.CompetitionDTO
+import database.TaskDTO
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.Alert
@@ -11,22 +11,12 @@ import javafx.scene.paint.Paint
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import javafx.stage.FileChooser
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.javafx.JavaFx
-import kotlinx.coroutines.launch
 import tornadofx.*
 import ui.Colors
 
 class CompetitionsView: View("Competitions") {
 
     private val viewModel = CompetitionsViewModel()
-    private val viewScope = CoroutineScope(Dispatchers.JavaFx)
-    private var flowJob: Job? = null
 
     private val competitionsList = listview<CompetitionDTO> {
         cellFormat { text = it.name }
@@ -66,9 +56,6 @@ class CompetitionsView: View("Competitions") {
         val columnDescription = column("Description", TaskDTO::description).makeEditable()
         val columnFlag = column("Flag", TaskDTO::flag).makeEditable()
         val columnAttachment = column("Attachment", TaskDTO::attachment).makeEditable()
-        column("Price", TaskDTO::price)
-        column("Dynamic scoring", TaskDTO::dynamicScoring)
-        column("Solves count", TaskDTO::solvesCount)
 
         onEditCommit {
             val item = selectedItem ?: return@onEditCommit
@@ -108,7 +95,7 @@ class CompetitionsView: View("Competitions") {
                         "Choose file",
                         arrayOf(FileChooser.ExtensionFilter("JSON", "*.json"))
                     ).firstOrNull() ?: return@action
-                    viewModel.tryAddFromJson(file, competition) { showFailedToParseJson() }
+//                    viewModel.tryAddFromJson(file, competition) { showFailedToParseJson() }
                 }
             }
 
@@ -140,15 +127,13 @@ class CompetitionsView: View("Competitions") {
     override fun onDock() {
         super.onDock()
 
-        flowJob = viewScope.launch {
-            viewModel.competitions.onEach { competitionsList.items = it.toObservable() }.launchIn(this)
-            viewModel.tasks.collect { tasksTable.items = it.toObservable() }
-        }
+        viewModel.onViewDock()
+        competitionsList.items = viewModel.competitions
+        tasksTable.items = viewModel.tasks
     }
 
     override fun onUndock() {
-        flowJob?.cancel()
-
+        viewModel.onViewUndock()
         super.onUndock()
     }
 
@@ -301,11 +286,9 @@ class CompetitionsView: View("Competitions") {
                                 category.text,
                                 name.text,
                                 description.text,
-                                price.text.toInt(),
                                 flag.text,
                                 attachmentContent.text,
-                                competition,
-                                dynamicScoring.isSelected
+                                competition
                             )
                             this@dialog.close()
                         }

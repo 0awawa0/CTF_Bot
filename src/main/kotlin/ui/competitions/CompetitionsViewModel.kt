@@ -1,136 +1,144 @@
 package ui.competitions
 
-import db.CompetitionDTO
-import db.DatabaseHelper
-import db.TaskDTO
-import db.TaskJsonModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import utils.Logger
-import java.io.File
+import database.*
+import javafx.collections.ObservableList
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.javafx.JavaFx
+import tornadofx.toObservable
 
 class CompetitionsViewModel {
 
     private val tag = "CompetitionsViewModel"
-    private val viewModelScope = CoroutineScope(Dispatchers.IO)
+    private var viewModelScope = CoroutineScope(Dispatchers.Default)
 
     var selectedCompetition: CompetitionDTO? = null
         set(value) {
             field = value
+            tasks.clear()
             viewModelScope.launch {
-                if (value != null)
-                    mTasks.emit(DatabaseHelper.getTasks(value).result ?: emptyList())
+                withContext(Dispatchers.JavaFx) {
+                    tasks.addAll(value?.getTasks() ?: emptyList())
+                }
             }
         }
 
-    val competitions = DatabaseHelper.competitions
-    private val mTasks =  MutableStateFlow<List<TaskDTO>>(emptyList())
-    val tasks = mTasks.asStateFlow()
+    val competitions: ObservableList<CompetitionDTO> = emptyList<CompetitionDTO>().toObservable()
+    val tasks: ObservableList<TaskDTO> = emptyList<TaskDTO>().toObservable()
 
     fun addCompetition(name: String) {
-        viewModelScope.launch {
-            val result = DatabaseHelper.addCompetition(name)
-            if (result.result == null) {
-                Logger.error(tag, "${result.exception?.message}\n${result.exception?.stackTraceToString()}")
-            }
-        }
+        viewModelScope.launch { DbHelper.addCompetition(CompetitionModel(name)) }
     }
 
     fun addTask(
         category: String,
         name: String,
         description: String,
-        price: Int,
         flag: String,
         attachment: String,
         competition: CompetitionDTO,
-        dynamicScoring: Boolean,
     ) {
         viewModelScope.launch {
-            val result = DatabaseHelper.addTask(
-                category,
-                name,
-                description,
-                price,
-                flag,
-                attachment,
-                dynamicScoring = dynamicScoring,
-                competition
+            val result = DbHelper.addTask(
+                competition,
+                TaskModel(
+                    category,
+                    name,
+                    description,
+                    flag,
+                    attachment
+                )
             )
-            if (result.result != null) {
-                val selectedCompetition = selectedCompetition
-                if (selectedCompetition != null)
-                    viewModelScope.launch {
-                        mTasks.emit(DatabaseHelper.getTasks(selectedCompetition).result ?: emptyList())
-                    }
-            } else {
-                Logger.error(tag, "${result.exception?.message}\n${result.exception?.stackTraceToString()}")
-            }
         }
     }
 
     fun delete(competition: CompetitionDTO) {
-        viewModelScope.launch {
-            val result = DatabaseHelper.deleteCompetition(competition)
-            if (result.result != true) {
-                Logger.error(tag, "${result.exception?.message}\n${result.exception?.stackTraceToString()}")
-            }
-        }
+        viewModelScope.launch { DbHelper.delete(competition) }
     }
 
     fun delete(task: TaskDTO) {
-        viewModelScope.launch {
-            val result = DatabaseHelper.deleteTask(task)
-            if (result.result == true) {
-                val competition = selectedCompetition ?: return@launch
-                mTasks.emit(DatabaseHelper.getTasks(competition).result ?: emptyList())
-            } else {
-                Logger.error(tag, "${result.exception?.message}\n${result.exception?.stackTraceToString()}")
-            }
-        }
+        viewModelScope.launch { DbHelper.delete(task) }
     }
 
     fun update(task: TaskDTO) {
+        viewModelScope.launch { task.updateEntity() }
+    }
+
+    fun onViewDock() {
         viewModelScope.launch {
-            val result = DatabaseHelper.updateTask(task)
-            if (result.result != true) {
-                Logger.error(tag, "${result.exception?.message}\n${result.exception?.stackTraceToString()}")
+            DbHelper.eventsPipe.collect { event ->
+                when (event) {
+                    is DbHelper.DbEvent.Add -> {
+                        when (event.dto) {
+                            is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
+                                competitions.add(event.dto)
+                            }
+                            is TaskDTO -> {
+                                if (event.dto.getCompetition().id == selectedCompetition?.id)
+                                    withContext(Dispatchers.JavaFx) {
+                                        tasks.add(event.dto)
+                                    }
+                            }}
+                    }
+                    is DbHelper.DbEvent.Update -> {
+                        when (event.dto) {
+                            is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
+                                if (competitions.removeIf { it.id == event.dto.id })
+                                    competitions.add(event.dto)
+                            }
+                            is TaskDTO -> withContext(Dispatchers.JavaFx) {
+                                if (tasks.removeIf { it.id == event.dto.id })
+                                    tasks.add(event.dto)
+                            }
+                        }
+                    }
+                    is DbHelper.DbEvent.Delete -> {
+                        when (event.dto) {
+                            is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
+                                competitions.removeIf { it.id == event.dto.id }
+                            }
+                            is TaskDTO -> withContext(Dispatchers.JavaFx) {
+                                tasks.removeIf { it.id == event.dto.id }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    fun tryAddFromJson(file: File, competition: CompetitionDTO, onErrorAction: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                val text = file.readText()
-                val parse = Json.decodeFromString<Array<TaskJsonModel>>(text)
-                for (task in parse) {
-                    val result = DatabaseHelper.addTask(
-                        task.category,
-                        task.name,
-                        task.description,
-                        task.price,
-                        task.flag,
-                        task.attachment,
-                        task.dynamicScoring,
-                        competition
-                    )
-                    if (result.result == null) {
-                        Logger.error(
-                            tag,
-                            "${result.exception?.message}\n${result.exception?.stackTraceToString()}"
-                        )
-                    }
-                }
-                mTasks.emit(DatabaseHelper.getTasks(competition).result ?: emptyList())
-            } catch (ex: Exception) {
-                onErrorAction()
-                Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
-            }
-        }
+    fun onViewUndock() {
+        viewModelScope.cancel()
+        viewModelScope = CoroutineScope(Dispatchers.Default)
     }
+//    fun tryAddFromJson(file: File, competition: CompetitionDTO, onErrorAction: () -> Unit) {
+//        viewModelScope.launch {
+//            try {
+//                val text = file.readText()
+//                val parse = Json.decodeFromString<Array<TaskJsonModel>>(text)
+//                for (task in parse) {
+//                    val result = DatabaseHelper.addTask(
+//                        task.category,
+//                        task.name,
+//                        task.description,
+//                        task.price,
+//                        task.flag,
+//                        task.attachment,
+//                        task.dynamicScoring,
+//                        competition
+//                    )
+//                    if (result.result == null) {
+//                        Logger.error(
+//                            tag,
+//                            "${result.exception?.message}\n${result.exception?.stackTraceToString()}"
+//                        )
+//                    }
+//                }
+//                mTasks.emit(DatabaseHelper.getTasks(competition).result ?: emptyList())
+//            } catch (ex: Exception) {
+//                onErrorAction()
+//                Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
+//            }
+//        }
+//    }
 }

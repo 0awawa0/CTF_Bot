@@ -1,6 +1,6 @@
 import db.DatabaseHelper
 import kotlinx.coroutines.runBlocking
-import new_db.DbHelper
+import database.DbHelper
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance

@@ -1,6 +1,6 @@
 package ui
 
-import db.DatabaseHelper
+import database.DbHelper
 import javafx.stage.Stage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +45,6 @@ class Application:  App(ui.main.MainView::class) {
 
 fun main(args: Array<String> = emptyArray()) {
     ApiContextInitializer.init()
-    CoroutineScope(Dispatchers.IO).launch { DatabaseHelper.init() }
+    CoroutineScope(Dispatchers.IO).launch { DbHelper.init() }
     launch<Application>(args)
 }
