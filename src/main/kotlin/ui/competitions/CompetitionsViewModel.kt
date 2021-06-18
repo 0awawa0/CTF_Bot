@@ -5,7 +5,11 @@ import javafx.collections.ObservableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import tornadofx.toObservable
+import utils.Logger
+import java.io.File
 
 class CompetitionsViewModel {
 
@@ -39,7 +43,7 @@ class CompetitionsViewModel {
         competition: CompetitionDTO,
     ) {
         viewModelScope.launch {
-            val result = DbHelper.addTask(
+            DbHelper.addTask(
                 competition,
                 TaskModel(
                     category,
@@ -111,34 +115,19 @@ class CompetitionsViewModel {
         viewModelScope.cancel()
         viewModelScope = CoroutineScope(Dispatchers.Default)
     }
-//    fun tryAddFromJson(file: File, competition: CompetitionDTO, onErrorAction: () -> Unit) {
-//        viewModelScope.launch {
-//            try {
-//                val text = file.readText()
-//                val parse = Json.decodeFromString<Array<TaskJsonModel>>(text)
-//                for (task in parse) {
-//                    val result = DatabaseHelper.addTask(
-//                        task.category,
-//                        task.name,
-//                        task.description,
-//                        task.price,
-//                        task.flag,
-//                        task.attachment,
-//                        task.dynamicScoring,
-//                        competition
-//                    )
-//                    if (result.result == null) {
-//                        Logger.error(
-//                            tag,
-//                            "${result.exception?.message}\n${result.exception?.stackTraceToString()}"
-//                        )
-//                    }
-//                }
-//                mTasks.emit(DatabaseHelper.getTasks(competition).result ?: emptyList())
-//            } catch (ex: Exception) {
-//                onErrorAction()
-//                Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
-//            }
-//        }
-//    }
+
+    fun tryAddFromJson(file: File, competition: CompetitionDTO, onErrorAction: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val text = file.readText()
+                val parse = Json.decodeFromString<Array<TaskModel>>(text)
+                for (task in parse) {
+                    DbHelper.addTask(competition, task)
+                }
+            } catch (ex: Exception) {
+                onErrorAction()
+                Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
+            }
+        }
+    }
 }

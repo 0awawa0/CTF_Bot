@@ -49,13 +49,16 @@ class CompetitionsView: View("Competitions") {
     }
 
     private val tasksTable = tableview<TaskDTO> {
-        readonlyColumn("id", TaskDTO::id) { columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY }
+        readonlyColumn("id", TaskDTO::id) {
+            columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
+        }
 
         val columnCategory = column("Category", TaskDTO::category).makeEditable()
         val columnName = column("Name", TaskDTO::name).makeEditable()
         val columnDescription = column("Description", TaskDTO::description).makeEditable()
         val columnFlag = column("Flag", TaskDTO::flag).makeEditable()
         val columnAttachment = column("Attachment", TaskDTO::attachment).makeEditable()
+        readonlyColumn("Solves count", TaskDTO::solvesCount)
 
         onEditCommit {
             val item = selectedItem ?: return@onEditCommit
@@ -95,7 +98,7 @@ class CompetitionsView: View("Competitions") {
                         "Choose file",
                         arrayOf(FileChooser.ExtensionFilter("JSON", "*.json"))
                     ).firstOrNull() ?: return@action
-//                    viewModel.tryAddFromJson(file, competition) { showFailedToParseJson() }
+                    viewModel.tryAddFromJson(file, competition) { showFailedToParseJson() }
                 }
             }
 

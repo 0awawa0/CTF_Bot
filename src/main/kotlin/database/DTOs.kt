@@ -1,5 +1,7 @@
 package database
 
+import kotlinx.coroutines.runBlocking
+
 abstract class BaseDTO {
     abstract val id: Long
 
@@ -38,6 +40,9 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
     override val id: Long = entity.id.value
 
     var name: String = entity.name
+
+    val totalScore: Long
+        get() { return runBlocking { getScores().sumOf { it.score } }}
 
     override suspend fun updateEntity() {
         DbHelper.transactionOn(DbHelper.database) { entity.name = name }
@@ -78,6 +83,8 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
     var description = entity.description
     var flag = entity.flag
     var attachment = entity.attachment
+    val solvesCount: Int
+        get() { return runBlocking { getSolves().count() }}
 
     override suspend fun updateEntity() {
         DbHelper.transactionOn(DbHelper.database) {
