@@ -1,5 +1,6 @@
 import db.DatabaseHelper
 import kotlinx.coroutines.runBlocking
+import new_db.DbHelper
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -93,6 +94,13 @@ class DatabaseTest {
             val competition = DatabaseHelper.addCompetition("Test competition").result!!
             println("Fetching existing tasks")
             var tasks = DatabaseHelper.getTasks(competition)
+        }
+    }
+
+    @Test
+    fun testTaskPriceDecay() {
+        for (i in 0 .. DbHelper.DECAY) {
+            println(DbHelper.getNewTaskPrice(i))
         }
     }
 }

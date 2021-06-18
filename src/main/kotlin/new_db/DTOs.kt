@@ -1,13 +1,140 @@
 package new_db
 
-import org.jetbrains.exposed.dao.id.EntityID
-
 abstract class BaseDTO {
-    abstract val id: EntityID<Long>
+    abstract val id: Long
+
+    abstract suspend fun updateEntity()
 }
 
-data class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
-    override val id: EntityID<Long> = entity.id
+class CompetitionDTO(private val entity: CompetitionEntity): BaseDTO() {
+    override val id: Long = entity.id.value
 
+    var name: String = entity.name
 
+    override suspend fun updateEntity() {
+        DbHelper.transactionOn(DbHelper.database) { entity.name = name }
+    }
+
+    suspend fun getTasks(): List<TaskDTO> {
+        return DbHelper.transactionOn(DbHelper.database) { entity.tasks.map { TaskDTO(it) }}
+    }
+
+    suspend fun getScores(): List<ScoreDTO> {
+        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
+    }
+
+    suspend fun getScoreBoard(): List<Pair<String, Long>> {
+        val scores = getScores()
+        val result = ArrayList<Pair<String, Long>>()
+        for (score in scores) {
+            val player = score.getPlayer()
+            result.add(Pair(player.name, score.score))
+        }
+        return result
+    }
+}
+
+class PlayerDTO(private val entity: PlayerEntity): BaseDTO() {
+    override val id: Long = entity.id.value
+
+    var name: String = entity.name
+
+    override suspend fun updateEntity() {
+        DbHelper.transactionOn(DbHelper.database) { entity.name = name }
+    }
+
+    suspend fun getScores(): List<ScoreDTO> {
+        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
+    }
+
+    suspend fun getSolves(): List<SolveDTO> {
+        return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { SolveDTO(it) }}
+    }
+
+    suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): Long {
+        return getScores().find {
+            it.getCompetition().id == competitionDTO.id
+        }?.score ?: 0L
+    }
+
+    suspend fun getTotalScore(): Long {
+        return getScores().sumOf { it.score }
+    }
+
+    suspend fun getSolvedTasks(competitionDTO: CompetitionDTO): List<TaskDTO> {
+        return getSolves().map {
+            it.getTask()
+        }.filter {
+            it.getCompetition().id == competitionDTO.id
+        }
+    }
+}
+
+class TaskDTO(private val entity: TaskEntity): BaseDTO() {
+    override val id: Long = entity.id.value
+
+    var category = entity.category
+    var name = entity.name
+    var description = entity.description
+    var flag = entity.flag
+    var attachment = entity.attachment
+
+    override suspend fun updateEntity() {
+        DbHelper.transactionOn(DbHelper.database) {
+            entity.category = category
+            entity.name = name
+            entity.description = description
+            entity.flag = flag
+            entity.attachment = attachment
+        }
+    }
+
+    suspend fun getCompetition(): CompetitionDTO {
+        return DbHelper.transactionOn(DbHelper.database) { CompetitionDTO(entity.competition) }
+    }
+
+    suspend fun getSolves(): List<SolveDTO> {
+        return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { SolveDTO(it) }}
+    }
+
+    suspend fun getSolvedPlayers(): List<PlayerDTO> {
+        return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { PlayerDTO(it.player) } }
+    }
+
+    suspend fun getTaskPrice(): Int {
+        return DbHelper.getNewTaskPrice(getSolves().count())
+    }
+}
+
+class SolveDTO(private val entity: SolveEntity): BaseDTO() {
+    override val id: Long = entity.id.value
+
+    val timestamp = entity.timestamp
+
+    override suspend fun updateEntity() {}
+
+    suspend fun getTask(): TaskDTO {
+        return DbHelper.transactionOn(DbHelper.database) { TaskDTO(entity.task) }
+    }
+
+    suspend fun getPlayer(): PlayerDTO {
+        return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
+    }
+}
+
+data class ScoreDTO(private val entity: ScoreEntity): BaseDTO() {
+    override val id: Long = entity.id.value
+
+    var score = entity.score
+
+    override suspend fun updateEntity() {
+        DbHelper.transactionOn(DbHelper.database) { entity.score = score }
+    }
+
+    suspend fun getCompetition(): CompetitionDTO {
+        return DbHelper.transactionOn(DbHelper.database) { CompetitionDTO(entity.competition) }
+    }
+    suspend fun getPlayer(): PlayerDTO {
+        return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
+    }
 }

@@ -1,7 +1,5 @@
 package new_db
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -10,7 +8,6 @@ class CompetitionEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<CompetitionEntity>(CompetitionsTable)
 
     var name by CompetitionsTable.name
-        private set
 
     val tasks by TaskEntity referrersOn TasksTable.competition
     val scores by ScoreEntity referrersOn ScoresTable.competition
