@@ -22,7 +22,7 @@ class PlayerEntity(id: EntityID<Long>): LongEntity(id) {
 
     var name by PlayersTable.name
 
-    val scores by ScoreEntity referrersOn SolvesTable.player
+    val scores by ScoreEntity referrersOn ScoresTable.player
     val solves by SolveEntity referrersOn SolvesTable.player
 }
 

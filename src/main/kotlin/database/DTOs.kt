@@ -41,11 +41,12 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
 
     var name: String = entity.name
 
-    val totalScore: Long
-        get() { return runBlocking { getScores().sumOf { it.score } }}
-
     override suspend fun updateEntity() {
         DbHelper.transactionOn(DbHelper.database) { entity.name = name }
+    }
+
+    fun getTotalScoreSynchronous(): Long {
+        return runBlocking { getScores().sumOf { it.score } }
     }
 
     suspend fun getScores(): List<ScoreDTO> {
@@ -83,8 +84,6 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
     var description = entity.description
     var flag = entity.flag
     var attachment = entity.attachment
-    val solvesCount: Int
-        get() { return runBlocking { getSolves().count() }}
 
     override suspend fun updateEntity() {
         DbHelper.transactionOn(DbHelper.database) {
@@ -94,6 +93,10 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
             entity.flag = flag
             entity.attachment = attachment
         }
+    }
+
+    fun getSolvesCountSynchronous(): Int {
+        return runBlocking { getSolves().count() }
     }
 
     suspend fun getCompetition(): CompetitionDTO {

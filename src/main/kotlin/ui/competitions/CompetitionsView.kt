@@ -8,6 +8,7 @@ import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.TableView
 import javafx.scene.paint.Paint
+import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import javafx.stage.FileChooser
@@ -19,7 +20,13 @@ class CompetitionsView: View("Competitions") {
     private val viewModel = CompetitionsViewModel()
 
     private val competitionsList = listview<CompetitionDTO> {
-        cellFormat { text = it.name }
+        cellFormat {
+            text = it.name
+            style {
+                fontWeight = FontWeight.BOLD
+                fontSize = 20.px
+            }
+        }
         onUserSelect(clickCount = 1) { viewModel.selectedCompetition = it }
     }
 
@@ -58,7 +65,7 @@ class CompetitionsView: View("Competitions") {
         val columnDescription = column("Description", TaskDTO::description).makeEditable()
         val columnFlag = column("Flag", TaskDTO::flag).makeEditable()
         val columnAttachment = column("Attachment", TaskDTO::attachment).makeEditable()
-        readonlyColumn("Solves count", TaskDTO::solvesCount)
+        column("Solves count", TaskDTO::getSolvesCountSynchronous)
 
         onEditCommit {
             val item = selectedItem ?: return@onEditCommit
@@ -115,8 +122,6 @@ class CompetitionsView: View("Competitions") {
     }
 
     override val root = gridpane {
-        prefWidth = minOf(1000.0, primaryStage.maxWidth)
-        prefHeight = 500.0
 
         row {
             add(leftPane)
@@ -129,6 +134,10 @@ class CompetitionsView: View("Competitions") {
 
     override fun onDock() {
         super.onDock()
+
+        currentStage?.width =  minOf(1000.0, primaryStage.maxWidth)
+        currentStage?.height = 500.0
+        currentStage?.centerOnScreen()
 
         viewModel.onViewDock()
         competitionsList.items = viewModel.competitions
@@ -145,7 +154,8 @@ class CompetitionsView: View("Competitions") {
             spacing = 8.0
             alignment = Pos.CENTER
             padding = Insets(8.0)
-            prefWidth = 300.0
+            stage.width = 300.0
+            stage.centerOnScreen()
 
             val competitionName = textfield()
             hbox {
@@ -157,6 +167,11 @@ class CompetitionsView: View("Competitions") {
                 }.fitToParentWidth()
                 add(competitionName)
                 competitionName.fitToParentWidth()
+                competitionName.action {
+                    if (competitionName.text.isBlank()) return@action
+                    viewModel.addCompetition(competitionName.text)
+                    this@dialog.close()
+                }
             }.fitToParentWidth()
 
             hbox {
@@ -189,8 +204,7 @@ class CompetitionsView: View("Competitions") {
             spacing = 8.0
             padding = Insets(8.0)
             alignment = Pos.CENTER
-            prefWidth = 300.0
-            stage.isResizable = false
+            prefWidth = 400.0
 
             label(
                 "Competition deletion is unrecoverable. Are you sure you want to delete competition"
@@ -199,8 +213,9 @@ class CompetitionsView: View("Competitions") {
                 isWrapText = true
             }.fitToParentWidth()
 
-            label("'${competition.name}'") {
+            label("'${competition.name}'\n?") {
                 style {
+                    textAlignment = TextAlignment.CENTER
                     fontWeight = FontWeight.BOLD
                 }
             }
@@ -234,17 +249,6 @@ class CompetitionsView: View("Competitions") {
         val category = textfield()
         val name = textfield()
         val description = textarea()
-        val price = textfield {
-            filterInput {
-                if (it.isAdded) {
-                    return@filterInput it.controlNewText.isEmpty() || it.controlNewText.all {
-                            char -> char in "0123456789"
-                    }
-                }
-                return@filterInput true
-            }
-        }
-        val dynamicScoring = checkbox()
         val attachment = hbox {
             spacing = 8.0
             alignment = Pos.CENTER
@@ -264,16 +268,14 @@ class CompetitionsView: View("Competitions") {
         val flag = textfield()
 
         dialog("New task ") {
-            prefWidth = 500.0
+            stage.width = 500.0
             stage.centerOnScreen()
 
             form {
                 field("Category") { add(category) }
                 field("Name") { add(name) }
                 field("Description") { add(description) }
-                field("Price") { add(price) }
                 field("Flag") { add(flag) }
-                field("Dynamic scoring") { add(dynamicScoring) }
                 field("Attachment") { add(attachment) }
                 hbox {
                     spacing = 8.0
@@ -283,7 +285,6 @@ class CompetitionsView: View("Competitions") {
                         action {
                             if (category.text.isBlank()) return@action
                             if (name.text.isBlank()) return@action
-                            if (price.text.toIntOrNull() == null) return@action
                             if (flag.text.isBlank()) return@action
                             viewModel.addTask(
                                 category.text,
@@ -308,22 +309,22 @@ class CompetitionsView: View("Competitions") {
     }
 
     private fun showAcceptTaskDeletionDialog(task: TaskDTO) {
-        dialog("Delete competition") {
+        dialog("Delete task") {
             spacing = 8.0
             padding = Insets(8.0)
             alignment = Pos.CENTER
-            prefWidth = 300.0
-            stage.isResizable = false
+            prefWidth = 400.0
 
             label(
-                "Task deletion is unrecoverable. Are you sure you want to delete competition"
+                "Task deletion is unrecoverable. Are you sure you want to delete task"
             ) {
                 textAlignment = TextAlignment.JUSTIFY
                 isWrapText = true
             }.fitToParentWidth()
 
-            label("'${task.name}'") {
+            label("'${task.name}'\n?") {
                 style {
+                    textAlignment = TextAlignment.CENTER
                     fontWeight = FontWeight.BOLD
                 }
             }

@@ -6,9 +6,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import utils.Logger
 import java.io.File
@@ -37,44 +39,36 @@ object DbHelper {
     }
 
     val database: Database by lazy {
-        Database.connect("jdbc:sqlite:db/data.db", "org.sqlite.JDBC")
+        Database.connect("jdbc:sqlite:db/data.db?foreign_keys=on", "org.sqlite.JDBC")
     }
 
     private val tag = "DbHelper"
 
     private val flagCheckMutex = Mutex()
-    private val mCompetitions = MutableStateFlow<List<CompetitionDTO>>(emptyList())
-    val competitions = mCompetitions.asStateFlow()
-
-    private val mTasks = MutableStateFlow<List<TaskDTO>>(emptyList())
-    val tasks = mTasks.asStateFlow()
-
-    private val mPlayers = MutableStateFlow<List<PlayerDTO>>(emptyList())
-    val players = mPlayers.asStateFlow()
-
-    private val mSolves = MutableStateFlow<List<SolveDTO>>(emptyList())
-    val solves = mSolves.asStateFlow()
-
     private val mEventsPipe = MutableSharedFlow<DbEvent>()
     val eventsPipe = mEventsPipe.asSharedFlow()
 
-    suspend fun init() {
+    suspend fun init(): Boolean {
         try {
             if (!File(DATABASE_FOLDER).exists()) File(DATABASE_FOLDER).mkdir()
 
             transactionOn(database) {
                 SchemaUtils.create(CompetitionsTable, TasksTable, PlayersTable, SolvesTable, ScoresTable)
             }
+            return true
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to initialize database: ${ex.message}\n${ex.stackTraceToString()}")
+            return false
         }
     }
+
     suspend fun <T> transactionOn(database: Database, action: () -> T): T {
         return withContext(Dispatchers.IO) { transaction(db = database) { action() } }
     }
 
     fun getNewTaskPrice(solvesCount: Int): Int {
-        return (MIN_POINTS - INITIAL_TASK_PRICE) / (DECAY * DECAY) * (solvesCount * solvesCount) + INITIAL_TASK_PRICE
+        val x = maxOf(0, solvesCount)
+        return (MIN_POINTS - INITIAL_TASK_PRICE) / (DECAY * DECAY) * (x * x) + INITIAL_TASK_PRICE
     }
 
     suspend fun getAllCompetitions(): List<CompetitionDTO> {
@@ -131,7 +125,7 @@ object DbHelper {
         }
     }
 
-    suspend fun addCompetition(competitionModel: CompetitionModel): CompetitionDTO? {
+    suspend fun add(competitionModel: CompetitionModel): CompetitionDTO? {
         try {
             val dto = transactionOn(database) {
                 val competition = CompetitionEntity.new { this.name = competitionModel.name }
@@ -155,7 +149,7 @@ object DbHelper {
         }
     }
 
-    suspend fun addTask(competitionDTO: CompetitionDTO, taskModel: TaskModel): TaskDTO? {
+    suspend fun add(competitionDTO: CompetitionDTO, taskModel: TaskModel): TaskDTO? {
         try {
             val dto = transactionOn(database) {
                 val task = TaskEntity.new {
@@ -176,7 +170,7 @@ object DbHelper {
         }
     }
 
-    suspend fun addPlayer(playerModel: PlayerModel): PlayerDTO? {
+    suspend fun add(playerModel: PlayerModel): PlayerDTO? {
         try {
             val dto = transactionOn(database) {
                 val player = PlayerEntity.new(playerModel.id) {
@@ -194,63 +188,67 @@ object DbHelper {
     }
 
     suspend fun onFlagPassed(competition: CompetitionDTO, playerId: Long, flag: String): FlagCheckResult {
-        try {
-            val player = transactionOn(database) { PlayerEntity.findById(playerId)?.let { PlayerDTO(it) }}
-                ?: return FlagCheckResult.NoSuchPlayer
+        flagCheckMutex.withLock {
+            try {
+                val player = transactionOn(database) { PlayerEntity.findById(playerId)?.let { PlayerDTO(it) }}
+                    ?: return FlagCheckResult.NoSuchPlayer
 
-            val task = competition.getTasks().find { it.flag == flag } ?: return FlagCheckResult.WrongFlag
+                val task = competition.getTasks().find { it.flag == flag } ?: return FlagCheckResult.WrongFlag
 
-            // Adding new solution must be synchronized in order to protect of adding solution twice
-            flagCheckMutex.lock()
-            val solvedPlayers = task.getSolvedPlayers()
-            if (solvedPlayers.any { it.id == player.id }) return FlagCheckResult.SolveExists
+                // Adding new solution must be synchronized in order to protect of adding solution twice
+                val solvedPlayers = task.getSolvedPlayers()
+                if (solvedPlayers.any { it.id == player.id }) {
+                    return FlagCheckResult.SolveExists
+                }
 
-            val dto = transactionOn(database) {
-                SolveDTO(SolveEntity.new {
-                    this.player = player.entity
-                    this.task = task.entity
-                    this.timestamp = Date().time
-                })
-            }
-            flagCheckMutex.unlock()
-
-            mEventsPipe.emit(DbEvent.Add(dto))
-
-            val currentPrice = getNewTaskPrice(solvedPlayers.count())
-            val newPrice = getNewTaskPrice(solvedPlayers.count() + 1)
-
-            // Updating other players' scores
-            for (p in solvedPlayers) {
-                val score = p.getCompetitionScore(competition) ?: continue
-                score.score = score.score - currentPrice + newPrice
-            }
-
-            // Add
-            val playerSore = player.getCompetitionScore(competition)
-            if (playerSore == null) {
-                val scoreDto = transactionOn(database) {
-                    ScoreDTO(ScoreEntity.new {
-                        this.competition = competition.entity
+                val dto = transactionOn(database) {
+                    SolveDTO(SolveEntity.new {
                         this.player = player.entity
-                        this.score = newPrice.toLong()
+                        this.task = task.entity
+                        this.timestamp = Date().time
                     })
                 }
-                mEventsPipe.emit(DbEvent.Add(scoreDto))
-            } else {
-                playerSore.score += newPrice
-                playerSore.updateEntity()
-                mEventsPipe.emit(DbEvent.Update(playerSore))
+
+
+                mEventsPipe.emit(DbEvent.Add(dto))
+
+                val previousPrice = getNewTaskPrice(solvedPlayers.count() - 1)
+                val currentPrice = getNewTaskPrice(solvedPlayers.count())
+
+                // Updating other players' scores
+                for (p in solvedPlayers) {
+                    val score = p.getCompetitionScore(competition) ?: continue
+                    score.score = score.score - previousPrice + currentPrice
+                    score.updateEntity()
+                }
+
+                // Add
+                val playerSore = player.getCompetitionScore(competition)
+                if (playerSore == null) {
+                    val scoreDto = transactionOn(database) {
+                        ScoreDTO(ScoreEntity.new {
+                            this.competition = competition.entity
+                            this.player = player.entity
+                            this.score = currentPrice.toLong()
+                        })
+                    }
+                    mEventsPipe.emit(DbEvent.Add(scoreDto))
+                } else {
+                    playerSore.score += currentPrice
+                    playerSore.updateEntity()
+                    mEventsPipe.emit(DbEvent.Update(playerSore))
+                }
+                return FlagCheckResult.CorrectFlag(currentPrice)
+            } catch (ex: Exception) {
+                Logger.error(tag, "Failed to check player's flag: ${ex.message}\n${ex.stackTraceToString()}")
+                return FlagCheckResult.NoSuchPlayer
             }
-            return FlagCheckResult.CorrectFlag(newPrice)
-        } catch (ex: Exception) {
-            Logger.error(tag, "Failed to check player's flag: ${ex.message}\n${ex.stackTraceToString()}")
-            return FlagCheckResult.NoSuchPlayer
         }
     }
 
     suspend fun delete(competitionDTO: CompetitionDTO): Boolean {
         try {
-            transactionOn(database) { competitionDTO.entity.delete() }
+            transactionOn(database) { CompetitionsTable.deleteWhere { CompetitionsTable.id eq competitionDTO.id } }
             mEventsPipe.emit(DbEvent.Delete(competitionDTO))
             return true
         } catch (ex: Exception) {
@@ -261,7 +259,7 @@ object DbHelper {
 
     suspend fun delete(taskDTO: TaskDTO): Boolean {
         try {
-            transactionOn(database) { taskDTO.entity.delete() }
+            transactionOn(database) { TasksTable.deleteWhere { TasksTable.id eq taskDTO.id } }
             mEventsPipe.emit(DbEvent.Delete(taskDTO))
             return true
         } catch (ex: Exception) {
@@ -272,7 +270,7 @@ object DbHelper {
 
     suspend fun delete(playerDTO: PlayerDTO): Boolean {
         try {
-            transactionOn(database) { playerDTO.entity.delete() }
+            transactionOn(database) { PlayersTable.deleteWhere { PlayersTable.id eq playerDTO.id } }
             mEventsPipe.emit(DbEvent.Delete(playerDTO))
             return true
         } catch (ex: Exception) {

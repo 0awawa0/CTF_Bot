@@ -5,6 +5,8 @@ import javafx.collections.ObservableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import tornadofx.toObservable
@@ -16,13 +18,16 @@ class CompetitionsViewModel {
     private val tag = "CompetitionsViewModel"
     private var viewModelScope = CoroutineScope(Dispatchers.Default)
 
+    private var tasksLoadingMutex = Mutex()
     var selectedCompetition: CompetitionDTO? = null
         set(value) {
-            field = value
-            tasks.clear()
             viewModelScope.launch {
-                withContext(Dispatchers.JavaFx) {
-                    tasks.addAll(value?.getTasks() ?: emptyList())
+                tasksLoadingMutex.withLock {
+                    withContext(Dispatchers.JavaFx) {
+                        tasks.clear()
+                        tasks.addAll(value?.getTasks() ?: emptyList())
+                        field = value
+                    }
                 }
             }
         }
@@ -31,7 +36,7 @@ class CompetitionsViewModel {
     val tasks: ObservableList<TaskDTO> = emptyList<TaskDTO>().toObservable()
 
     fun addCompetition(name: String) {
-        viewModelScope.launch { DbHelper.addCompetition(CompetitionModel(name)) }
+        viewModelScope.launch { DbHelper.add(CompetitionModel(name)) }
     }
 
     fun addTask(
@@ -43,7 +48,7 @@ class CompetitionsViewModel {
         competition: CompetitionDTO,
     ) {
         viewModelScope.launch {
-            DbHelper.addTask(
+            DbHelper.add(
                 competition,
                 TaskModel(
                     category,
@@ -70,6 +75,12 @@ class CompetitionsViewModel {
 
     fun onViewDock() {
         viewModelScope.launch {
+            withContext(Dispatchers.JavaFx) {
+                competitions.clear()
+                competitions.addAll(DbHelper.getAllCompetitions())
+            }
+
+            selectedCompetition = null
             DbHelper.eventsPipe.collect { event ->
                 when (event) {
                     is DbHelper.DbEvent.Add -> {
@@ -99,6 +110,7 @@ class CompetitionsViewModel {
                     is DbHelper.DbEvent.Delete -> {
                         when (event.dto) {
                             is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
+                                if (event.dto.id == selectedCompetition?.id) selectedCompetition = null
                                 competitions.removeIf { it.id == event.dto.id }
                             }
                             is TaskDTO -> withContext(Dispatchers.JavaFx) {
@@ -122,7 +134,7 @@ class CompetitionsViewModel {
                 val text = file.readText()
                 val parse = Json.decodeFromString<Array<TaskModel>>(text)
                 for (task in parse) {
-                    DbHelper.addTask(competition, task)
+                    DbHelper.add(competition, task)
                 }
             } catch (ex: Exception) {
                 onErrorAction()
