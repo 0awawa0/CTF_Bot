@@ -1,187 +1,130 @@
-//package ui.players
-//
-//import javafx.collections.ObservableList
-//import javafx.geometry.Insets
-//import javafx.geometry.Pos
-//import javafx.scene.control.TableView
-//import javafx.scene.text.Font
-//import tornadofx.*
-//import java.util.*
-//
-//class PlayersView: View("Players") {
-//
-//    private var playersTable: TableViewEditModel<PlayerModel> by singleAssign()
-//
-//    private val presenter = PlayersPresenter(this)
-//
-//    private val players = tableview<PlayerModel>{
-//        playersTable = editModel
-//        columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
-//
-//        column("Username", PlayerModel::userName).makeEditable()
-//        column("Current score", PlayerModel::currentScore).makeEditable()
-//        column("Season score", PlayerModel::seasonScore).makeEditable()
-//        column("Solved tasks", PlayerModel::solvedTasks).makeEditable()
-//        column("Last right answer", PlayerModel::lastRightAnswer) {
-//            value {
-//                SimpleDateFormat("dd.MM.YYYY HH:mm:ss").format(Date(it.value.lastRightAnswer.value))
-//            }
-//        }
-//
-//        enableCellEditing()
-//        enableDirtyTracking()
-//
-//        onEditCommit {
-//            enableButtons()
-//        }
-//    }
-//
-//    private val btRefreshCurrentScores = button {
-//        text = "Refresh current scores"
-//        font = Font(14.0)
-//        action {
-//            presenter.refreshCurrentScores()
-//        }
-//    }
-//    private val btRefreshAllScores = button {
-//        text = "Refresh all scores"
-//        font = Font(14.0)
-//        action {
-//            presenter.refreshAllScores()
-//        }
-//    }
-//
-//    private val btDeletePlayer = button {
-//        text = "Delete player"
-//        font = Font(14.0)
-//        action {
-//            when(val model = playersTable.tableView.selectedItem) {
-//                null -> return@action
-//                else -> presenter.deletePlayer(model)
-//            }
-//        }
-//    }
-//
-//    private val btDeleteAllPlayers = button {
-//        text = "Delete all players"
-//        font = Font(14.0)
-//        action {
-//            presenter.deleteAllPlayers()
-//        }
-//    }
-//
-//    private val btRollback = button {
-//        text = "Cancel changes"
-//        font = Font(14.0)
-//        action {
-//            playersTable.rollback()
-//            disableButtons()
-//        }
-//    }
-//
-//    private val btSaveChanges = button {
-//        text = "Save changes"
-//        font = Font(14.0)
-//        action {
-//            presenter.updateDatabase(playersTable.items.asSequence())
-//            disableButtons()
-//        }
-//    }
-//
-//    private val btSendMessageToSelected = button {
-//        text = "Send message to selected player"
-//        font = Font(14.0)
-//        action {
-//            presenter.sendMessageToSelectedPlayer(
-//                playersTable.tableView.selectedItem?.item?.id?.value,
-//                taMessage.text
-//            )
-//        }
-//    }
-//
-//    private val btSendMessageToAll = button {
-//        text = "Send message to all players"
-//        font = Font(14.0)
-//        action {
-//            presenter.sendMessageToAll(
-//                taMessage.text
-//            )
-//        }
-//    }
-//
-//    private val taMessage = textarea {
-//        font = Font(13.0)
-//    }
-//
-//    private val messageBox = hbox {
-//        spacing = 10.0
-//        add(taMessage)
-//        taMessage.fitToParentWidth()
-//        taMessage.fitToParentHeight()
-//        val btns = vbox {
-//            spacing = 5.0
-//            add(btSendMessageToSelected)
-//            add(btSendMessageToAll)
-//            alignment = Pos.CENTER
-//        }
-//        btns.fitToParentWidth()
-//        btns.fitToParentHeight()
-//        btns.maxWidth = 500.0
-//
-//        this.maxHeight = 400.0
-//    }
-//    private val buttons = hbox {
-//        spacing = 15.0
-//
-//        alignment = Pos.CENTER
-//
-//        add(btRefreshCurrentScores)
-//        add(btRefreshAllScores)
-//        add(btDeletePlayer)
-//        add(btDeleteAllPlayers)
-//
-//        btRefreshCurrentScores.fitToParentWidth()
-//        btRefreshAllScores.fitToParentWidth()
-//        btDeletePlayer.fitToParentWidth()
-//        btDeleteAllPlayers.fitToParentWidth()
-//
-//        maxHeight = 150.0
-//    }
-//
-//    override val root = vbox {
-//        padding = Insets(10.0)
-//        spacing = 15.0
-//
-//        add(messageBox)
-//        add(buttons)
-//        add(players)
-//        add(btSaveChanges)
-//        add(btRollback)
-//
-//        messageBox.fitToParentWidth()
-//        messageBox.fitToParentHeight()
-//        buttons.fitToParentWidth()
-//        buttons.fitToParentHeight()
-//        players.fitToParentWidth()
-//        players.fitToParentHeight()
-//        btSaveChanges.fitToParentWidth()
-//        btRollback.fitToParentWidth()
-//    }
-//
-//    init {
-//        disableButtons()
-//        presenter.loadPlayersList()
-//    }
-//
-//    private fun enableButtons() {
-//        btSaveChanges.isDisable = false
-//        btRollback.isDisable = false
-//    }
-//
-//    private fun disableButtons() {
-//        btSaveChanges.isDisable = true
-//        btRollback.isDisable = true
-//    }
-//
-//    fun onPlayersListReady(playersList: ObservableList<PlayerModel>) { players.items = playersList }
-//}
+package ui.players
+
+import database.PlayerDTO
+import database.ScoreDTO
+import database.SolveDTO
+import javafx.geometry.Insets
+import javafx.geometry.Pos
+import javafx.scene.control.TableView
+import javafx.scene.text.FontWeight
+import tornadofx.*
+import ui.BaseView
+
+class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
+
+    private val playersList = listview<PlayerDTO> {
+        cellFormat {
+            graphic = hbox {
+                padding = Insets(0.0, 4.0, 0.0, 4.0)
+                spacing = 8.0
+
+                label(it.name) {
+                    style {
+                        fontSize = 14.px
+                        fontWeight = FontWeight.BOLD
+                    }
+                }
+
+                label(it.getTotalScoreSynchronous().toString()) {
+                    style {
+                        fontSize = 12.px
+                        fontWeight = FontWeight.NORMAL
+                    }
+                }
+            }
+        }
+        onUserSelect(1) { viewModel.selectedPlayer = it }
+    }
+
+    private val leftPane = vbox {
+        add(playersList)
+        playersList.fitToParentSize()
+
+        hbox {
+            padding = Insets(8.0)
+            alignment = Pos.CENTER
+            spacing = 8.0
+
+            button {
+                text = "Delete"
+                action {
+                    val player = playersList.selectedItem
+                }
+            }
+        }
+    }
+
+    private val playerName = label("") {
+        style {
+            fontSize = 24.px
+            fontWeight = FontWeight.BLACK
+        }
+    }
+
+    private val playerScore = label("") {
+        style {
+            fontSize = 20.px
+        }
+    }
+
+    private val scoresTable = tableview<ScoreDTO> {
+
+        column("Competition", ScoreDTO::getCompetition).cellFormat {
+            text = it.name
+        }
+        column("Score", ScoreDTO::score) {
+            columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
+        }
+
+        onUserSelect { viewModel.selectedScore = it }
+    }
+
+    private val solvesTable = tableview<SolveDTO> {
+        column("Task", SolveDTO::getTask).cellFormat {
+            text = it.name
+        }
+        readonlyColumn("Timestamp", SolveDTO::timestamp) {
+            columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
+        }
+    }
+
+    private val tables = hbox {
+        add(scoresTable)
+        add(solvesTable)
+        scoresTable.fitToParentSize()
+        solvesTable.fitToParentSize()
+    }
+
+    private val rightPane = vbox {
+        padding = Insets(8.0, 0.0, 0.0, 0.0)
+        spacing = 8.0
+        alignment = Pos.CENTER
+        add(playerName)
+        add(playerScore)
+        add(tables)
+
+        tables.fitToParentSize()
+    }
+
+    override val root =  gridpane {
+        row {
+            add(leftPane)
+            add(rightPane)
+
+            constraintsForColumn(0).percentWidth = 25.0
+            constraintsForColumn(1).percentWidth = 85.0
+        }
+    }
+
+    override fun onDock() {
+        super.onDock()
+
+        currentStage?.width = minOf(1000.0, primaryStage.maxWidth)
+        currentStage?.height = 500.0
+        currentStage?.centerOnScreen()
+
+        playersList.items = viewModel.scoreBoard
+        scoresTable.items = viewModel.scores
+        solvesTable.items = viewModel.solves
+    }
+}

@@ -10,13 +10,13 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import tornadofx.toObservable
+import ui.BaseViewModel
 import utils.Logger
 import java.io.File
 
-class CompetitionsViewModel {
+class CompetitionsViewModel: BaseViewModel() {
 
     private val tag = "CompetitionsViewModel"
-    private var viewModelScope = CoroutineScope(Dispatchers.Default)
 
     private var tasksLoadingMutex = Mutex()
     var selectedCompetition: CompetitionDTO? = null
@@ -73,7 +73,7 @@ class CompetitionsViewModel {
         viewModelScope.launch { task.updateEntity() }
     }
 
-    fun onViewDock() {
+    override fun onViewDock() {
         viewModelScope.launch {
             withContext(Dispatchers.JavaFx) {
                 competitions.clear()
@@ -121,11 +121,6 @@ class CompetitionsViewModel {
                 }
             }
         }
-    }
-
-    fun onViewUndock() {
-        viewModelScope.cancel()
-        viewModelScope = CoroutineScope(Dispatchers.Default)
     }
 
     fun tryAddFromJson(file: File, competition: CompetitionDTO, onErrorAction: () -> Unit) {

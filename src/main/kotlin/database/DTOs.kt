@@ -127,6 +127,10 @@ class SolveDTO(val entity: SolveEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { TaskDTO(entity.task) }
     }
 
+    fun getTaskSynchronous(): TaskDTO {
+        return runBlocking { getTask() }
+    }
+
     suspend fun getPlayer(): PlayerDTO {
         return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
     }
@@ -144,6 +148,11 @@ data class ScoreDTO(val entity: ScoreEntity): BaseDTO() {
     suspend fun getCompetition(): CompetitionDTO {
         return DbHelper.transactionOn(DbHelper.database) { CompetitionDTO(entity.competition) }
     }
+
+    fun getCompetitionSynchronous(): CompetitionDTO {
+        return runBlocking { getCompetition() }
+    }
+
     suspend fun getPlayer(): PlayerDTO {
         return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
     }

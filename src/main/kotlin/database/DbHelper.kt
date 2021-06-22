@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import utils.Logger
 import java.io.File
@@ -110,6 +111,17 @@ object DbHelper {
     suspend fun getAllScores(): List<ScoreDTO> {
         try {
             return transactionOn(database) { ScoreEntity.all().map { ScoreDTO(it) }}
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")
+            return emptyList()
+        }
+    }
+
+    suspend fun getScoreBoard(): List<PlayerDTO> {
+        try {
+            return transactionOn(database) {
+                PlayerEntity.all().map { PlayerDTO(it) }.sortedBy { it.getTotalScoreSynchronous() }
+            }
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")
             return emptyList()

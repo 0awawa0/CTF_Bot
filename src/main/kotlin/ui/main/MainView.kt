@@ -4,18 +4,20 @@ import database.CompetitionDTO
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import tornadofx.*
+import ui.BaseView
 import ui.competitions.CompetitionsView
+import ui.players.PlayersView
 
-class MainView: View("CTF Bot") {
-
-    private val viewModel = MainViewModel()
+class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
 
     private val menuBar = menubar {
         menu("Menu") {
             item("Competitions") {
                 action { find<CompetitionsView>().openModal() }
             }
-            item("Players")
+            item("Players") {
+                action { find<PlayersView>().openModal() }
+            }
             item("Exit")
         }
         menubutton("About")

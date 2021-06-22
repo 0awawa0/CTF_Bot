@@ -8,23 +8,21 @@ import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.TableView
 import javafx.scene.paint.Paint
-import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import javafx.stage.FileChooser
 import tornadofx.*
+import ui.BaseView
 import ui.Colors
 
-class CompetitionsView: View("Competitions") {
-
-    private val viewModel = CompetitionsViewModel()
+class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(), "Competitions") {
 
     private val competitionsList = listview<CompetitionDTO> {
         cellFormat {
             text = it.name
             style {
                 fontWeight = FontWeight.BOLD
-                fontSize = 20.px
+                fontSize = 16.px
             }
         }
         onUserSelect(clickCount = 1) { viewModel.selectedCompetition = it }
@@ -139,7 +137,6 @@ class CompetitionsView: View("Competitions") {
         currentStage?.height = 500.0
         currentStage?.centerOnScreen()
 
-        viewModel.onViewDock()
         competitionsList.items = viewModel.competitions
         tasksTable.items = viewModel.tasks
     }

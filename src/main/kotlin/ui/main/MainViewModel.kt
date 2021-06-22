@@ -7,14 +7,15 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
 import tornadofx.toObservable
+import ui.BaseViewModel
 
-class MainViewModel {
+class MainViewModel: BaseViewModel() {
 
     val competitions: ObservableList<CompetitionDTO> = emptyList<CompetitionDTO>().toObservable()
     private val dbEvents = DbHelper.eventsPipe
-    private var viewModelScope = CoroutineScope(Dispatchers.Default)
 
-    fun onViewDock() {
+    override fun onViewDock() {
+        super.onViewDock()
         viewModelScope.launch {
             competitions.clear()
             competitions.addAll(DbHelper.getAllCompetitions())
@@ -44,10 +45,5 @@ class MainViewModel {
                 }
             }
         }
-    }
-
-    fun onViewUndock() {
-        viewModelScope.cancel()
-        viewModelScope = CoroutineScope(Dispatchers.Default)
     }
 }
