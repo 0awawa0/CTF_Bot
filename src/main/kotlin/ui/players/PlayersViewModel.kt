@@ -15,12 +15,13 @@ import ui.BaseViewModel
 
 class PlayersViewModel: BaseViewModel() {
 
+    private val players: ObservableList<PlayerDTO> = emptyList<PlayerDTO>().toObservable()
     val scoreBoard = SortedList(
-        emptyList<PlayerDTO>().toObservable(),
-        Comparator<PlayerDTO> { first, second ->
-            return@Comparator (first.getTotalScoreSynchronous() - second.getTotalScoreSynchronous()).toInt()
-        }
-    )
+        players
+    ) { o1, o2 ->
+        val x = o2.getTotalScoreSynchronous() - o1.getTotalScoreSynchronous()
+        return@SortedList (x % Int.MAX_VALUE).toInt()
+    }
 
     private var solvesLoadingMutex = Mutex()
     var selectedScore: ScoreDTO? = null
@@ -70,8 +71,8 @@ class PlayersViewModel: BaseViewModel() {
         super.onViewDock()
         viewModelScope.launch {
             withContext(Dispatchers.JavaFx) {
-                scoreBoard.clear()
-                scoreBoard.addAll(DbHelper.getScoreBoard())
+                players.clear()
+                players.setAll(DbHelper.getScoreBoard())
             }
 
             selectedPlayer = null
@@ -87,7 +88,7 @@ class PlayersViewModel: BaseViewModel() {
 
     private suspend fun onAddEvent(dto: BaseDTO) {
         when (dto) {
-            is PlayerDTO -> withContext(Dispatchers.JavaFx) { scoreBoard.add(dto) }
+            is PlayerDTO -> withContext(Dispatchers.JavaFx) { players.add(dto) }
             is ScoreDTO -> {
                 val isForSelectedPlayer = dto.getPlayer().id == selectedPlayer?.id
                 if (isForSelectedPlayer) withContext(Dispatchers.JavaFx) { scores.add(dto) }
@@ -107,7 +108,7 @@ class PlayersViewModel: BaseViewModel() {
         when (dto) {
             is PlayerDTO -> {
                 withContext(Dispatchers.JavaFx) {
-                    if (scoreBoard.removeIf { it.id == dto.id }) scoreBoard.add(dto)
+                    if (players.removeIf { it.id == dto.id }) players.add(dto)
                 }
             }
             is ScoreDTO -> {
@@ -126,7 +127,7 @@ class PlayersViewModel: BaseViewModel() {
     private suspend fun onDeleteEvent(dto: BaseDTO) {
         when (dto) {
             is PlayerDTO -> {
-                withContext(Dispatchers.JavaFx) { scoreBoard.removeIf { it.id == dto.id } }
+                withContext(Dispatchers.JavaFx) { players.removeIf { it.id == dto.id } }
             }
             is ScoreDTO -> {
                 withContext(Dispatchers.JavaFx) { scores.removeIf { it.id == dto.id }}

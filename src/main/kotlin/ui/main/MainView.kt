@@ -58,12 +58,6 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
 
     override fun onDock() {
         super.onDock()
-        viewModel.onViewDock()
         competitionSelector.items = viewModel.competitions
-    }
-
-    override fun onUndock() {
-        viewModel.onViewUndock()
-        super.onUndock()
     }
 }

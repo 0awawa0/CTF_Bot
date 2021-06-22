@@ -33,7 +33,11 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                 }
             }
         }
-        onUserSelect(1) { viewModel.selectedPlayer = it }
+        onUserSelect(1) {
+            viewModel.selectedPlayer = it
+            playerName.text = it.name
+            playerScore.text = it.getTotalScoreSynchronous().toString()
+        }
     }
 
     private val leftPane = vbox {
@@ -69,18 +73,18 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 
     private val scoresTable = tableview<ScoreDTO> {
 
-        column("Competition", ScoreDTO::getCompetition).cellFormat {
+        column("Competition", ScoreDTO::getCompetitionSynchronous).cellFormat {
             text = it.name
         }
         column("Score", ScoreDTO::score) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         }
 
-        onUserSelect { viewModel.selectedScore = it }
+        onUserSelect(1) { viewModel.selectedScore = it }
     }
 
     private val solvesTable = tableview<SolveDTO> {
-        column("Task", SolveDTO::getTask).cellFormat {
+        column("Task", SolveDTO::getTaskSynchronous).cellFormat {
             text = it.name
         }
         readonlyColumn("Timestamp", SolveDTO::timestamp) {
