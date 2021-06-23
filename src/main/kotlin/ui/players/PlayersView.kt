@@ -6,9 +6,13 @@ import database.SolveDTO
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.TableView
+import javafx.scene.control.TextField
+import javafx.scene.paint.Paint
 import javafx.scene.text.FontWeight
+import javafx.scene.text.TextAlignment
 import tornadofx.*
 import ui.BaseView
+import ui.Colors
 
 class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 
@@ -52,7 +56,8 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
             button {
                 text = "Delete"
                 action {
-                    val player = playersList.selectedItem
+                    val selectedPlayer = playersList.selectedItem ?: return@action
+                    showAcceptPlayerDeletionDialog(selectedPlayer)
                 }
             }
         }
@@ -62,6 +67,22 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         style {
             fontSize = 24.px
             fontWeight = FontWeight.BLACK
+        }
+
+        onDoubleClick {
+            playerNameEdit.text = this.text
+            replaceWith(playerNameEdit)
+        }
+    }
+
+    private val playerNameEdit: TextField = textfield {
+        action {
+            val newName = this.text
+            if (newName.isNotEmpty()) {
+                playerName.text = this.text
+                viewModel.changeUserName(playerName.text)
+            }
+            replaceWith(playerName)
         }
     }
 
@@ -76,10 +97,16 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         column("Competition", ScoreDTO::getCompetitionSynchronous).cellFormat {
             text = it.name
         }
-        column("Score", ScoreDTO::score) {
+        val scoreColumn = column("Score", ScoreDTO::score) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
-        }
+        }.makeEditable()
 
+        onEditCommit {
+            if (this.tableColumn == scoreColumn) {
+                it.score = this.newValue as Long
+                viewModel.update(it)
+            }
+        }
         onUserSelect(1) { viewModel.selectedScore = it }
     }
 
@@ -130,5 +157,47 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         playersList.items = viewModel.scoreBoard
         scoresTable.items = viewModel.scores
         solvesTable.items = viewModel.solves
+    }
+
+    private fun showAcceptPlayerDeletionDialog(player: PlayerDTO) {
+        dialog("Delete player") {
+            spacing = 8.0
+            padding = Insets(8.0)
+            alignment = Pos.CENTER
+            prefWidth = 400.0
+
+            label("Player deletion is unrecoverable. Are you sure you want to delete task") {
+                textAlignment = TextAlignment.JUSTIFY
+                isWrapText = true
+            }.fitToParentWidth()
+
+            label("'${player.name}'\n?") {
+                style {
+                    textAlignment = TextAlignment.CENTER
+                    fontWeight = FontWeight.BOLD
+                }
+            }
+
+            hbox {
+                spacing = 8.0
+                alignment = Pos.CENTER
+
+                button {
+                    text = "Yes"
+                    textFill = Paint.valueOf(Colors.RED)
+
+                    action {
+                        viewModel.deletePlayer(player)
+                    }
+                }.fitToParentWidth()
+
+                button {
+                    text = "No"
+                    textFill = Paint.valueOf(Colors.GREEN)
+
+                    action { this@dialog.close() }
+                }.fitToParentWidth()
+            }.fitToParentWidth()
+        }
     }
 }

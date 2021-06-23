@@ -199,6 +199,48 @@ object DbHelper {
         }
     }
 
+    suspend fun update(competition: CompetitionDTO) {
+        try {
+            transactionOn(database) { competition.entity.name = competition.name }
+            mEventsPipe.emit(DbEvent.Update(competition))
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to update competition: ${ex.message}\n${ex.stackTraceToString()}")
+        }
+    }
+
+    suspend fun update(player: PlayerDTO) {
+        try {
+            transactionOn(database) { player.entity.name = player.name }
+            mEventsPipe.emit(DbEvent.Update(player))
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to update player: ${ex.message}\n${ex.stackTraceToString()}")
+        }
+    }
+
+    suspend fun update(task: TaskDTO) {
+        try {
+            transactionOn(database) {
+                task.entity.category = task.category
+                task.entity.name = task.name
+                task.entity.description = task.description
+                task.entity.flag = task.flag
+                task.entity.attachment = task.attachment
+            }
+            mEventsPipe.emit(DbEvent.Update(task))
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to update task: ${ex.message}\n${ex.stackTraceToString()}")
+        }
+    }
+
+    suspend fun update(score: ScoreDTO) {
+        try {
+            transactionOn(database) { score.entity.score = score.score }
+            mEventsPipe.emit(DbEvent.Update(score))
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to update score: ${ex.message}\n${ex.stackTraceToString()}")
+        }
+    }
+
     suspend fun onFlagPassed(competition: CompetitionDTO, playerId: Long, flag: String): FlagCheckResult {
         flagCheckMutex.withLock {
             try {

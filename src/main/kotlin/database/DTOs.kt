@@ -13,9 +13,7 @@ class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
 
     var name: String = entity.name
 
-    override suspend fun updateEntity() {
-        DbHelper.transactionOn(DbHelper.database) { entity.name = name }
-    }
+    override suspend fun updateEntity() { DbHelper.update(this) }
 
     suspend fun getTasks(): List<TaskDTO> {
         return DbHelper.transactionOn(DbHelper.database) { entity.tasks.map { TaskDTO(it) }}
@@ -42,7 +40,7 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
     var name: String = entity.name
 
     override suspend fun updateEntity() {
-        DbHelper.transactionOn(DbHelper.database) { entity.name = name }
+        DbHelper.update(this)
     }
 
     fun getTotalScoreSynchronous(): Long {
@@ -85,15 +83,7 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
     var flag = entity.flag
     var attachment = entity.attachment
 
-    override suspend fun updateEntity() {
-        DbHelper.transactionOn(DbHelper.database) {
-            entity.category = category
-            entity.name = name
-            entity.description = description
-            entity.flag = flag
-            entity.attachment = attachment
-        }
-    }
+    override suspend fun updateEntity() { DbHelper.update(this) }
 
     fun getSolvesCountSynchronous(): Int {
         return runBlocking { getSolves().count() }
@@ -141,9 +131,7 @@ data class ScoreDTO(val entity: ScoreEntity): BaseDTO() {
 
     var score = entity.score
 
-    override suspend fun updateEntity() {
-        DbHelper.transactionOn(DbHelper.database) { entity.score = score }
-    }
+    override suspend fun updateEntity() { DbHelper.update(this) }
 
     suspend fun getCompetition(): CompetitionDTO {
         return DbHelper.transactionOn(DbHelper.database) { CompetitionDTO(entity.competition) }

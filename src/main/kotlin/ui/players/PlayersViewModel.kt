@@ -86,6 +86,24 @@ class PlayersViewModel: BaseViewModel() {
         }
     }
 
+    fun update(score: ScoreDTO) {
+        viewModelScope.launch {
+            score.updateEntity()
+        }
+    }
+
+    fun changeUserName(name: String) {
+        viewModelScope.launch {
+            val player = selectedPlayer ?: return@launch
+            player.name = name
+            player.updateEntity()
+        }
+    }
+
+    fun deletePlayer(player: PlayerDTO) {
+        viewModelScope.launch { DbHelper.delete(player) }
+    }
+
     private suspend fun onAddEvent(dto: BaseDTO) {
         when (dto) {
             is PlayerDTO -> withContext(Dispatchers.JavaFx) { players.add(dto) }
