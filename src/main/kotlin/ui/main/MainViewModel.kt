@@ -5,9 +5,11 @@ import database.DbHelper
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.javafx.JavaFx
 import tornadofx.toObservable
 import ui.BaseViewModel
+import utils.Logger
 
 class MainViewModel: BaseViewModel() {
 
@@ -24,6 +26,7 @@ class MainViewModel: BaseViewModel() {
         viewModelScope.launch {
             competitions.clear()
             competitions.addAll(DbHelper.getAllCompetitions().map { CompetitionItem(it.id, it.name) })
+            Logger.messages.onEach {  }
             dbEvents.collect { event ->
                 when (event) {
                     is DbHelper.DbEvent.Add -> {

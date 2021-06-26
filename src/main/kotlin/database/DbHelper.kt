@@ -137,6 +137,15 @@ object DbHelper {
         }
     }
 
+    suspend fun getPlayer(id: Long): PlayerDTO? {
+        try {
+            return transactionOn(database) { PlayerEntity.findById(id)?.let { PlayerDTO(it) } }
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to get player by id: ${ex.message}\n${ex.stackTraceToString()}")
+            return null
+        }
+    }
+
     suspend fun add(competitionModel: CompetitionModel): CompetitionDTO? {
         try {
             val dto = transactionOn(database) {
@@ -297,6 +306,15 @@ object DbHelper {
                 Logger.error(tag, "Failed to check player's flag: ${ex.message}\n${ex.stackTraceToString()}")
                 return FlagCheckResult.NoSuchPlayer
             }
+        }
+    }
+
+    suspend fun checkPlayerExists(id: Long): Boolean {
+        try {
+            return transactionOn(database) { PlayerEntity.findById(id) != null }
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to check user: ${ex.message}\n${ex.stackTraceToString()}")
+            return false
         }
     }
 

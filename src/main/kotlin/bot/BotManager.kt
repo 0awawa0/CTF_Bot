@@ -1,0 +1,6 @@
+package bot
+
+object BotManager {
+
+
+}
