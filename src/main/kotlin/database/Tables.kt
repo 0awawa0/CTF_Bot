@@ -30,5 +30,5 @@ object SolvesTable: LongIdTable(name = "Solves") {
 object ScoresTable: LongIdTable(name = "Scores") {
     val competition = reference("competition", CompetitionsTable, onDelete = ReferenceOption.CASCADE)
     val player = reference("player", PlayersTable, onDelete = ReferenceOption.CASCADE)
-    val score = long("score")
+    val score = integer("score")
 }

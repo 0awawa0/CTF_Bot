@@ -35,5 +35,5 @@ data class SolveModel(
 data class ScoreModel(
     val competition: CompetitionModel,
     val player: PlayerModel,
-    val score: Long
+    val score: Int
 )

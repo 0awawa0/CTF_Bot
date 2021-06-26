@@ -23,9 +23,9 @@ class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
     }
 
-    suspend fun getScoreBoard(): List<Pair<String, Long>> {
+    suspend fun getScoreBoard(): List<Pair<String, Int>> {
         val scores = getScores()
-        val result = ArrayList<Pair<String, Long>>()
+        val result = ArrayList<Pair<String, Int>>()
         for (score in scores) {
             val player = score.getPlayer()
             result.add(Pair(player.name, score.score))
@@ -43,7 +43,7 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
         DbHelper.update(this)
     }
 
-    fun getTotalScoreSynchronous(): Long {
+    fun getTotalScoreSynchronous(): Int {
         return runBlocking { getScores().sumOf { it.score } }
     }
 
@@ -61,7 +61,7 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
         }
     }
 
-    suspend fun getTotalScore(): Long {
+    suspend fun getTotalScore(): Int {
         return getScores().sumOf { it.score }
     }
 
@@ -143,5 +143,9 @@ data class ScoreDTO(val entity: ScoreEntity): BaseDTO() {
 
     suspend fun getPlayer(): PlayerDTO {
         return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
+    }
+
+    fun getPlayerName(): String {
+        return runBlocking { getPlayer().name }
     }
 }

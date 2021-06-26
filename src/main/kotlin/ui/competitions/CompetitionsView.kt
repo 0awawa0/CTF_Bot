@@ -1,12 +1,12 @@
 package ui.competitions
 
-import database.CompetitionDTO
-import database.TaskDTO
 import javafx.geometry.Insets
+import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.control.TableView
+import javafx.scene.control.TextField
 import javafx.scene.paint.Paint
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
@@ -17,7 +17,8 @@ import ui.Colors
 
 class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(), "Competitions") {
 
-    private val competitionsList = listview<CompetitionDTO> {
+    private val competitionsList = listview<CompetitionsViewModel.CompetitionItem> {
+
         cellFormat {
             text = it.name
             style {
@@ -25,7 +26,12 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                 fontSize = 16.px
             }
         }
-        onUserSelect(clickCount = 1) { viewModel.selectedCompetition = it }
+
+        onUserSelect(clickCount = 1) {
+            competitionName.text = it.name
+            competitionNameEdit.text = it.name
+            it.onSelected()
+        }
     }
 
     private val leftPane = vbox {
@@ -53,17 +59,17 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         }.fitToParentWidth()
     }
 
-    private val tasksTable = tableview<TaskDTO> {
-        readonlyColumn("id", TaskDTO::id) {
+    private val tasksTable = tableview<CompetitionsViewModel.TaskItem> {
+        readonlyColumn("id", CompetitionsViewModel.TaskItem::id) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         }
 
-        val columnCategory = column("Category", TaskDTO::category).makeEditable()
-        val columnName = column("Name", TaskDTO::name).makeEditable()
-        val columnDescription = column("Description", TaskDTO::description).makeEditable()
-        val columnFlag = column("Flag", TaskDTO::flag).makeEditable()
-        val columnAttachment = column("Attachment", TaskDTO::attachment).makeEditable()
-        column("Solves count", TaskDTO::getSolvesCountSynchronous)
+        val columnCategory = column("Category", CompetitionsViewModel.TaskItem::category).makeEditable()
+        val columnName = column("Name", CompetitionsViewModel.TaskItem::name).makeEditable()
+        val columnDescription = column("Description", CompetitionsViewModel.TaskItem::description).makeEditable()
+        val columnFlag = column("Flag", CompetitionsViewModel.TaskItem::flag).makeEditable()
+        val columnAttachment = column("Attachment", CompetitionsViewModel.TaskItem::attachment).makeEditable()
+        readonlyColumn("Solves count", CompetitionsViewModel.TaskItem::solvesCount)
 
         onEditCommit {
             val item = selectedItem ?: return@onEditCommit
@@ -75,11 +81,11 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                 columnAttachment -> item.attachment = this.newValue as String
             }
 
-            viewModel.update(item)
+            item.pushChanges()
         }
     }
 
-    private val rightPane = vbox {
+    private val tasksSection = vbox {
         add(tasksTable)
         tasksTable.fitToParentSize()
 
@@ -103,7 +109,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                         "Choose file",
                         arrayOf(FileChooser.ExtensionFilter("JSON", "*.json"))
                     ).firstOrNull() ?: return@action
-                    viewModel.tryAddFromJson(file, competition) { showFailedToParseJson() }
+                    competition.addTasksFromJson(file) { showFailedToParseJson() }
                 }
             }
 
@@ -117,6 +123,61 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
             }
 
         }.fitToParentWidth()
+    }
+
+    private val scoreboardTable = tableview<CompetitionsViewModel.ScoreboardItem> {
+        readonlyColumn("Player", CompetitionsViewModel.ScoreboardItem::playerName)
+        readonlyColumn("Score", CompetitionsViewModel.ScoreboardItem::playerScore) {
+            columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
+        }
+    }
+
+    private val competitionName = label("") {
+        padding = Insets(8.0)
+
+        style {
+            textAlignment = TextAlignment.CENTER
+            fontSize = 24.px
+            fontWeight = FontWeight.BLACK
+        }
+
+        onDoubleClick {
+            competitionNameEdit.text = this.text
+            replaceWith(competitionNameEdit)
+        }
+    }
+
+    private val competitionNameEdit: TextField = textfield {
+        padding = competitionName.padding
+        alignment = Pos.CENTER
+        style {
+            textAlignment = TextAlignment.CENTER
+            fontSize = 24.px
+        }
+        action {
+            val newName = this.text
+            if (newName.isNotEmpty()) {
+                competitionName.text = this.text
+                competitionsList.selectedItem?.apply {
+                    this.name = competitionName.text
+                    pushChanges()
+                }
+                replaceWith(competitionName)
+            }
+        }
+    }
+
+    private val rightPane = vbox {
+
+        alignment = Pos.CENTER
+
+        add(competitionName)
+        splitpane(orientation = Orientation.HORIZONTAL) {
+            add(tasksSection)
+            add(scoreboardTable)
+
+            this.setDividerPositions(0.9)
+        }.fitToParentSize()
     }
 
     override val root = gridpane {
@@ -139,6 +200,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
 
         competitionsList.items = viewModel.competitions
         tasksTable.items = viewModel.tasks
+        scoreboardTable.items = viewModel.scoreboard
     }
 
     override fun onUndock() {
@@ -196,7 +258,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         }
     }
 
-    private fun showAcceptCompetitionDeletionDialog(competition: CompetitionDTO) {
+    private fun showAcceptCompetitionDeletionDialog(competition: CompetitionsViewModel.CompetitionItem) {
         dialog("Delete competition") {
             spacing = 8.0
             padding = Insets(8.0)
@@ -225,7 +287,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                     textFill = Paint.valueOf(Colors.RED)
 
                     action {
-                        viewModel.delete(competition)
+                        competition.delete()
                         this@dialog.close()
                     }
                 }.fitToParentWidth()
@@ -283,13 +345,12 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                             if (category.text.isBlank()) return@action
                             if (name.text.isBlank()) return@action
                             if (flag.text.isBlank()) return@action
-                            viewModel.addTask(
+                            competition.addTask(
                                 category.text,
                                 name.text,
                                 description.text,
                                 flag.text,
-                                attachmentContent.text,
-                                competition
+                                attachmentContent.text
                             )
                             this@dialog.close()
                         }
@@ -305,7 +366,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         }
     }
 
-    private fun showAcceptTaskDeletionDialog(task: TaskDTO) {
+    private fun showAcceptTaskDeletionDialog(task: CompetitionsViewModel.TaskItem) {
         dialog("Delete task") {
             spacing = 8.0
             padding = Insets(8.0)
@@ -334,7 +395,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                     textFill = Paint.valueOf(Colors.RED)
 
                     action {
-                        viewModel.delete(task)
+                        task.delete()
                         this@dialog.close()
                     }
                 }.fitToParentWidth()

@@ -103,7 +103,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 
         onEditCommit {
             if (this.tableColumn == scoreColumn) {
-                it.score = this.newValue as Long
+                it.score = this.newValue as Int
                 viewModel.update(it)
             }
         }

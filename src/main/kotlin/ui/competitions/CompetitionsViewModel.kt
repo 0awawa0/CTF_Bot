@@ -16,68 +16,107 @@ import java.io.File
 
 class CompetitionsViewModel: BaseViewModel() {
 
+    data class ScoreboardItem(
+        val playerName: String,
+        val playerScore: Int
+    )
+
+    inner class CompetitionItem(
+        private val dto: CompetitionDTO
+    ) {
+        val id by dto::id
+        var name by dto::name
+
+        fun onSelected() { selectedCompetition = dto }
+
+        fun addTask(category: String, name: String, description: String, flag: String, attachment: String) {
+            viewModelScope.launch {
+                DbHelper.add(
+                    dto,
+                    TaskModel(
+                        category,
+                        name,
+                        description,
+                        flag,
+                        attachment
+                    )
+                )
+            }
+        }
+
+        fun delete() { viewModelScope.launch { DbHelper.delete(dto) } }
+
+        fun pushChanges() { viewModelScope.launch { dto.updateEntity() } }
+
+        fun addTasksFromJson(file: File, onErrorAction: () -> Unit) {
+            viewModelScope.launch {
+                try {
+                    val text = file.readText()
+                    val parse = Json.decodeFromString<Array<TaskModel>>(text)
+                    for (task in parse) {
+                        DbHelper.add(dto, task)
+                    }
+                } catch (ex: Exception) {
+                    onErrorAction()
+                    Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
+                }
+            }
+        }
+    }
+
+    inner class TaskItem(private val dto: TaskDTO) {
+        val id by dto::id
+        var category by dto::category
+        var name by dto::name
+        var description by dto::description
+        var flag by dto::flag
+        var attachment by dto::attachment
+        var solvesCount: Int = 0
+            private set
+
+        init { viewModelScope.launch { solvesCount = dto.getSolves().count() } }
+
+        fun delete() { viewModelScope.launch { DbHelper.delete(dto) } }
+
+        fun pushChanges() { viewModelScope.launch { dto.updateEntity() } }
+    }
+
     private val tag = "CompetitionsViewModel"
 
     private var tasksLoadingMutex = Mutex()
-    var selectedCompetition: CompetitionDTO? = null
+    private var selectedCompetition: CompetitionDTO? = null
         set(value) {
             viewModelScope.launch {
                 tasksLoadingMutex.withLock {
                     withContext(Dispatchers.JavaFx) {
                         tasks.clear()
-                        tasks.addAll(value?.getTasks() ?: emptyList())
+                        tasks.addAll(value?.getTasks()?.map { TaskItem(it) } ?: emptyList())
+                        scoreboard.clear()
+                        scoreboard.addAll(
+                            value?.getScoreBoard()?.map {
+                                ScoreboardItem(it.first, it.second)
+                            } ?: emptyList()
+                        )
                         field = value
                     }
                 }
             }
         }
 
-    val competitions: ObservableList<CompetitionDTO> = emptyList<CompetitionDTO>().toObservable()
-    val tasks: ObservableList<TaskDTO> = emptyList<TaskDTO>().toObservable()
+    val competitions: ObservableList<CompetitionItem> = emptyList<CompetitionItem>().toObservable()
+    val tasks: ObservableList<TaskItem> = emptyList<TaskItem>().toObservable()
+
+    val scoreboard = emptyList<ScoreboardItem>().toObservable()
 
     fun addCompetition(name: String) {
         viewModelScope.launch { DbHelper.add(CompetitionModel(name)) }
-    }
-
-    fun addTask(
-        category: String,
-        name: String,
-        description: String,
-        flag: String,
-        attachment: String,
-        competition: CompetitionDTO,
-    ) {
-        viewModelScope.launch {
-            DbHelper.add(
-                competition,
-                TaskModel(
-                    category,
-                    name,
-                    description,
-                    flag,
-                    attachment
-                )
-            )
-        }
-    }
-
-    fun delete(competition: CompetitionDTO) {
-        viewModelScope.launch { DbHelper.delete(competition) }
-    }
-
-    fun delete(task: TaskDTO) {
-        viewModelScope.launch { DbHelper.delete(task) }
-    }
-
-    fun update(task: TaskDTO) {
-        viewModelScope.launch { task.updateEntity() }
     }
 
     override fun onViewDock() {
         viewModelScope.launch {
             withContext(Dispatchers.JavaFx) {
                 competitions.clear()
-                competitions.addAll(DbHelper.getAllCompetitions())
+                competitions.addAll(DbHelper.getAllCompetitions().map { CompetitionItem(it) })
             }
 
             selectedCompetition = null
@@ -86,12 +125,12 @@ class CompetitionsViewModel: BaseViewModel() {
                     is DbHelper.DbEvent.Add -> {
                         when (event.dto) {
                             is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
-                                competitions.add(event.dto)
+                                competitions.add(CompetitionItem(event.dto))
                             }
                             is TaskDTO -> {
                                 if (event.dto.getCompetition().id == selectedCompetition?.id)
                                     withContext(Dispatchers.JavaFx) {
-                                        tasks.add(event.dto)
+                                        tasks.add(TaskItem(event.dto))
                                     }
                             }}
                     }
@@ -99,11 +138,11 @@ class CompetitionsViewModel: BaseViewModel() {
                         when (event.dto) {
                             is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
                                 if (competitions.removeIf { it.id == event.dto.id })
-                                    competitions.add(event.dto)
+                                    competitions.add(CompetitionItem(event.dto))
                             }
                             is TaskDTO -> withContext(Dispatchers.JavaFx) {
                                 if (tasks.removeIf { it.id == event.dto.id })
-                                    tasks.add(event.dto)
+                                    tasks.add(TaskItem(event.dto))
                             }
                         }
                     }
@@ -119,21 +158,6 @@ class CompetitionsViewModel: BaseViewModel() {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    fun tryAddFromJson(file: File, competition: CompetitionDTO, onErrorAction: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                val text = file.readText()
-                val parse = Json.decodeFromString<Array<TaskModel>>(text)
-                for (task in parse) {
-                    DbHelper.add(competition, task)
-                }
-            } catch (ex: Exception) {
-                onErrorAction()
-                Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
             }
         }
     }

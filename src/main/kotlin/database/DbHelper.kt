@@ -283,7 +283,7 @@ object DbHelper {
                         ScoreDTO(ScoreEntity.new {
                             this.competition = competition.entity
                             this.player = player.entity
-                            this.score = currentPrice.toLong()
+                            this.score = currentPrice
                         })
                     }
                     mEventsPipe.emit(DbEvent.Add(scoreDto))
