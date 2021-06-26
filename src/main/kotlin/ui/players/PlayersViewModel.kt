@@ -1,7 +1,6 @@
 package ui.players
 
 import database.*
-import javafx.collections.ObservableList
 import javafx.collections.transformation.SortedList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -15,16 +14,39 @@ import ui.BaseViewModel
 
 class PlayersViewModel: BaseViewModel() {
 
-    private val players: ObservableList<PlayerDTO> = emptyList<PlayerDTO>().toObservable()
-    val scoreBoard = SortedList(
-        players
-    ) { o1, o2 ->
-        val x = o2.getTotalScoreSynchronous() - o1.getTotalScoreSynchronous()
-        return@SortedList (x % Int.MAX_VALUE).toInt()
+    data class SolveItem(
+        val id: Long,
+        val taskName: String,
+        val timestamp: Long
+    )
+
+    inner class PlayerItem(private val dto: PlayerDTO, var totalScore: Int = 0) {
+        val id by dto::id
+        var name by dto::name
+
+        fun onSelected() { selectedPlayer = dto }
+
+        fun pushChanges() { viewModelScope.launch { dto.updateEntity() } }
+
+        fun delete() { viewModelScope.launch { DbHelper.delete(dto) } }
+    }
+
+    inner class ScoreItem(private val dto: ScoreDTO, competitionName: String = "") {
+        val id by dto::id
+        var score by dto::score
+        var competitionName: String
+            private set
+
+        init {
+            this.competitionName = competitionName
+        }
+
+        fun onSelected() { selectedScore = dto }
+        fun pushChanges() { viewModelScope.launch { dto.updateEntity() } }
     }
 
     private var solvesLoadingMutex = Mutex()
-    var selectedScore: ScoreDTO? = null
+    private var selectedScore: ScoreDTO? = null
         set(value) {
             viewModelScope.launch {
                 solvesLoadingMutex.withLock {
@@ -32,14 +54,20 @@ class PlayersViewModel: BaseViewModel() {
                     if (value == null) {
                         withContext(Dispatchers.JavaFx) {
                             solves.clear()
-                            solves.addAll(selectedPlayer?.getSolves() ?: emptyList())
+                            solves.addAll(
+                                selectedPlayer?.getSolves()?.map {
+                                    SolveItem(it.id, it.getTask().name, it.timestamp)
+                                } ?: emptyList()
+                            )
                         }
                         return@launch
                     }
 
                     val playerSolves = selectedPlayer?.getSolves() ?: emptyList()
                     val competitionTasks = value.getCompetition().getTasks().map { it.id }
-                    val filteredSolves = playerSolves.filter { it.getTask().id in competitionTasks }
+                    val filteredSolves = playerSolves
+                        .filter { it.getTask().id in competitionTasks }
+                        .map { SolveItem(it.id, it.getTask().name, it.timestamp) }
 
                     withContext(Dispatchers.JavaFx) {
                         solves.clear()
@@ -50,13 +78,17 @@ class PlayersViewModel: BaseViewModel() {
         }
 
     private val scoresLoadingMutex = Mutex()
-    var selectedPlayer: PlayerDTO? = null
+    private var selectedPlayer: PlayerDTO? = null
         set(value) {
             viewModelScope.launch {
                 scoresLoadingMutex.withLock {
                     withContext(Dispatchers.JavaFx) {
                         scores.clear()
-                        scores.addAll(value?.getScores() ?: emptyList())
+                        scores.addAll(
+                            value?.getScores()?.map {
+                                ScoreItem(it, it.getCompetition().name)
+                            } ?: emptyList()
+                        )
                         selectedScore = null
                         field = value
                     }
@@ -64,15 +96,19 @@ class PlayersViewModel: BaseViewModel() {
             }
         }
 
-    val scores: ObservableList<ScoreDTO> = emptyList<ScoreDTO>().toObservable()
-    val solves: ObservableList<SolveDTO> = emptyList<SolveDTO>().toObservable()
+    private val players = emptyList<PlayerItem>().toObservable()
+    val scoreBoard = SortedList(players) { o1, o2 -> o1.totalScore - o2.totalScore }
+    val scores = emptyList<ScoreItem>().toObservable()
+    val solves = emptyList<SolveItem>().toObservable()
 
     override fun onViewDock() {
         super.onViewDock()
         viewModelScope.launch {
             withContext(Dispatchers.JavaFx) {
                 players.clear()
-                players.setAll(DbHelper.getScoreBoard())
+                players.setAll(DbHelper.getAllPlayers().map {
+                    PlayerItem(it, it.getTotalScore())
+                })
             }
 
             selectedPlayer = null
@@ -86,30 +122,14 @@ class PlayersViewModel: BaseViewModel() {
         }
     }
 
-    fun update(score: ScoreDTO) {
-        viewModelScope.launch {
-            score.updateEntity()
-        }
-    }
-
-    fun changeUserName(name: String) {
-        viewModelScope.launch {
-            val player = selectedPlayer ?: return@launch
-            player.name = name
-            player.updateEntity()
-        }
-    }
-
-    fun deletePlayer(player: PlayerDTO) {
-        viewModelScope.launch { DbHelper.delete(player) }
-    }
-
     private suspend fun onAddEvent(dto: BaseDTO) {
         when (dto) {
-            is PlayerDTO -> withContext(Dispatchers.JavaFx) { players.add(dto) }
+            is PlayerDTO -> withContext(Dispatchers.JavaFx) { players.add(PlayerItem(dto, dto.getTotalScore())) }
             is ScoreDTO -> {
                 val isForSelectedPlayer = dto.getPlayer().id == selectedPlayer?.id
-                if (isForSelectedPlayer) withContext(Dispatchers.JavaFx) { scores.add(dto) }
+                if (isForSelectedPlayer) withContext(Dispatchers.JavaFx) {
+                    scores.add(ScoreItem(dto, dto.getCompetition().name))
+                }
 
             }
             is SolveDTO -> {
@@ -117,7 +137,9 @@ class PlayersViewModel: BaseViewModel() {
                 if (!isForSelectedPlayer) return
 
                 val isForSelectedCompetition = dto.getTask().getCompetition().id == selectedScore?.getCompetition()?.id
-                if (isForSelectedCompetition) withContext(Dispatchers.JavaFx) { solves.add(dto) }
+                if (isForSelectedCompetition) withContext(Dispatchers.JavaFx) {
+                    solves.add(SolveItem(dto.id, dto.getTask().name, dto.timestamp))
+                }
             }
         }
     }
@@ -126,17 +148,19 @@ class PlayersViewModel: BaseViewModel() {
         when (dto) {
             is PlayerDTO -> {
                 withContext(Dispatchers.JavaFx) {
-                    if (players.removeIf { it.id == dto.id }) players.add(dto)
+                    if (players.removeIf { it.id == dto.id }) players.add(PlayerItem(dto, dto.getTotalScore()))
                 }
             }
             is ScoreDTO -> {
                 withContext(Dispatchers.JavaFx) {
-                    if (scores.removeIf { it.id == dto.id }) scores.add(dto)
+                    if (scores.removeIf { it.id == dto.id }) scores.add(ScoreItem(dto, dto.getCompetition().name))
                 }
             }
             is SolveDTO -> {
                 withContext(Dispatchers.JavaFx) {
-                    if (solves.removeIf { it.id == dto.id }) solves.add(dto)
+                    if (solves.removeIf { it.id == dto.id }) {
+                        solves.add(SolveItem(dto.id, dto.getTask().name, dto.timestamp))
+                    }
                 }
             }
         }

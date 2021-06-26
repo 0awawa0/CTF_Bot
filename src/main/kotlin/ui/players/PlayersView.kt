@@ -1,8 +1,5 @@
 package ui.players
 
-import database.PlayerDTO
-import database.ScoreDTO
-import database.SolveDTO
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.TableView
@@ -16,7 +13,7 @@ import ui.Colors
 
 class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 
-    private val playersList = listview<PlayerDTO> {
+    private val playersList = listview<PlayersViewModel.PlayerItem> {
         cellFormat {
             graphic = hbox {
                 padding = Insets(0.0, 4.0, 0.0, 4.0)
@@ -29,7 +26,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                     }
                 }
 
-                label(it.getTotalScoreSynchronous().toString()) {
+                label(it.totalScore.toString()) {
                     style {
                         fontSize = 12.px
                         fontWeight = FontWeight.NORMAL
@@ -38,9 +35,9 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
             }
         }
         onUserSelect(1) {
-            viewModel.selectedPlayer = it
+            it.onSelected()
             playerName.text = it.name
-            playerScore.text = it.getTotalScoreSynchronous().toString()
+            playerScore.text = it.totalScore.toString()
         }
     }
 
@@ -80,7 +77,10 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
             val newName = this.text
             if (newName.isNotEmpty()) {
                 playerName.text = this.text
-                viewModel.changeUserName(playerName.text)
+                playersList.selectedItem?.apply {
+                    this.name = playerName.text
+                    pushChanges()
+                }
             }
             replaceWith(playerName)
         }
@@ -92,29 +92,25 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         }
     }
 
-    private val scoresTable = tableview<ScoreDTO> {
+    private val scoresTable = tableview<PlayersViewModel.ScoreItem> {
 
-        column("Competition", ScoreDTO::getCompetitionSynchronous).cellFormat {
-            text = it.name
-        }
-        val scoreColumn = column("Score", ScoreDTO::score) {
+        readonlyColumn("Competition", PlayersViewModel.ScoreItem::competitionName)
+        val scoreColumn = column("Score", PlayersViewModel.ScoreItem::score) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         }.makeEditable()
 
         onEditCommit {
             if (this.tableColumn == scoreColumn) {
                 it.score = this.newValue as Int
-                viewModel.update(it)
+                it.pushChanges()
             }
         }
-        onUserSelect(1) { viewModel.selectedScore = it }
+        onUserSelect(1) { it.onSelected() }
     }
 
-    private val solvesTable = tableview<SolveDTO> {
-        column("Task", SolveDTO::getTaskSynchronous).cellFormat {
-            text = it.name
-        }
-        readonlyColumn("Timestamp", SolveDTO::timestamp) {
+    private val solvesTable = tableview<PlayersViewModel.SolveItem> {
+        readonlyColumn("Task", PlayersViewModel.SolveItem::taskName)
+        readonlyColumn("Timestamp", PlayersViewModel.SolveItem::timestamp) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         }
     }
@@ -159,7 +155,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         solvesTable.items = viewModel.solves
     }
 
-    private fun showAcceptPlayerDeletionDialog(player: PlayerDTO) {
+    private fun showAcceptPlayerDeletionDialog(player: PlayersViewModel.PlayerItem) {
         dialog("Delete player") {
             spacing = 8.0
             padding = Insets(8.0)
@@ -186,9 +182,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                     text = "Yes"
                     textFill = Paint.valueOf(Colors.RED)
 
-                    action {
-                        viewModel.deletePlayer(player)
-                    }
+                    action { player.delete() }
                 }.fitToParentWidth()
 
                 button {

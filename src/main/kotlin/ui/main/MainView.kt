@@ -1,6 +1,5 @@
 package ui.main
 
-import database.CompetitionDTO
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import tornadofx.*
@@ -23,7 +22,7 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
         menubutton("About")
     }
 
-    private val competitionSelector = combobox<CompetitionDTO>() {
+    private val competitionSelector = combobox<MainViewModel.CompetitionItem>() {
         cellFormat { text = it.name }
     }
     private val logArea = textarea()

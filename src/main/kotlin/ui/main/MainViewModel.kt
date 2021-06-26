@@ -11,27 +11,32 @@ import ui.BaseViewModel
 
 class MainViewModel: BaseViewModel() {
 
-    val competitions: ObservableList<CompetitionDTO> = emptyList<CompetitionDTO>().toObservable()
+    data class CompetitionItem(
+        val id: Long,
+        val name: String
+    )
+
+    val competitions: ObservableList<CompetitionItem> = emptyList<CompetitionItem>().toObservable()
     private val dbEvents = DbHelper.eventsPipe
 
     override fun onViewDock() {
         super.onViewDock()
         viewModelScope.launch {
             competitions.clear()
-            competitions.addAll(DbHelper.getAllCompetitions())
+            competitions.addAll(DbHelper.getAllCompetitions().map { CompetitionItem(it.id, it.name) })
             dbEvents.collect { event ->
                 when (event) {
                     is DbHelper.DbEvent.Add -> {
                         if (event.dto is CompetitionDTO)
                             withContext(Dispatchers.JavaFx) {
-                                competitions.add(event.dto)
+                                competitions.add(CompetitionItem(event.dto.id, event.dto.name))
                             }
                     }
                     is DbHelper.DbEvent.Update -> {
                         if (event.dto is CompetitionDTO) {
                             withContext(Dispatchers.JavaFx) {
                                 if (competitions.removeIf { it.id == event.dto.id })
-                                    competitions.add(event.dto)
+                                    competitions.add(CompetitionItem(event.dto.id, event.dto.name))
                             }
                         }
                     }
