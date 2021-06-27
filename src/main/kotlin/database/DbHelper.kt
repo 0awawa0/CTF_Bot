@@ -117,7 +117,7 @@ object DbHelper {
         }
     }
 
-    suspend fun getScoreBoard(): List<PlayerDTO> {
+    suspend fun getScoreboard(): List<PlayerDTO> {
         try {
             return transactionOn(database) {
                 PlayerEntity.all().map { PlayerDTO(it) }.sortedBy { it.getTotalScoreSynchronous() }

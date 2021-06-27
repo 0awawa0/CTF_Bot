@@ -5,6 +5,7 @@ import bot.features.numbers.NumbersUtils
 import bot.features.rot.Rot
 import bot.utils.Helper
 import database.DbHelper
+import database.PlayerModel
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.methods.send.SendSticker
@@ -19,7 +20,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
     //This chars must be escaped in markdown
     //'_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
-    var ctfName = ""
+
+    private val allowedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toSet() +
+            "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ_-.".toSet()
 
     private val niceStickers = setOf(
         "CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA",
@@ -109,7 +112,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         val bot = bot.get() ?: return null
         val sticker = SendSticker()
         var msgText = ""
-        val result = DbHelper.onFlagPassed(bot.competition, message.from.id, flag)
+        val result = DbHelper.onFlagPassed(bot.competition, message.chatId, flag)
 
         when (result) {
             is DbHelper.FlagCheckResult.CorrectFlag -> {
@@ -167,131 +170,152 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 //        return msg
 //    }
 
-    suspend fun getMenuMessage(message: Message, userName: String?): SendMessage {
-        val chatId = message.chatId
-        val user = message.from
-        val player = DbHelper.getPlayer(user.id)
-        if (player == null) {
-            DbHelper.add(chatId, userName ?: firstName)
-        }
+    suspend fun getStartMessage(message: Message): SendMessage {
+        val userName = (message.from.userName ?: message.from.firstName).filter { it in allowedCharacters }
+        val playerName = userName.let { if (it.length > 16) it.substring(0..15) else it }
+        val player = DbHelper.getPlayer(message.chatId) ?: DbHelper.add(PlayerModel(message.chatId, playerName))
+            ?: return getErrorMessage(message)
 
-        val msgText = """<b>$ctfName</b>
+        val msgText = "Привет, я  CTF-бот! Я помогаю проводить соревнования по CTF - раздаю задания и проверяю флаги." +
+                "Я буду называть тебя ${player.name}, если ты не против. " +
+                "Чтобы сменить имя, используй комманду: <i>/change_name \\<новое_имя\\></i>. " +
+                "Только постарайся уложиться в 16 " +
+                "символов - больше я не запомню :)\n"
+
+        val menuButton = InlineKeyboardButton()
+        menuButton.text = "Меню"
+        menuButton.callbackData = DATA_MENU
+
+        val msg = SendMessage()
+        msg.text = msgText
+        msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(menuButton)))
+        msg.chatId = message.chatId.toString()
+        msg.enableHtml(true)
+        return msg
+    }
+
+    suspend fun getMenuMessage(message: Message): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(message)
+        val player = DbHelper.getPlayer(message.chatId) ?: return getStartMessage(message)
+        val playerCompetitionScore = player.getCompetitionScore(bot.competition)?.score ?: 0
+        val playerTotalScore = player.getTotalScore()
+
+        val msgText = """<b>${bot.competition.name}</b>
                 |
-                |Ку, <i>${userName ?: firstName}</i>! Твой текущий счёт: ${player?.currentScore ?: 0}. Твой счёт за сезон: ${player?.seasonScore ?: 0}
+                |Привет, <i>${player.name}</i>! Твой текущий счёт: $playerCompetitionScore. 
+                |Твой общий счёт: $playerTotalScore.
                 |Для управления используй кнопки. Чтобы сдать флаг напиши /flag "твой флаг"
                 |""".trimMargin()
 
-        val buttonRow1 = listOf<InlineKeyboardButton>(
-            InlineKeyboardButton().setText("Таблица лидеров").setCallbackData(DATA_SCOREBOARD),
-            InlineKeyboardButton().setText("Задания").setCallbackData(DATA_TASKS)
+        val buttonRow1 = listOf(
+            InlineKeyboardButton("Таблица лидеров").apply { callbackData = DATA_SCOREBOARD },
+            InlineKeyboardButton("Задания").apply { callbackData = DATA_TASKS }
         )
-        val buttonRow2 = listOf<InlineKeyboardButton>(
-            InlineKeyboardButton().setText("Доступные команды").setCallbackData(DATA_COMMANDS)
+        val buttonRow2 = listOf(
+            InlineKeyboardButton("Доступные команды").apply { callbackData = DATA_COMMANDS }
         )
         val buttonsTable = listOf(buttonRow1, buttonRow2)
 
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.enableHtml(true)
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsTable)
         return msg
     }
 
-    fun getPasswordRequestMessage(chatId: Long): SendMessage {
-        val msgText = "Бот находится в состоянии тестирования. Для авторизации пришли мне пароль в формате:\n/testing_password <пароль>"
+    suspend fun getPasswordRequestMessage(message: Message): SendMessage {
+        val msgText = "Бот находится в состоянии тестирования. " +
+                "Для авторизации пришли мне пароль в формате:\n<i>/testing_password \\<пароль\\></i>"
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
+        msg.enableHtml(true)
         return msg
     }
 
-    fun getPasswordWrongMessage(chatId: Long): SendMessage {
+    suspend fun getPasswordWrongMessage(message: Message): SendMessage {
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = "Неверный пароль. Дотсуп запрещён"
         return msg
     }
 
 
-    fun getTasksMessage(chatId: Long): SendMessage {
-        val msgText = "<b>$ctfName</b>\n\nСписок заданий: "
+    suspend fun getTasksMessage(message: Message): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(message)
+        val player = DbHelper.getPlayer(message.chatId) ?: return getStartMessage(message)
+        val msgText = "<b>${bot.competition.name}</b>\n\nСписок заданий: "
         val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
-        if (DatabaseHelper.checkPlayerInDatabase(chatId)) {
-            for (task in DatabaseHelper.getTasksForCtf(ctfName)) {
-                val taskSolved = task.id.value in DatabaseHelper.getSolvedTasksForPlayer(chatId)
-                buttonsList.add(listOf(
-                    InlineKeyboardButton()
-                        .setText(
-                            "${task.category} - ${task.price}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
-                        )
-                        .setCallbackData("/task ${task.id}")
-                ))
-            }
-        } else {
-            return getErrorMessage(chatId)
+
+        for (task in bot.competition.getTasks()) {
+            val taskSolved = player.hasSolved(task)
+            buttonsList.add(listOf(
+                InlineKeyboardButton(
+                    "${task.category} - ${task.getTaskPrice()}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
+                ).apply { callbackData = "/task ${task.id}" }
+            ))
         }
 
         val msg = SendMessage()
         msg.enableHtml(true)
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsList)
         return msg
     }
 
 
-    fun getScoreboardMessage(chatId: Long): SendMessage {
-        val scoreboard = DatabaseHelper.getScoreboard()
+    suspend fun getCurrentScoreboard(message: Message): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(message)
+        val scoreboard = bot.competition.getScoreBoard()
         var msgText = """
-                <b>$ctfName</b>
+                <b>${bot.competition.name}</b>
                 |
                 |Таблица лидеров:
                 |
                 """.trimMargin()
-        var i = 1
-        val maxLength = 20
-        for (position in scoreboard) {
-            val userName = if (position.first.length > 20)
-                position.first.slice(0 until maxLength - 3) + "..."
-            else
-                position.first.let {
-                    var name = it
-                    while (name.length < 20)
-                        name += " "
-                    name
-                }
 
-            val currentScore = position.second.toString().let {
-                var score = "Текущий: $it"
-                while (score.length < 20)
-                    score = " $score"
-                score
-            }
-
-            val seasonScore = position.third.toString().let {
-                var score = "Сезон: $it"
-                while (score.length < 20)
-                    score = " $score"
-                score
-            }
-
-            msgText += "$i.  $userName $currentScore  $seasonScore\n"
-            i++
+        scoreboard.forEachIndexed { index, pair ->
+            msgText += "%3d. %16s %5d\n".format(index + 1, pair.first, pair.second)
         }
 
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.enableHtml(true)
         msg.text = msgText
-        msg.replyMarkup = InlineKeyboardMarkup().setKeyboard(
-            listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
-        )
+        msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
+            InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
+        )))
+        return msg
+    }
+
+    suspend fun getGlobalScoreboard(message: Message): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(message)
+        val scoreboard = DbHelper.getScoreboard()
+        var msgText = """
+                <b>${bot.competition.name}</b>
+                |
+                |Таблица лидеров:
+                |
+                """.trimMargin()
+
+        scoreboard.forEachIndexed { index, player ->
+            msgText += "%3d. %16s %5d\n".format(index + 1, player.name, player.getTotalScore())
+        }
+
+        val msg = SendMessage()
+        msg.chatId = message.chatId.toString()
+        msg.enableHtml(true)
+        msg.text = msgText
+        msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
+            InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
+        )))
         return msg
     }
 
 
-    fun getTaskMessage(chatId: Long, taskId: Long): SendMessage {
+    suspend fun getTaskMessage(chatId: Long, taskId: Long): SendMessage {
         val files = DatabaseHelper.getTaskFiles(taskId)
         val task = DatabaseHelper.getTaskById(taskId)!!
         val msgText = "<b>$ctfName</b>\n\n${task.name}           ${task.price}\n\n${task.description}"
@@ -323,7 +347,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
 
-    fun getErrorMessage(chatId: Long): SendMessage {
+    fun getErrorMessage(message: Message): SendMessage {
         val msgText = "Ой, возникла какая-то ошибка. Свяжитесь с @awawa0_0 для обратной связи."
         val msg = SendMessage()
         msg.chatId = chatId.toString()

@@ -72,6 +72,8 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
             it.getCompetition().id == competitionDTO.id
         }
     }
+
+    suspend fun hasSolved(taskDTO: TaskDTO): Boolean { return getSolves().any { it.getTask().id == taskDTO.id } }
 }
 
 class TaskDTO(val entity: TaskEntity): BaseDTO() {
@@ -101,9 +103,7 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { PlayerDTO(it.player) } }
     }
 
-    suspend fun getTaskPrice(): Int {
-        return DbHelper.getNewTaskPrice(getSolves().count())
-    }
+    suspend fun getTaskPrice(): Int { return DbHelper.getNewTaskPrice(getSolves().count()) }
 }
 
 class SolveDTO(val entity: SolveEntity): BaseDTO() {

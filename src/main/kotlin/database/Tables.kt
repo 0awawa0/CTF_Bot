@@ -9,7 +9,7 @@ object CompetitionsTable: LongIdTable(name = "Competitions") {
 }
 
 object PlayersTable: LongIdTable(name = "Players") {
-    val name = varchar("name", 128)
+    val name = varchar("name", 16)
 }
 
 object TasksTable: LongIdTable(name = "Tasks") {
