@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
@@ -87,17 +88,17 @@ class Bot(
     }
 
     private suspend fun answerMessage(message: Message) {
-        val user = message.from
         val msgText = message.text
 
-        if (!DbHelper.checkPlayerExists(user.id)) {
+        if (!DbHelper.checkPlayerExists(message.chatId)) {
+            execute(messageMaker.getStartMessage(message))
             return
         }
 
         Logger.info(
             tag,
-            "Received message from chat id: ${user.id} " +
-                    "Username: ${user.firstName}. " +
+            "Received message from chat id: ${message.chatId} " +
+                    "Username: ${message.from.userName ?: message.from.firstName}. " +
                     "Message $msgText"
         )
 
@@ -109,16 +110,18 @@ class Bot(
         val command = msgText.split(" ").find { it.startsWith("/") }!!
         val content = msgText.replace(command, "").trim()
 
-        if (testing && user.id !in authorizedForTesting) {
+        if (testing && message.chatId !in authorizedForTesting) {
 
             try {
                 if (command == MSG_TESTING_PASSWORD) {
                     if (content == testingPassword) {
-                        authorizedForTesting.add(user.id)
-                        // answer menu
+                        authorizedForTesting.add(message.chatId)
+                        execute(messageMaker.getMenuMessage(message))
+                    } else {
+                        execute(messageMaker.getPasswordWrongMessage(message))
                     }
                 } else {
-                    // answer wrong password
+                    execute(messageMaker.getPasswordRequestMessage(message))
                 }
             } catch (ex: TelegramApiException) {
                 Logger.error(tag, "${ex.message}\n${ex.stackTraceToString()}")
@@ -128,28 +131,17 @@ class Bot(
 
         try {
             when (command) {
-                MSG_START -> {
-                }
-                MSG_FLAG -> {
-                }
-                MSG_CONVERT -> {
-                }
-                MSG_TO_HEX -> {
-                }
-                MSG_TO_BIN -> {
-                }
-                MSG_TO_DEC -> {
-                }
-                MSG_TO_STRING -> {
-                }
-                MSG_ROT -> {
-                }
-                MSG_ROT_BRUTE -> {
-                }
-                MSG_CHECK_MAGIC -> {
-                }
-                else -> {
-                }
+                MSG_START -> execute(messageMaker.getMenuMessage(message))
+                MSG_FLAG -> execute(messageMaker.getFlagSticker(message, content))
+                MSG_CONVERT -> execute(messageMaker.getConvertMessage(message ,content))
+                MSG_TO_HEX -> execute(messageMaker.getToHexMessage(message, content))
+                MSG_TO_BIN -> execute(messageMaker.getToBinMessage(message, content))
+                MSG_TO_DEC -> execute(messageMaker.getToDecMessage(message, content))
+                MSG_TO_STRING -> execute(messageMaker.getToStringMessage(message, content))
+                MSG_ROT -> execute(messageMaker.getRotMessage(message, content))
+                MSG_ROT_BRUTE -> execute(messageMaker.getRotBruteMessage(message, content))
+                MSG_CHECK_MAGIC -> execute(messageMaker.getCheckMagicMessage(message, content))
+                else -> execute(messageMaker.getUnknownMessage(message))
             }
         } catch (ex: TelegramApiException) {
             Logger.error(tag, "${ex.message}\n${ex.stackTraceToString()}")
@@ -157,6 +149,42 @@ class Bot(
     }
 
     private suspend fun answerCallback(callback: CallbackQuery) {
+        try {
 
+            Logger.info(tag, "received message from ch")
+            val answerToCallback = AnswerCallbackQuery()
+            answerToCallback.callbackQueryId = callback.id
+            execute(answerToCallback)
+
+            if (!DbHelper.checkPlayerExists(callback.message.chatId)) {
+                execute(messageMaker.getStartMessage(callback.message))
+                return
+            }
+
+            Logger.info(
+                tag,
+                "Received message from chat id: ${callback.message.chatId} " +
+                        "Username: ${callback.message.from.userName ?: callback.message.from.firstName}. " +
+                        "Message ${callback.message.text}"
+            )
+            if (testing && callback.message.chatId !in authorizedForTesting) {
+                execute(messageMaker.getPasswordRequestMessage(callback.message))
+                return
+            }
+
+            if (!callback.data.startsWith("/")) {
+                execute(messageMaker.getErrorMessage(callback.message))
+                return
+            }
+
+            val command = callback.data.split(" ").find { it.startsWith("/") }!!
+            val content = callback.data.replace(command, "").trim()
+
+            when (command) {
+                DATA_FILE
+            }
+        } catch (ex: TelegramApiException) {
+            Logger.error(tag, "${ex.message}\n${ex.stackTraceToString()}")
+        }
     }
 }
