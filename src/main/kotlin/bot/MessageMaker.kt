@@ -13,6 +13,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
+import java.io.File
 import java.lang.ref.WeakReference
 
 
@@ -315,62 +316,68 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
 
-    suspend fun getTaskMessage(chatId: Long, taskId: Long): SendMessage {
-        val files = DatabaseHelper.getTaskFiles(taskId)
-        val task = DatabaseHelper.getTaskById(taskId)!!
-        val msgText = "<b>$ctfName</b>\n\n${task.name}           ${task.price}\n\n${task.description}"
+    suspend fun getTaskMessage(message: Message, taskId: Long): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(message)
+        val task = DbHelper.getTask(taskId) ?: return getErrorMessage(message)
+        val attachmentFile = File(task.attachment)
+        val msgText = "<b>${bot.competition.name}</b>\n" +
+                "\n${task.name}           ${task.getTaskPrice()}\n\n${task.description}"
         val msg = SendMessage()
         msg.enableHtml(true)
 
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
 
         val buttons = arrayListOf<List<InlineKeyboardButton>>()
-
-        for (file in files) {
-            buttons.add(listOf(InlineKeyboardButton().setText(file.name).setCallbackData("$DATA_FILE $taskId ${file.name}")))
+        if (attachmentFile.exists()) {
+            buttons.add(
+                listOf(InlineKeyboardButton(attachmentFile.name).apply { callbackData = "$DATA_FILE $taskId" })
+            )
         }
-
-        buttons.add(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+        buttons.add(listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
         msg.replyMarkup = InlineKeyboardMarkup(buttons)
 
         return msg
     }
 
-    fun getFileMessage(chatId: Long, taskId: Long, fileName: String): SendDocument {
-        val contentFile = DatabaseHelper.getTaskFiles(taskId).find { it.name == fileName}!!
+    suspend fun getFileMessage(message: Message, taskId: Long): SendDocument? {
+        val task = DbHelper.getTask(taskId) ?: return null
+        val attachmentFile = File(task.attachment)
+        if (!attachmentFile.exists()) return null
+
         val msg = SendDocument()
-        msg.chatId = chatId.toString()
-        msg.document = InputFile(contentFile, contentFile.name)
-        msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU))))
+        msg.chatId = message.chatId.toString()
+        msg.document = InputFile(attachmentFile, attachmentFile.name)
+        msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
+            InlineKeyboardButton("Меню").apply { callbackData =  DATA_MENU}
+        )))
         return msg
     }
-
 
     fun getErrorMessage(message: Message): SendMessage {
         val msgText = "Ой, возникла какая-то ошибка. Свяжитесь с @awawa0_0 для обратной связи."
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.replyMarkup = InlineKeyboardMarkup(
-            listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+            listOf(listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
         )
         msg.text = msgText
         return msg
     }
 
-    fun getUnknownMessage(chatId:  Long): SendMessage {
+    fun getUnknownMessage(message: Message): SendMessage {
         val msgText = "Это что? Эльфийский? Я не понимаю. Используй кнопки, пожалуйста."
-        val buttonsTable = listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+        val buttonsTable = listOf(listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
 
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsTable)
 
         return msg
     }
 
-    fun getConvertMessage(chatId: Long, content: String): SendMessage {
+    fun getConvertMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -385,12 +392,12 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
                 """.trimIndent()
         }
 
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -398,7 +405,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToHexMessage(chatId: Long, content: String): SendMessage {
+    fun getToHexMessage(message: Message, content: String): SendMessage {
 
         val msg = SendMessage()
         var msgText = ""
@@ -408,12 +415,12 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             msgText += Helper.anyToHex(number)
         }
 
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -421,7 +428,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToDecMessage(chatId: Long, content: String): SendMessage {
+    fun getToDecMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -430,12 +437,12 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             msgText += Helper.anyToDec(number)
         }
 
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -443,7 +450,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToBinMessage(chatId: Long, content: String): SendMessage {
+    fun getToBinMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -452,12 +459,12 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             msgText += Helper.anyToBin(number)
         }
 
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -465,7 +472,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToStringMessage(chatId: Long, content: String): SendMessage {
+    fun getToStringMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -483,12 +490,12 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             msgText = msgText.trim() + "."
         }
 
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -503,7 +510,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -511,13 +518,13 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getRotMessage(chatId: Long, content: String): SendMessage {
+    fun getRotMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -535,9 +542,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getRotBruteMessage(chatId: Long, content: String): SendMessage {
+    fun getRotBruteMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
 
         val msgText = StringBuilder()
         for (key in 0 until Rot.ALPHABET_LENGTH) {
@@ -547,7 +554,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
@@ -555,9 +562,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getCheckMagicMessage(chatId: Long, content: String): SendMessage {
+    fun getCheckMagicMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
 
         val msgText = StringBuilder()
         val replyMarkup = ArrayList<List<InlineKeyboardButton>>()
@@ -568,35 +575,37 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         for ((i, match) in magicCheck.withIndex()) {
             replyMarkup.add(
                 listOf(
-                    InlineKeyboardButton().setText(
+                    InlineKeyboardButton(
                         "${i + 1}. ${match.first.formatName} - ${if (match.second) "Полное совпадение" else "Неполное совпадение"}"
-                    ).setCallbackData(match.first.callback)
+                    ).apply {
+                        match.first.callback
+                    }
                 )
             )
         }
 
         msg.text = msgText.toString()
 
-        replyMarkup.add(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
+        replyMarkup.add(listOf(InlineKeyboardButton("Меню").apply{ callbackData = DATA_MENU }))
         msg.replyMarkup = InlineKeyboardMarkup(replyMarkup)
 
         return msg
     }
 
-    fun getMagicData(chatId: Long, content: String): SendMessage {
+    fun getMagicData(message: Message, content: String): SendMessage {
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.enableHtml(true)
         msg.text = MagicNumbers.getDataForMagic(content.trim())
         msg.replyMarkup = InlineKeyboardMarkup(listOf(
-            listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU))
-        ))
+            listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
+        )
         return msg
     }
 
-    fun getCommandsHelpMessage(chatId: Long): SendMessage {
+    fun getCommandsHelpMessage(message: Message): SendMessage {
         val msg = SendMessage()
-        msg.chatId = chatId.toString()
+        msg.chatId = message.chatId.toString()
         msg.text = """
                 Список команд, поддерживаемых ботом. Заметьте, что бот распознаёт десятичные, двоичные и шестнадцатеричные числа. Двоичные числа должны иметь префикс '0b', а шестнадцатеричные '0x'.
                 В массивах числа должны быть разделены пробелом. Числа ограничены диапазоном [0:9223372036854775807]
@@ -622,7 +631,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(
                 listOf(
-                    InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)
+                    InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
                 )
             )
         )
