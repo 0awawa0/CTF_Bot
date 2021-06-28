@@ -128,6 +128,15 @@ object DbHelper {
         }
     }
 
+    suspend fun getCompetition(id: Long): CompetitionDTO? {
+        try {
+            return transactionOn(database) { CompetitionEntity.findById(id)?.let { CompetitionDTO(it) } }
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to get competition by id: ${ex.message}\n${ex.stackTraceToString()}")
+            return null
+        }
+    }
+
     suspend fun getTask(id: Long): TaskDTO? {
         try {
             return transactionOn(database) { TaskEntity.findById(id)?.let { TaskDTO(it) } }

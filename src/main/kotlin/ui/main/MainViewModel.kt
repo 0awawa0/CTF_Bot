@@ -1,5 +1,6 @@
 package ui.main
 
+import bot.BotManager
 import database.CompetitionDTO
 import database.DbHelper
 import javafx.collections.ObservableList
@@ -12,6 +13,8 @@ import ui.BaseViewModel
 import utils.Logger
 
 class MainViewModel: BaseViewModel() {
+
+    private val tag = "MainViewModel"
 
     data class CompetitionItem(
         val id: Long,
@@ -54,4 +57,36 @@ class MainViewModel: BaseViewModel() {
             }
         }
     }
+
+    fun startBot(competitionItem: CompetitionItem) {
+        viewModelScope.launch {
+            try {
+                val competition = DbHelper.getCompetition(competitionItem.id)
+                if (competition == null) {
+                    Logger.error(tag, "Failed to start bot, competition not found")
+                    return@launch
+                }
+                BotManager.startBot(competition)
+            } catch (ex: Exception) {
+                Logger.error(tag, "Failed to start bot: ${ex.message}\n${ex.stackTraceToString()}")
+            }
+        }
+    }
+
+    fun startBotForTesting(competitionItem: CompetitionItem, password: String) {
+        viewModelScope.launch {
+            try {
+                val competition = DbHelper.getCompetition(competitionItem.id)
+                if (competition == null) {
+                    Logger.error(tag, "Failed to start bot, competition not found")
+                    return@launch
+                }
+                BotManager.startForTesting(competition, password)
+            } catch (ex: Exception) {
+                Logger.error(tag, "Failed to start bot: ${ex.message}\n${ex.stackTraceToString()}")
+            }
+        }
+    }
+
+    fun stopBot() { BotManager.stopBot() }
 }

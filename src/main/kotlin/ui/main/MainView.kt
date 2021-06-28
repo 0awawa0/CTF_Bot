@@ -2,6 +2,7 @@ package ui.main
 
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.control.Alert
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -54,9 +55,22 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
                 text = "Start"
 
                 action {
-
+                    val competition = competitionSelector.selectedItem ?: return@action
+                    viewModel.startBot(competition)
                 }
-            }
+            }.fitToParentWidth()
+
+            button {
+                text = "Start for testing"
+
+                action { showTestingPasswordDialog() }
+            }.fitToParentWidth()
+
+            button {
+                text = "Stop"
+
+                action { viewModel.stopBot() }
+            }.fitToParentWidth()
 
             add(logArea)
 
@@ -81,5 +95,31 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
             }
         }
         competitionSelector.items = viewModel.competitions
+    }
+
+    private fun showTestingPasswordDialog() {
+        dialog {
+            spacing = 8.0
+            alignment = Pos.CENTER
+
+            title = "Testing password"
+            text = "Enter testing password"
+
+            passwordfield {
+                action {
+                    val competition = competitionSelector.selectedItem ?: return@action
+                    if (text.isNotBlank()) {
+                        viewModel.startBotForTesting(competition, text)
+                        close()
+                    } else {
+                        alert(
+                            Alert.AlertType.ERROR,
+                            "Empty password",
+                            "Testing password must not be blank"
+                        )
+                    }
+                }
+            }
+        }
     }
 }

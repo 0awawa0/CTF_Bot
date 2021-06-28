@@ -1,5 +1,12 @@
 package bot
 
+import bot.Bot.Companion
+import bot.Bot.Companion.DATA_COMMANDS
+import bot.Bot.Companion.DATA_CURRENT_SCOREBOARD
+import bot.Bot.Companion.DATA_FILE
+import bot.Bot.Companion.DATA_GLOBAL_SCOREBOARD
+import bot.Bot.Companion.DATA_MENU
+import bot.Bot.Companion.DATA_TASKS
 import bot.features.magic.MagicNumbers
 import bot.features.numbers.NumbersUtils
 import bot.features.rot.Rot
@@ -9,6 +16,7 @@ import database.PlayerModel
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.methods.send.SendSticker
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
@@ -113,9 +121,8 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         val bot = bot.get() ?: return null
         val sticker = SendSticker()
         var msgText = ""
-        val result = DbHelper.onFlagPassed(bot.competition, message.chatId, flag)
 
-        when (result) {
+        when (val result = DbHelper.onFlagPassed(bot.competition, message.chatId, flag)) {
             is DbHelper.FlagCheckResult.CorrectFlag -> {
                 sticker.sticker = InputFile(niceStickers.random())
                 msgText = "Отлично! +${result.price}"
@@ -138,48 +145,25 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return sticker
     }
 
-//    fun getFlagMessage(chatId: Long, flag: String): SendMessage {
-//
-//        var msgText = ""
-//
-//        val result = DatabaseHelper.onPlayerPassedFlag(chatId, flag)
-//        when (result.first) {
-//            DatabaseHelper.FLAG_RESULT_SUCCESS -> {
-//                msgText = "<b>$ctfName</b>\n\nВерный флаг, задание засчитано! Продолжай в том же духе!"
-//            }
-//
-//            DatabaseHelper.FLAG_RESULT_WRONG -> {
-//                msgText = "<b>$ctfName</b>\n\nТы не прав, подумай ещё."
-//            }
-//
-//            DatabaseHelper.FLAG_RESULT_ALREADY_SOLVED -> {
-//                msgText = "<b>$ctfName</b>\n\nЭтот флаг ты уже сдал, поздравляю! А теперь займись другими!"
-//            }
-//
-//            DatabaseHelper.FLAG_RESULT_ERROR -> {
-//                return getErrorMessage(chatId)
-//            }
-//        }
-//
-//        val msg = SendMessage()
-//        msg.enableHtml(true)
-//        msg.text = msgText
-//        msg.chatId = chatId.toString()
-//        msg.replyMarkup = InlineKeyboardMarkup(
-//            listOf(listOf(InlineKeyboardButton().setText("Меню").setCallbackData(DATA_MENU)))
-//        )
-//        return msg
-//    }
-
     suspend fun getStartMessage(message: Message): SendMessage {
-        val userName = (message.from.userName ?: message.from.firstName).filter { it in allowedCharacters }
+        val userName = message.from.userName ?: message.from.firstName
+        return getStartMessage(userName, message.chatId)
+    }
+
+    suspend fun getStartMessage(callback: CallbackQuery): SendMessage {
+        val userName = callback.from.userName ?: callback.from.firstName
+        return getStartMessage(userName, callback.message.chatId)
+    }
+
+    private suspend fun getStartMessage(userName: String, chatId: Long): SendMessage {
+        val userName = userName.filter { it in allowedCharacters }
         val playerName = userName.let { if (it.length > 16) it.substring(0..15) else it }
-        val player = DbHelper.getPlayer(message.chatId) ?: DbHelper.add(PlayerModel(message.chatId, playerName))
-            ?: return getErrorMessage(message)
+        val player = DbHelper.getPlayer(chatId) ?: DbHelper.add(PlayerModel(chatId, playerName))
+            ?: return getErrorMessage(chatId)
 
         val msgText = "Привет, я  CTF-бот! Я помогаю проводить соревнования по CTF - раздаю задания и проверяю флаги." +
                 "Я буду называть тебя ${player.name}, если ты не против. " +
-                "Чтобы сменить имя, используй комманду: <i>/change_name \\<новое_имя\\></i>. " +
+                "Чтобы сменить имя, используй комманду: <i>/change_name __новое_имя__</i>. " +
                 "Только постарайся уложиться в 16 " +
                 "символов - больше я не запомню :)\n"
 
@@ -190,14 +174,24 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         val msg = SendMessage()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(menuButton)))
-        msg.chatId = message.chatId.toString()
+        msg.chatId = chatId.toString()
         msg.enableHtml(true)
         return msg
     }
 
+    suspend fun getMenuMessage(callback: CallbackQuery): SendMessage {
+        val userName = callback.from.userName ?: callback.from.firstName
+        return getMenuMessage(userName, callback.message.chatId)
+    }
+
     suspend fun getMenuMessage(message: Message): SendMessage {
-        val bot = bot.get() ?: return getErrorMessage(message)
-        val player = DbHelper.getPlayer(message.chatId) ?: return getStartMessage(message)
+        val userName = message.from.userName ?: message.from.firstName
+        return getMenuMessage(userName, message.chatId)
+    }
+
+    private suspend fun getMenuMessage(userName: String, chatId: Long): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(chatId)
+        val player = DbHelper.getPlayer(chatId) ?: return getStartMessage(userName, chatId)
         val playerCompetitionScore = player.getCompetitionScore(bot.competition)?.score ?: 0
         val playerTotalScore = player.getTotalScore()
 
@@ -209,27 +203,30 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
                 |""".trimMargin()
 
         val buttonRow1 = listOf(
-            InlineKeyboardButton("Таблица лидеров").apply { callbackData = DATA_SCOREBOARD },
-            InlineKeyboardButton("Задания").apply { callbackData = DATA_TASKS }
+            InlineKeyboardButton("Текущая таблица лидеров").apply { callbackData = DATA_CURRENT_SCOREBOARD },
+            InlineKeyboardButton("Общая таблица лидеров").apply { callbackData = DATA_GLOBAL_SCOREBOARD }
         )
         val buttonRow2 = listOf(
+            InlineKeyboardButton("Задания").apply { callbackData = DATA_TASKS }
+        )
+        val buttonRow3 = listOf(
             InlineKeyboardButton("Доступные команды").apply { callbackData = DATA_COMMANDS }
         )
-        val buttonsTable = listOf(buttonRow1, buttonRow2)
+        val buttonsTable = listOf(buttonRow1, buttonRow2, buttonRow3)
 
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = chatId.toString()
         msg.enableHtml(true)
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsTable)
         return msg
     }
 
-    suspend fun getPasswordRequestMessage(message: Message): SendMessage {
+    suspend fun getPasswordRequestMessage(chatId: Long): SendMessage {
         val msgText = "Бот находится в состоянии тестирования. " +
-                "Для авторизации пришли мне пароль в формате:\n<i>/testing_password \\<пароль\\></i>"
+                "Для авторизации пришли мне пароль в формате:\n<i>/testing_password __пароль__</i>"
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = chatId.toString()
         msg.text = msgText
         msg.enableHtml(true)
         return msg
@@ -243,9 +240,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
 
-    suspend fun getTasksMessage(message: Message): SendMessage {
-        val bot = bot.get() ?: return getErrorMessage(message)
-        val player = DbHelper.getPlayer(message.chatId) ?: return getStartMessage(message)
+    suspend fun getTasksMessage(callback: CallbackQuery): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
+        val player = DbHelper.getPlayer(callback.message.chatId) ?: return getStartMessage(callback)
         val msgText = "<b>${bot.competition.name}</b>\n\nСписок заданий: "
         val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
 
@@ -260,29 +257,34 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
         val msg = SendMessage()
         msg.enableHtml(true)
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsList)
         return msg
     }
 
 
-    suspend fun getCurrentScoreboard(message: Message): SendMessage {
-        val bot = bot.get() ?: return getErrorMessage(message)
+    suspend fun getCurrentScoreboard(callback: CallbackQuery): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
         val scoreboard = bot.competition.getScoreBoard()
         var msgText = """
                 <b>${bot.competition.name}</b>
                 |
                 |Таблица лидеров:
                 |
+                |<code>
                 """.trimMargin()
 
         scoreboard.forEachIndexed { index, pair ->
-            msgText += "%3d. %16s %5d\n".format(index + 1, pair.first, pair.second)
+            val name = pair.first.padEnd(16, ' ')
+            val number = (index + 1).toString().padStart(3, ' ')
+            val score = pair.second.toString().padStart(6, ' ')
+            msgText += "%s. %s %s\n".format(number, name, score)
         }
+        msgText += "</code>"
 
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.enableHtml(true)
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
@@ -291,22 +293,27 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    suspend fun getGlobalScoreboard(message: Message): SendMessage {
-        val bot = bot.get() ?: return getErrorMessage(message)
+    suspend fun getGlobalScoreboard(callback: CallbackQuery): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
         val scoreboard = DbHelper.getScoreboard()
         var msgText = """
                 <b>${bot.competition.name}</b>
                 |
                 |Таблица лидеров:
                 |
+                |<code>
                 """.trimMargin()
 
         scoreboard.forEachIndexed { index, player ->
-            msgText += "%3d. %16s %5d\n".format(index + 1, player.name, player.getTotalScore())
+            val name = player.name.padEnd(16, ' ')
+            val number = (index + 1).toString().padStart(3, ' ')
+            val score = player.getTotalScore().toString().padStart(6, ' ')
+            msgText += "%s. %s %s\n".format(number, name, score)
         }
+        msgText += "</code>"
 
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.enableHtml(true)
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
@@ -316,16 +323,16 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
 
-    suspend fun getTaskMessage(message: Message, taskId: Long): SendMessage {
-        val bot = bot.get() ?: return getErrorMessage(message)
-        val task = DbHelper.getTask(taskId) ?: return getErrorMessage(message)
+    suspend fun getTaskMessage(callback: CallbackQuery, taskId: Long): SendMessage {
+        val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
+        val task = DbHelper.getTask(taskId) ?: return getErrorMessage(callback.message.chatId)
         val attachmentFile = File(task.attachment)
         val msgText = "<b>${bot.competition.name}</b>\n" +
                 "\n${task.name}           ${task.getTaskPrice()}\n\n${task.description}"
         val msg = SendMessage()
         msg.enableHtml(true)
 
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.text = msgText
 
         val buttons = arrayListOf<List<InlineKeyboardButton>>()
@@ -340,13 +347,13 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    suspend fun getFileMessage(message: Message, taskId: Long): SendDocument? {
+    suspend fun getFileMessage(callback: CallbackQuery, taskId: Long): SendDocument? {
         val task = DbHelper.getTask(taskId) ?: return null
         val attachmentFile = File(task.attachment)
         if (!attachmentFile.exists()) return null
 
         val msg = SendDocument()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.document = InputFile(attachmentFile, attachmentFile.name)
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
             InlineKeyboardButton("Меню").apply { callbackData =  DATA_MENU}
@@ -354,10 +361,10 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getErrorMessage(message: Message): SendMessage {
+    suspend fun getErrorMessage(chatId: Long): SendMessage {
         val msgText = "Ой, возникла какая-то ошибка. Свяжитесь с @awawa0_0 для обратной связи."
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = chatId.toString()
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
         )
@@ -365,7 +372,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getUnknownMessage(message: Message): SendMessage {
+    suspend fun getUnknownMessage(message: Message): SendMessage {
         val msgText = "Это что? Эльфийский? Я не понимаю. Используй кнопки, пожалуйста."
         val buttonsTable = listOf(listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
 
@@ -377,7 +384,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getConvertMessage(message: Message, content: String): SendMessage {
+    suspend fun getConvertMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -405,7 +412,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToHexMessage(message: Message, content: String): SendMessage {
+    suspend fun getToHexMessage(message: Message, content: String): SendMessage {
 
         val msg = SendMessage()
         var msgText = ""
@@ -428,7 +435,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToDecMessage(message: Message, content: String): SendMessage {
+    suspend fun getToDecMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -450,7 +457,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToBinMessage(message: Message, content: String): SendMessage {
+    suspend fun getToBinMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -472,7 +479,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getToStringMessage(message: Message, content: String): SendMessage {
+    suspend fun getToStringMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         var msgText = ""
         val numbers = content.split(" ")
@@ -503,7 +510,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getMessageToPlayer(id: Long, text: String): SendMessage {
+    suspend fun getMessageToPlayer(id: Long, text: String): SendMessage {
         val msg = SendMessage()
         msg.chatId = id.toString()
         msg.text = text
@@ -518,7 +525,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getRotMessage(message: Message, content: String): SendMessage {
+    suspend fun getRotMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         msg.chatId = message.chatId.toString()
         msg.replyMarkup = InlineKeyboardMarkup(
@@ -542,7 +549,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getRotBruteMessage(message: Message, content: String): SendMessage {
+    suspend fun getRotBruteMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         msg.chatId = message.chatId.toString()
 
@@ -562,7 +569,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getCheckMagicMessage(message: Message, content: String): SendMessage {
+    suspend fun getCheckMagicMessage(message: Message, content: String): SendMessage {
         val msg = SendMessage()
         msg.chatId = message.chatId.toString()
 
@@ -592,9 +599,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getMagicData(message: Message, content: String): SendMessage {
+    suspend fun getMagicData(callback: CallbackQuery, content: String): SendMessage {
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.enableHtml(true)
         msg.text = MagicNumbers.getDataForMagic(content.trim())
         msg.replyMarkup = InlineKeyboardMarkup(listOf(
@@ -603,9 +610,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
-    fun getCommandsHelpMessage(message: Message): SendMessage {
+    suspend fun getCommandsHelpMessage(callback: CallbackQuery): SendMessage {
         val msg = SendMessage()
-        msg.chatId = message.chatId.toString()
+        msg.chatId = callback.message.chatId.toString()
         msg.text = """
                 Список команд, поддерживаемых ботом. Заметьте, что бот распознаёт десятичные, двоичные и шестнадцатеричные числа. Двоичные числа должны иметь префикс '0b', а шестнадцатеричные '0x'.
                 В массивах числа должны быть разделены пробелом. Числа ограничены диапазоном [0:9223372036854775807]

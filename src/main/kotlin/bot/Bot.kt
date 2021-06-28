@@ -2,9 +2,7 @@ package bot
 
 import database.CompetitionDTO
 import database.DbHelper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery
@@ -16,8 +14,7 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 
 class Bot(
-    private val token: String,
-    val name: String,
+    private val credentials: BotCredentials,
     val competition: CompetitionDTO,
     private val testing: Boolean = false,
     private val testingPassword: String = ""
@@ -37,7 +34,8 @@ class Bot(
         const val MSG_CHECK_MAGIC = "/checkMagic"
 
         const val DATA_MENU = "/menu"
-        const val DATA_SCOREBOARD = "/scoreboard"
+        const val DATA_CURRENT_SCOREBOARD = "/current_scoreboard"
+        const val DATA_GLOBAL_SCOREBOARD = "/global_scoreboard"
         const val DATA_TASKS = "/tasks"
         const val DATA_TASK = "/task"
         const val DATA_FILE = "/file"
@@ -71,12 +69,12 @@ class Bot(
     private val authorizedForTesting = HashSet<Long>()
 
     private val threadPool = Executors.newCachedThreadPool()
-    private val botScope = CoroutineScope(threadPool.asCoroutineDispatcher())
+    private var botScope = CoroutineScope(threadPool.asCoroutineDispatcher())
 
     private val messageMaker = MessageMaker(WeakReference(this))
-    override fun getBotToken(): String { return token }
+    override fun getBotToken(): String { return credentials.token }
 
-    override fun getBotUsername(): String { return name }
+    override fun getBotUsername(): String { return credentials.name }
 
     override fun onUpdateReceived(update: Update?) {
         if (update == null) return
@@ -87,18 +85,24 @@ class Bot(
         }
     }
 
+    override fun onClosing() {
+        super.onClosing()
+        botScope.cancel()
+        threadPool.shutdownNow()
+    }
+
+    override fun onRegister() {
+        super.onRegister()
+        botScope = CoroutineScope(threadPool.asCoroutineDispatcher())
+    }
+
     private suspend fun answerMessage(message: Message) {
         val msgText = message.text
-
-        if (!DbHelper.checkPlayerExists(message.chatId)) {
-            execute(messageMaker.getStartMessage(message))
-            return
-        }
 
         Logger.info(
             tag,
             "Received message from chat id: ${message.chatId} " +
-                    "Username: ${message.from.userName ?: message.from.firstName}. " +
+                    "Player name: ${message.from.userName ?: message.from.firstName}. " +
                     "Message $msgText"
         )
 
@@ -121,11 +125,16 @@ class Bot(
                         execute(messageMaker.getPasswordWrongMessage(message))
                     }
                 } else {
-                    execute(messageMaker.getPasswordRequestMessage(message))
+                    execute(messageMaker.getPasswordRequestMessage(message.chatId))
                 }
             } catch (ex: TelegramApiException) {
                 Logger.error(tag, "${ex.message}\n${ex.stackTraceToString()}")
             }
+            return
+        }
+
+        if (!DbHelper.checkPlayerExists(message.chatId)) {
+            execute(messageMaker.getStartMessage(message))
             return
         }
 
@@ -150,30 +159,28 @@ class Bot(
 
     private suspend fun answerCallback(callback: CallbackQuery) {
         try {
-
-            Logger.info(tag, "received message from ch")
             val answerToCallback = AnswerCallbackQuery()
             answerToCallback.callbackQueryId = callback.id
             execute(answerToCallback)
 
-            if (!DbHelper.checkPlayerExists(callback.message.chatId)) {
-                execute(messageMaker.getStartMessage(callback.message))
+            Logger.info(
+                tag,
+                "Received callback from chat id: ${callback.message.chatId} " +
+                        "Player name: ${callback.from.userName ?: callback.from.firstName}. " +
+                        "Data: ${callback.data}"
+            )
+            if (testing && callback.message.chatId !in authorizedForTesting) {
+                execute(messageMaker.getPasswordRequestMessage(callback.message.chatId))
                 return
             }
 
-            Logger.info(
-                tag,
-                "Received message from chat id: ${callback.message.chatId} " +
-                        "Username: ${callback.message.from.userName ?: callback.message.from.firstName}. " +
-                        "Message ${callback.message.text}"
-            )
-            if (testing && callback.message.chatId !in authorizedForTesting) {
-                execute(messageMaker.getPasswordRequestMessage(callback.message))
+            if (!DbHelper.checkPlayerExists(callback.message.chatId)) {
+                execute(messageMaker.getStartMessage(callback))
                 return
             }
 
             if (!callback.data.startsWith("/")) {
-                execute(messageMaker.getErrorMessage(callback.message))
+                execute(messageMaker.getErrorMessage(callback.message.chatId))
                 return
             }
 
@@ -181,10 +188,44 @@ class Bot(
             val content = callback.data.replace(command, "").trim()
 
             when (command) {
-                DATA_FILE
+                DATA_FILE -> execute(messageMaker.getFileMessage(callback, content.toLong()))
+                DATA_CURRENT_SCOREBOARD -> execute(messageMaker.getCurrentScoreboard(callback))
+                DATA_GLOBAL_SCOREBOARD -> execute(messageMaker.getGlobalScoreboard(callback))
+                DATA_TASKS -> execute(messageMaker.getTasksMessage(callback))
+                DATA_TASK -> execute(messageMaker.getTaskMessage(callback, content.toLong()))
+                DATA_MENU -> execute(messageMaker.getMenuMessage(callback))
+                DATA_COMMANDS -> execute(messageMaker.getCommandsHelpMessage(callback))
+
+                DATA_JPEG_SIGNATURE, DATA_JPEG_TAIL,
+                DATA_PNG_SIGNATURE, DATA_PNG_HEADER,
+                DATA_PNG_DATA, DATA_PNG_TAIL,
+                DATA_ZIP_SIGNATURE, DATA_RAR_SIGNATURE,
+                DATA_ELF_SIGNATURE, DATA_CLASS_SIGNATURE,
+                DATA_PDF_SIGNATURE, DATA_PDF_TAIL,
+                DATA_PSD_SIGNATURE, DATA_RIFF_SIGNATURE,
+                DATA_WAVE_TAG, DATA_AVI_TAG,
+                DATA_BMP_SIGNATURE, DATA_DOC_SIGNATURE,
+                DATA_VMDK_SIGNATURE, DATA_TAR_SIGNATURE,
+                DATA_7ZIP_SIGNATURE, DATA_GZ_SIGNATURE -> messageMaker.getMagicData(callback, callback.data)
+                else -> messageMaker.getMenuMessage(callback)
             }
         } catch (ex: TelegramApiException) {
             Logger.error(tag, "${ex.message}\n${ex.stackTraceToString()}")
+        }
+    }
+
+    fun sendMessageToPlayer(id: Long, text: String) {
+        botScope.launch {
+            execute(messageMaker.getMessageToPlayer(id, text))
+        }
+    }
+
+    fun broadcastMessage(text: String) {
+        botScope.launch {
+            for (player in DbHelper.getAllPlayers()) {
+                sendMessageToPlayer(player.id, text)
+                delay(100)
+            }
         }
     }
 }

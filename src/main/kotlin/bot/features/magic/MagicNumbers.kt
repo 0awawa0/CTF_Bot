@@ -1,6 +1,28 @@
 package bot.features.magic
 
 import bot.*
+import bot.Bot.Companion.DATA_7ZIP_SIGNATURE
+import bot.Bot.Companion.DATA_AVI_TAG
+import bot.Bot.Companion.DATA_BMP_SIGNATURE
+import bot.Bot.Companion.DATA_CLASS_SIGNATURE
+import bot.Bot.Companion.DATA_DOC_SIGNATURE
+import bot.Bot.Companion.DATA_ELF_SIGNATURE
+import bot.Bot.Companion.DATA_GZ_SIGNATURE
+import bot.Bot.Companion.DATA_JPEG_SIGNATURE
+import bot.Bot.Companion.DATA_JPEG_TAIL
+import bot.Bot.Companion.DATA_PDF_SIGNATURE
+import bot.Bot.Companion.DATA_PDF_TAIL
+import bot.Bot.Companion.DATA_PNG_DATA
+import bot.Bot.Companion.DATA_PNG_HEADER
+import bot.Bot.Companion.DATA_PNG_SIGNATURE
+import bot.Bot.Companion.DATA_PNG_TAIL
+import bot.Bot.Companion.DATA_PSD_SIGNATURE
+import bot.Bot.Companion.DATA_RAR_SIGNATURE
+import bot.Bot.Companion.DATA_RIFF_SIGNATURE
+import bot.Bot.Companion.DATA_TAR_SIGNATURE
+import bot.Bot.Companion.DATA_VMDK_SIGNATURE
+import bot.Bot.Companion.DATA_WAVE_TAG
+import bot.Bot.Companion.DATA_ZIP_SIGNATURE
 
 
 object MagicNumbers {
