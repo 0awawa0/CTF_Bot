@@ -3,6 +3,7 @@ package ui.main
 import bot.BotManager
 import database.CompetitionDTO
 import database.DbHelper
+import javafx.beans.property.ReadOnlyBooleanWrapper
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -20,6 +21,9 @@ class MainViewModel: BaseViewModel() {
         val id: Long,
         val name: String
     )
+
+    private val mIsRunning = ReadOnlyBooleanWrapper(false)
+    val isRunning = mIsRunning.readOnlyProperty
 
     val competitions: ObservableList<CompetitionItem> = emptyList<CompetitionItem>().toObservable()
     private val dbEvents = DbHelper.eventsPipe
@@ -66,7 +70,7 @@ class MainViewModel: BaseViewModel() {
                     Logger.error(tag, "Failed to start bot, competition not found")
                     return@launch
                 }
-                BotManager.startBot(competition)
+                if (BotManager.startBot(competition)) mIsRunning.set(true)
             } catch (ex: Exception) {
                 Logger.error(tag, "Failed to start bot: ${ex.message}\n${ex.stackTraceToString()}")
             }
@@ -81,12 +85,16 @@ class MainViewModel: BaseViewModel() {
                     Logger.error(tag, "Failed to start bot, competition not found")
                     return@launch
                 }
-                BotManager.startForTesting(competition, password)
+                if (BotManager.startForTesting(competition, password)) mIsRunning.set(true)
             } catch (ex: Exception) {
                 Logger.error(tag, "Failed to start bot: ${ex.message}\n${ex.stackTraceToString()}")
             }
         }
     }
 
-    fun stopBot() { BotManager.stopBot() }
+    fun stopBot() {
+        viewModelScope.launch {
+            if (BotManager.stopBot()) mIsRunning.set(false)
+        }
+    }
 }

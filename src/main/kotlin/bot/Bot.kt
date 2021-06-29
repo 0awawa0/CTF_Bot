@@ -23,7 +23,7 @@ class Bot(
     companion object {
         const val MSG_START = "/start"
         const val MSG_FLAG = "/flag"
-        const val MSG_TESTING_PASSWORD = "/testing_password"
+        const val MSG_TESTING_PASSWORD = "/testingPassword"
         const val MSG_CONVERT = "/convert"
         const val MSG_TO_HEX = "/toHex"
         const val MSG_TO_DEC = "/toDec"
@@ -32,6 +32,9 @@ class Bot(
         const val MSG_ROT = "/rot"
         const val MSG_ROT_BRUTE = "/rotBruteForce"
         const val MSG_CHECK_MAGIC = "/checkMagic"
+        const val MSG_CHANGE_NAME = "/changeName"
+        const val MSG_DELETE = "/delete"
+        const val MSG_COMMANDS_HELP = "/commandsHelp"
 
         const val DATA_MENU = "/menu"
         const val DATA_CURRENT_SCOREBOARD = "/current_scoreboard"
@@ -80,7 +83,10 @@ class Bot(
         if (update == null) return
 
         botScope.launch {
-            if (update.hasMessage() && update.message.hasText()) { answerMessage(update.message) }
+            if (update.hasMessage()) {
+                if (update.message.hasText()) answerMessage(update.message)
+                if (update.message.hasSticker()) Logger.info(tag, "Received sticker: ${update.message.sticker.fileId}")
+            }
             if (update.hasCallbackQuery()) answerCallback(update.callbackQuery)
         }
     }
@@ -150,6 +156,9 @@ class Bot(
                 MSG_ROT -> execute(messageMaker.getRotMessage(message, content))
                 MSG_ROT_BRUTE -> execute(messageMaker.getRotBruteMessage(message, content))
                 MSG_CHECK_MAGIC -> execute(messageMaker.getCheckMagicMessage(message, content))
+                MSG_CHANGE_NAME -> execute(messageMaker.getChangeNameMessage(message, content))
+                MSG_DELETE -> execute(messageMaker.getDeleteMessage(message, content))
+                MSG_COMMANDS_HELP -> execute(messageMaker.getCommandsHelpMessage(message))
                 else -> execute(messageMaker.getUnknownMessage(message))
             }
         } catch (ex: TelegramApiException) {

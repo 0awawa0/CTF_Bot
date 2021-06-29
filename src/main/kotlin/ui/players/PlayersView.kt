@@ -182,7 +182,12 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                     text = "Yes"
                     textFill = Paint.valueOf(Colors.RED)
 
-                    action { player.delete() }
+                    action {
+                        player.delete()
+                        playerName.text = ""
+                        playerScore.text = ""
+                        this@dialog.close()
+                    }
                 }.fitToParentWidth()
 
                 button {

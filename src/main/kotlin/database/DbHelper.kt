@@ -120,7 +120,7 @@ object DbHelper {
     suspend fun getScoreboard(): List<PlayerDTO> {
         try {
             return transactionOn(database) {
-                PlayerEntity.all().map { PlayerDTO(it) }.sortedBy { it.getTotalScoreSynchronous() }
+                PlayerEntity.all().map { PlayerDTO(it) }.sortedByDescending { it.getTotalScoreSynchronous() }
             }
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")

@@ -1,6 +1,5 @@
 package bot
 
-import bot.Bot.Companion
 import bot.Bot.Companion.DATA_COMMANDS
 import bot.Bot.Companion.DATA_CURRENT_SCOREBOARD
 import bot.Bot.Companion.DATA_FILE
@@ -34,44 +33,63 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ_-.".toSet()
 
     private val niceStickers = setOf(
-        "CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA",
-        "CAACAgIAAxkBAAIJR18VnEnsspEr1-c0nfuivqrsLF_4AAJ4CQAC8UK_BcyW4BnRNuwKGgQ",
-        "CAACAgIAAxkBAAIJSF8VnFK_9gEmaVBryUw9QPXdIC1VAAINAgACNnYgDjJnEuNd-1iCGgQ",
+        "CAACAgIAAxkBAAI4yGDbE1494ffZg_wSh7-dsXYWsgdYAALVBwACRvusBEqXUnkJhF84IAQ",
+        "CAACAgIAAxkBAAI4xmDbExVeAAENLPrCCFtnb7x6_AfWHwAC6gcAAkb7rASUHp5Nfp3HaCAE",
+        "CAACAgIAAxkBAAI4tmDbEJeTJHFiriwRRhQ3EAaukdLlAAJ0HwACooqWASrB2U8ghGu0IAQ",
+        "CAACAgIAAxkBAAIJT18VnLcHUgsFzCcxHihdJ1AowVFMAAKWAAMfAUwVQT-DgR0Ym0saBA",
+        "CAACAgIAAxkBAAIJTV8VnK9HKA94FtdBFWjzmCu-Uwn6AALtBwACYyviCSNLVcKzULbEGgQ",
+        "CAACAgIAAxkBAAIJWl8WfpblDWCMQptHaCcoMNvqOlqSAAJ0AQACihKqDqn6Ep_umnvhGgQ",
+        "CAACAgIAAxkBAAIJXl8WfsLYOjRW-7UltRYl9Dmm9oI2AAL-AANWnb0K2gRhMC751_8aBA",
+        "CAACAgIAAxkBAAI4v2DbEcvXnBCp56JkShgOUQV9vevEAAKAAAPBnGAMNSI9fXm2854gBA",
         "CAACAgIAAxkBAAIJSV8VnFYVJRnEPBZhS3Eu7dWUD5QvAALzAgACnNbnCuAuBHGFD8ECGgQ",
+        "CAACAgEAAxkBAAI4xGDbEwhN2UWqNCHWKkrrp_5-YNJdAAL_AAM4DoIRy3vWd2ul3nUgBA",
+        "CAACAgUAAxkBAAIJVF8VnN7sbq-xIlubyOfF3yTtF4UuAAKsAwAC6QrIA7C0qC7bh6c7GgQ",
+        "CAACAgIAAxkBAAIJjl8Wh_BJYm0aNMft2fD_56Q6QKfiAAImAwACz7vUDqRT7fQiGuLvGgQ",
         "CAACAgIAAxkBAAIJSl8VnFo5nBLmgFhi_cM6efEShZqVAAL5BwACGELuCAh1fKDO8HNOGgQ",
+        "CAACAgIAAxkBAAIJW18Wfp6MbnlP03waFSGOxGKGwftIAAL9CQACLw_wBrlfDQPsjDttGgQ",
+        "CAACAgIAAxkBAAIJjV8Wh-yWKz_qWTIZcOQ8LW6Hsk_NAAKVAAMfAUwVAfFU0Ca-WLcaBA",
+        "CAACAgIAAxkBAAI4vmDbEU_vWonIo75MrGIZoIdPSYnLAAJ4AAMQIQIQVgLTdGip2AABIAQ",
+        "CAACAgIAAxkBAAIJUl8VnMzHCA0COXVkf7xzgu3A2vBRAAIyCgACbjLYAAH9b7brkPA7TRoE",
+        "CAACAgIAAxkBAAIJXF8WfqVcu0_TGUjvTnom-2f6FWbJAAK0AgACW__yCmCB33V_fjhuGgQ",
+        "CAACAgIAAxkBAAI4zmDbE_s7jGGYXzaWx2Q-lZWeE7bPAAIsAANEDc8XyPvc7VqXDYsgBA",
+        "CAACAgIAAxkBAAIJTl8VnLR1FJnJkBI0VecVVe1qo5o7AALpBwACYyviCXvSqf4U1mKMGgQ",
+        "CAACAgIAAxkBAAIJXV8WfqrBeL4l4rCKeOE4g7D5czdEAALoAgACtXHaBlINrrZVgIJbGgQ",
+        "CAACAgIAAxkBAAIJYF8WftVOWc6aFz_hTTVxJgggCjVXAAIgAAOWn4wOrP1BM_Sqb_kaBA",
+        "CAACAgIAAxkBAAI4zGDbE5ogLfwK3BzyoakubDAPVrBjAAI4AAN4qOYP_tlS9QdPmhkgBA",
+        "CAACAgIAAxkBAAI4y2DbE4haCFuYUvi9o4svpB-kYkT9AAJBAAN4qOYP-J7xorhFu34gBA",
+        "CAACAgIAAxkBAAI40GDbFCgX_YizNiNC8JjUOrKw1jxlAAKmAQAC8UK_BfPqOPDovILxIAQ",
+        "CAACAgIAAxkBAAIJk18WiD-wYWHHWJ0Uqt6t0jxK-WJ6AAJlAwAC7sShCkZUXth8bywsGgQ",
+        "CAACAgIAAxkBAAI4w2DbEv1ZKjVrDfuWHzyKfwydMFQeAAIBAQACIjeOBE2NeYSdvlefIAQ",
+        "CAACAgIAAxkBAAIJkF8WiATgl_sq4wZXUP-mgKMTDBGmAAIfAAMNttIZUwyqkRgWjiAaBA",
+        "CAACAgIAAxkBAAIJUF8VnLvWZA19VDS207QfeRlOKbdoAAJXCQACeVziCSskAcAPGVVeGgQ",
+        "CAACAgIAAxkBAAI4wGDbErAhitYis-TFoRmWWXbyCCZuAALPHwACooqWAfznXLGCKZZmIAQ",
+        "CAACAgIAAxkBAAIJWF8WfndKRVEEPtHafWczBHRjcnFXAAI2AgACz7vUDoh3s73RN0lHGgQ",
+        "CAACAgIAAxkBAAIJTF8VnKeHcCXNyXpeD8gwX2_jZJ7EAAIbAQACYyviCRVFtTZcAq6uGgQ",
+        "CAACAgIAAxkBAAI4z2DbFB7d___76y12BW_Ku_VSwbqeAAIeAgACNnYgDluSTg2uvsW3IAQ",
+        "CAACAgIAAxkBAAIJX18WfshmsxFruyhfiwasTdWvcx67AAL8AAMw1J0RU6XxJu0oNegaBA",
+        "CAACAgIAAxkBAAI4ymDbE3g5kxcrBk2CkNcG-f-RfLb2AAIxAwACbbBCA5qcE5gargaAIAQ",
+        "CAACAgIAAxkBAAI4yWDbE2l3fA7ILO_iON-nu_IvmQ8_AALJAQACVp29CnXYcMSIGS6NIAQ",
+        "CAACAgIAAxkBAAIJjF8Wh-UNsbzRQratjVJbM4qjDe3xAALkAAPEe4QKEcIHSKqKDJQaBA",
+        "CAACAgIAAxkBAAII818ViQ806_Vkg6bol8ALkVEPOPBIAAIlAAM7YCQUglfAqB1EIS0aBA",
+        "CAACAgUAAxkBAAIJWV8WfoN1skrCCtKeQc2jiZH04zQaAAKHAwAC6QrIAypdTyYxR1EwGgQ",
         "CAACAgIAAxkBAAIJVl8VnO7R91RmoyvPanX0cuE_9QQNAAJGAANSiZEj-P7l5ArVCh0aBA",
         "CAACAgUAAxkBAAIJVV8VnON2NIhUaBgnHyr4bY0Q-txhAAJuAwAC6QrIA3w0Dz_a7ARtGgQ",
-        "CAACAgUAAxkBAAIJVF8VnN7sbq-xIlubyOfF3yTtF4UuAAKsAwAC6QrIA7C0qC7bh6c7GgQ",
-        "CAACAgIAAxkBAAIJUl8VnMzHCA0COXVkf7xzgu3A2vBRAAIyCgACbjLYAAH9b7brkPA7TRoE",
-        "CAACAgIAAxkBAAIJUV8VnMfihimPG5vP_ZK6u5P87C9fAALhAAPEe4QKi7PG5z3j_7YaBA",
-        "CAACAgIAAxkBAAIJUF8VnLvWZA19VDS207QfeRlOKbdoAAJXCQACeVziCSskAcAPGVVeGgQ",
-        "CAACAgIAAxkBAAIJT18VnLcHUgsFzCcxHihdJ1AowVFMAAKWAAMfAUwVQT-DgR0Ym0saBA",
-        "CAACAgIAAxkBAAIJTl8VnLR1FJnJkBI0VecVVe1qo5o7AALpBwACYyviCXvSqf4U1mKMGgQ",
-        "CAACAgIAAxkBAAIJTV8VnK9HKA94FtdBFWjzmCu-Uwn6AALtBwACYyviCSNLVcKzULbEGgQ",
-        "CAACAgIAAxkBAAIJTF8VnKeHcCXNyXpeD8gwX2_jZJ7EAAIbAQACYyviCRVFtTZcAq6uGgQ",
-        "CAACAgIAAxkBAAIJS18VnJo3e3Ab31YJIBAY0DbWWXhWAAIkAwACz7vUDm0PI10rjwfcGgQ",
-        "CAACAgIAAxkBAAIJSl8VnFo5nBLmgFhi_cM6efEShZqVAAL5BwACGELuCAh1fKDO8HNOGgQ",
-        "CAACAgIAAxkBAAIJSV8VnFYVJRnEPBZhS3Eu7dWUD5QvAALzAgACnNbnCuAuBHGFD8ECGgQ",
+        "CAACAgIAAxkBAAI4xWDbEw6Us-Ek85pVcvZIrEblNl3PAAIbCQACGELuCNy5pdXzSq7IIAQ",
         "CAACAgIAAxkBAAIJSF8VnFK_9gEmaVBryUw9QPXdIC1VAAINAgACNnYgDjJnEuNd-1iCGgQ",
-        "CAACAgIAAxkBAAIJWF8WfndKRVEEPtHafWczBHRjcnFXAAI2AgACz7vUDoh3s73RN0lHGgQ",
-        "CAACAgUAAxkBAAIJWV8WfoN1skrCCtKeQc2jiZH04zQaAAKHAwAC6QrIAypdTyYxR1EwGgQ",
-        "CAACAgIAAxkBAAIJWl8WfpblDWCMQptHaCcoMNvqOlqSAAJ0AQACihKqDqn6Ep_umnvhGgQ",
-        "CAACAgIAAxkBAAIJW18Wfp6MbnlP03waFSGOxGKGwftIAAL9CQACLw_wBrlfDQPsjDttGgQ",
-        "CAACAgIAAxkBAAIJXF8WfqVcu0_TGUjvTnom-2f6FWbJAAK0AgACW__yCmCB33V_fjhuGgQ",
-        "CAACAgIAAxkBAAIJXV8WfqrBeL4l4rCKeOE4g7D5czdEAALoAgACtXHaBlINrrZVgIJbGgQ",
-        "CAACAgIAAxkBAAIJXl8WfsLYOjRW-7UltRYl9Dmm9oI2AAL-AANWnb0K2gRhMC751_8aBA",
-        "CAACAgIAAxkBAAIJX18WfshmsxFruyhfiwasTdWvcx67AAL8AAMw1J0RU6XxJu0oNegaBA",
-        "CAACAgIAAxkBAAIJYF8WftVOWc6aFz_hTTVxJgggCjVXAAIgAAOWn4wOrP1BM_Sqb_kaBA",
-        "CAACAgIAAxkBAAIJYV8WfvQNewABa1o6xvFd_15l57iZQAACdAMAAvoLtgjV5oYGGtDaUBoE",
-        "CAACAgIAAxkBAAIJi18Wh9_7jkge3HN8iqY8k2f8xNT6AAIiAgACNnYgDjgrKIrs7Ue3GgQ",
-        "CAACAgIAAxkBAAIJjF8Wh-UNsbzRQratjVJbM4qjDe3xAALkAAPEe4QKEcIHSKqKDJQaBA",
-        "CAACAgIAAxkBAAIJjV8Wh-yWKz_qWTIZcOQ8LW6Hsk_NAAKVAAMfAUwVAfFU0Ca-WLcaBA",
-        "CAACAgIAAxkBAAIJjl8Wh_BJYm0aNMft2fD_56Q6QKfiAAImAwACz7vUDqRT7fQiGuLvGgQ",
-        "CAACAgIAAxkBAAIJj18Wh_ZBEj4O1SXCb3Dbb-hvPPmlAAJiCQACeVziCYqMcuA2PTO4GgQ",
-        "CAACAgIAAxkBAAIJkF8WiATgl_sq4wZXUP-mgKMTDBGmAAIfAAMNttIZUwyqkRgWjiAaBA",
         "CAACAgIAAxkBAAIJkV8WiA0MQOITIucEncqGtw6VDAN9AAJrAAOWn4wOMuKqiPbhniUaBA",
+        "CAACAgIAAxkBAAIJR18VnEnsspEr1-c0nfuivqrsLF_4AAJ4CQAC8UK_BcyW4BnRNuwKGgQ",
+        "CAACAgIAAxkBAAIJYV8WfvQNewABa1o6xvFd_15l57iZQAACdAMAAvoLtgjV5oYGGtDaUBoE",
+        "CAACAgUAAxkBAAI4wWDbErehRd1B60I5eEjZpXqA3BC3AALyAgACra44V5u5bJqDYtoGIAQ",
+        "CAACAgIAAxkBAAI4uWDbENUqOp_WAAFz6JPr8xAMMuodwAACCQADjrKQEzqpFR9Ms2mDIAQ",
+        "CAACAgIAAxkBAAIJi18Wh9_7jkge3HN8iqY8k2f8xNT6AAIiAgACNnYgDjgrKIrs7Ue3GgQ",
+        "CAACAgIAAxkBAAIJUV8VnMfihimPG5vP_ZK6u5P87C9fAALhAAPEe4QKi7PG5z3j_7YaBA",
+        "CAACAgIAAxkBAAIJS18VnJo3e3Ab31YJIBAY0DbWWXhWAAIkAwACz7vUDm0PI10rjwfcGgQ",
+        "CAACAgIAAxkBAAI4uGDbEND8V93aDG2e24YrSHi-QxYYAAJAAAOvxlEaV1XfcKI2zaogBA",
+        "CAACAgIAAxkBAAI4t2DbEMwiSD4Ezqvf07G-TpPayVOQAAJ-AgACVp29CkFidF9RbKzkIAQ",
+        "CAACAgIAAxkBAAIJj18Wh_ZBEj4O1SXCb3Dbb-hvPPmlAAJiCQACeVziCYqMcuA2PTO4GgQ",
+        "CAACAgUAAxkBAAI4wmDbEsV7CXDO577Wt8QB7gXGYAn5AAK8AQAChr5BV4TIzDpMpfkHIAQ",
+        "CAACAgUAAxkBAAI4x2DbExt_JZsSEJUFnWB_vy8hfUvDAAKyAgACETFAV-Bxn7axpULxIAQ",
         "CAACAgIAAxkBAAIJkl8WiDPgckyWTmq3PGwwRpmQ16PXAAJXAAMfAUwVF6izXvNT8SwaBA",
-        "CAACAgIAAxkBAAIJk18WiD-wYWHHWJ0Uqt6t0jxK-WJ6AAJlAwAC7sShCkZUXth8bywsGgQ"
     )
 
     private val badStickers = setOf(
@@ -156,16 +174,18 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
     private suspend fun getStartMessage(userName: String, chatId: Long): SendMessage {
-        val userName = userName.filter { it in allowedCharacters }
-        val playerName = userName.let { if (it.length > 16) it.substring(0..15) else it }
+        val usrName = userName.filter { it in allowedCharacters }
+        val playerName = usrName.let { if (it.length > 16) it.substring(0..15) else it }
         val player = DbHelper.getPlayer(chatId) ?: DbHelper.add(PlayerModel(chatId, playerName))
             ?: return getErrorMessage(chatId)
 
         val msgText = "Привет, я  CTF-бот! Я помогаю проводить соревнования по CTF - раздаю задания и проверяю флаги." +
-                "Я буду называть тебя ${player.name}, если ты не против. " +
-                "Чтобы сменить имя, используй комманду: <i>/change_name __новое_имя__</i>. " +
+                "Я буду называть тебя ${player.name}, если ты не против.\n\n" +
+                "Чтобы сменить имя, используй команду:\n<i>${Bot.MSG_CHANGE_NAME} __новое_имя__</i>\n" +
                 "Только постарайся уложиться в 16 " +
-                "символов - больше я не запомню :)\n"
+                "символов - больше я не запомню :)\n\n" +
+                "Чтобы удалить себя из моей базы данных пришли команду:\n<i>${Bot.MSG_DELETE} __своё_текущее_имя__</i>\n\n" +
+                "Подробнее о доступных командах:\n<i>${Bot.MSG_COMMANDS_HELP}</i>"
 
         val menuButton = InlineKeyboardButton()
         menuButton.text = "Меню"
@@ -199,7 +219,8 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
                 |
                 |Привет, <i>${player.name}</i>! Твой текущий счёт: $playerCompetitionScore. 
                 |Твой общий счёт: $playerTotalScore.
-                |Для управления используй кнопки. Чтобы сдать флаг напиши /flag "твой флаг"
+                |Для управления используй кнопки. Чтобы сдать флаг напиши
+                |<i>${Bot.MSG_FLAG} __твой_флаг__</i>
                 |""".trimMargin()
 
         val buttonRow1 = listOf(
@@ -224,7 +245,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
     suspend fun getPasswordRequestMessage(chatId: Long): SendMessage {
         val msgText = "Бот находится в состоянии тестирования. " +
-                "Для авторизации пришли мне пароль в формате:\n<i>/testing_password __пароль__</i>"
+                "Для авторизации пришли мне пароль в формате:\n<i>${Bot.MSG_TESTING_PASSWORD} __пароль__</i>"
         val msg = SendMessage()
         msg.chatId = chatId.toString()
         msg.text = msgText
@@ -235,7 +256,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     suspend fun getPasswordWrongMessage(message: Message): SendMessage {
         val msg = SendMessage()
         msg.chatId = message.chatId.toString()
-        msg.text = "Неверный пароль. Дотсуп запрещён"
+        msg.text = "Неверный пароль. Доступ запрещён"
         return msg
     }
 
@@ -251,7 +272,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             buttonsList.add(listOf(
                 InlineKeyboardButton(
                     "${task.category} - ${task.getTaskPrice()}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
-                ).apply { callbackData = "/task ${task.id}" }
+                ).apply { callbackData = "${Bot.DATA_TASK} ${task.id}" }
             ))
         }
 
@@ -266,19 +287,21 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
     suspend fun getCurrentScoreboard(callback: CallbackQuery): SendMessage {
         val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
-        val scoreboard = bot.competition.getScoreBoard()
+        val scoreboard = DbHelper.getScoreboard()
         var msgText = """
                 <b>${bot.competition.name}</b>
                 |
-                |Таблица лидеров:
+                |Таблица лидеров по текущей игре:
                 |
                 |<code>
                 """.trimMargin()
 
-        scoreboard.forEachIndexed { index, pair ->
-            val name = pair.first.padEnd(16, ' ')
+        scoreboard.forEachIndexed { index, player ->
+            val name = player.name.padEnd(16, ' ')
             val number = (index + 1).toString().padStart(3, ' ')
-            val score = pair.second.toString().padStart(6, ' ')
+            val score = (player.getCompetitionScore(bot.competition)?.score ?: 0)
+                .toString()
+                .padStart(6, ' ')
             msgText += "%s. %s %s\n".format(number, name, score)
         }
         msgText += "</code>"
@@ -299,7 +322,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         var msgText = """
                 <b>${bot.competition.name}</b>
                 |
-                |Таблица лидеров:
+                |Таблица лидеров по всем играм:
                 |
                 |<code>
                 """.trimMargin()
@@ -599,6 +622,52 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
+    suspend fun getChangeNameMessage(message: Message, newName: String): SendMessage {
+        val msg = SendMessage()
+        msg.chatId = message.chatId.toString()
+        if (newName.isBlank() || newName.length > 16 || newName.any { it !in allowedCharacters}) {
+            val msgText = "Имя пользователя не соответствует требованиям формата и не будет изменено."
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(listOf(
+                listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
+            )
+            return msg
+        }
+
+        val player = DbHelper.getPlayer(message.chatId) ?: return getStartMessage(message)
+        player.name = newName
+        player.updateEntity()
+        val msgText = "Имя пользователя успешно изменено. Поздравляю, ты теперь официально: <b>${player.name}</b>!"
+        msg.text = msgText
+        msg.enableHtml(true)
+        msg.replyMarkup = InlineKeyboardMarkup(listOf(
+            listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
+        )
+        return msg
+    }
+
+    suspend fun getDeleteMessage(message: Message, content: String): SendMessage {
+        val msg = SendMessage()
+        msg.chatId = message.chatId.toString()
+        val player = DbHelper.getPlayer(message.chatId) ?: return getStartMessage(message)
+        if (content != player.name) {
+            val msgText = "Нет, так не пойдёт. Чтобы удалить пользователя пришли своё имя."
+            msg.text = msgText
+            msg.replyMarkup = InlineKeyboardMarkup(listOf(
+                listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
+            )
+            return msg
+        }
+
+        if (!DbHelper.delete(player)) return getErrorMessage(message.chatId)
+
+        msg.text = "Пользователь удалён. Теперь я тебя не знаю."
+        msg.replyMarkup = InlineKeyboardMarkup(listOf(
+            listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
+        )
+        return msg
+    }
+
     suspend fun getMagicData(callback: CallbackQuery, content: String): SendMessage {
         val msg = SendMessage()
         msg.chatId = callback.message.chatId.toString()
@@ -610,30 +679,43 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         return msg
     }
 
+    suspend fun getCommandsHelpMessage(message: Message): SendMessage {
+        return getCommandsHelpMessage(message.chatId)
+    }
     suspend fun getCommandsHelpMessage(callback: CallbackQuery): SendMessage {
+        return getCommandsHelpMessage(callback.message.chatId)
+    }
+
+    private suspend fun getCommandsHelpMessage(chatId: Long): SendMessage {
         val msg = SendMessage()
-        msg.chatId = callback.message.chatId.toString()
+        msg.chatId = chatId.toString()
         msg.text = """
                 Список команд, поддерживаемых ботом. Заметьте, что бот распознаёт десятичные, двоичные и шестнадцатеричные числа. Двоичные числа должны иметь префикс '0b', а шестнадцатеричные '0x'.
                 В массивах числа должны быть разделены пробелом. Числа ограничены диапазоном [0:9223372036854775807]
 
-                /flag <string> - проверяет флаг. Если переданная строка является флагом к какому-либо заданию, это задание будет зачтено как решенное.
+                ${Bot.MSG_FLAG} <string> - проверяет флаг. Если переданная строка является флагом к какому-либо заданию, это задание будет зачтено как решенное.
+                
+                ${Bot.MSG_COMMANDS_HELP} - показать это сообщение.
+                
+                ${Bot.MSG_DELETE} __твоё_имя_пользователя__ - удаляет текущего пользователя из базы данных. Имя пользователя требуется для подтверждения удаления.
+                  
+                ${Bot.MSG_CHANGE_NAME} __новое_имя_пользователя__ - меняет имя текущего пользователя на новое. Имя пользователя не является его уникальным идентификатором. Разные пользователи могут иметь одинаковые имена. Имя пользователя ограничено 16 символами из алфавита: $allowedCharacters 
 
-                /convert <array of numbers> - переводит массив чисел в двоичную, десятичную и шестнадцатеричную системы счисления.
+                ${Bot.MSG_CONVERT} <array of numbers> - переводит массив чисел в двоичную, десятичную и шестнадцатеричную системы счисления.
 
-                /toHex <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
+                ${Bot.MSG_TO_HEX} <array of numbers> - переводит массив чисел в шестнадцатеричную систему счисления.
 
-                /toDec <array of numbers> - переводит массив чисел в десятичную систему счисления.
+                ${Bot.MSG_TO_DEC} <array of numbers> - переводит массив чисел в десятичную систему счисления.
 
-                /toBin <array of numbers> - переводит массив чисел в двоичную систему счисления.
+                ${Bot.MSG_TO_BIN} <array of numbers> - переводит массив чисел в двоичную систему счисления.
 
-                /toString <array of numbers> - переводит массив чисел в одну строку. Числа ограничены 16 битами. Если передано число длиннее 16 бит, будут использованы младшие его 16 бит.
+                ${Bot.MSG_TO_STRING} <array of numbers> - переводит массив чисел в одну строку. Числа ограничены 16 битами. Если передано число длиннее 16 бит, будут использованы младшие его 16 бит.
 
-                /rot <key> <text> - преобразует текст по алгоритму ROT13 (Шифрование Цезаря) с заданным ключом. Ключ может быть положительным или отрицательным.
+                ${Bot.MSG_ROT} <key> <text> - преобразует текст по алгоритму ROT13 (Шифрование Цезаря) с заданным ключом. Ключ может быть положительным или отрицательным.
 
-                /rotBruteForce <text> - расшифровывает текст по алгоритму ROT13 (Шифрование Цезаря) со всеми возможными вариантами ключа.
+                ${Bot.MSG_ROT_BRUTE} <text> - расшифровывает текст по алгоритму ROT13 (Шифрование Цезаря) со всеми возможными вариантами ключа.
 
-                /checkMagic <magic_number> - помогает определить тип файла по магическому числу. Магические числа должны быть указаны в шестнадцатеричном формате без префикса '0x', пример: ff d8. Магическими числами считаются не только сигнатуры файлов (первые n байт), но и другие, характерные для файлов последовательности. Например, "49 44 41 54" - сектор данных (IDAT) PNG файла.
+                ${Bot.MSG_CHECK_MAGIC} <magic_number> - помогает определить тип файла по магическому числу. Магические числа должны быть указаны в шестнадцатеричном формате без префикса '0x', пример: ff d8. Магическими числами считаются не только сигнатуры файлов (первые n байт), но и другие, характерные для файлов последовательности. Например, "49 44 41 54" - сектор данных (IDAT) PNG файла.
             """.trimIndent()
         msg.replyMarkup = InlineKeyboardMarkup(
             listOf(

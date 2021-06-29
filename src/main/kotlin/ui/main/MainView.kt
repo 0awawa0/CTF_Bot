@@ -36,7 +36,7 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
     private val competitionSelector = combobox<MainViewModel.CompetitionItem> {
         cellFormat { text = it.name }
     }
-    private val logArea = textarea()
+    private val logArea = textarea { isEditable = false }
 
     override val root = vbox {
         spacing = 8.0
@@ -51,25 +51,34 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
 
             add(competitionSelector)
 
-            button {
-                text = "Start"
+            hbox {
+                spacing = 8.0
+                button {
+                    text = "Start"
 
-                action {
-                    val competition = competitionSelector.selectedItem ?: return@action
-                    viewModel.startBot(competition)
-                }
-            }.fitToParentWidth()
+                    disableProperty().bind(viewModel.isRunning)
+                    action {
+                        val competition = competitionSelector.selectedItem ?: return@action
+                        viewModel.startBot(competition)
+                    }
+                }.fitToParentWidth()
 
-            button {
-                text = "Start for testing"
+                button {
+                    text = "Start for testing"
+                    disableProperty().bind(viewModel.isRunning)
+                    action {
+                        val competition = competitionSelector.selectedItem ?: return@action
+                        showTestingPasswordDialog(competition)
+                    }
+                }.fitToParentWidth()
 
-                action { showTestingPasswordDialog() }
-            }.fitToParentWidth()
-
-            button {
-                text = "Stop"
-
-                action { viewModel.stopBot() }
+                button {
+                    text = "Stop"
+                    disableProperty().bind(
+                        viewModel.isRunning.booleanBinding { return@booleanBinding it?.not() ?: false}
+                    )
+                    action { viewModel.stopBot() }
+                }.fitToParentWidth()
             }.fitToParentWidth()
 
             add(logArea)
@@ -97,7 +106,7 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
         competitionSelector.items = viewModel.competitions
     }
 
-    private fun showTestingPasswordDialog() {
+    private fun showTestingPasswordDialog(competition: MainViewModel.CompetitionItem) {
         dialog {
             spacing = 8.0
             alignment = Pos.CENTER
@@ -105,9 +114,8 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
             title = "Testing password"
             text = "Enter testing password"
 
-            passwordfield {
+            val password = passwordfield {
                 action {
-                    val competition = competitionSelector.selectedItem ?: return@action
                     if (text.isNotBlank()) {
                         viewModel.startBotForTesting(competition, text)
                         close()
@@ -120,6 +128,22 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
                     }
                 }
             }
+            button {
+                text = "Ok"
+
+                action {
+                    if (password.text.isNotBlank()) {
+                        viewModel.startBotForTesting(competition, password.text)
+                        close()
+                    } else {
+                        alert(
+                            Alert.AlertType.ERROR,
+                            "Empty password",
+                            "Testing password must not be blank"
+                        )
+                    }
+                }
+            }.fitToParentWidth()
         }
     }
 }

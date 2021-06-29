@@ -24,13 +24,12 @@ class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
     }
 
     suspend fun getScoreBoard(): List<Pair<String, Int>> {
-        val scores = getScores()
+        val players = DbHelper.getAllPlayers()
         val result = ArrayList<Pair<String, Int>>()
-        for (score in scores) {
-            val player = score.getPlayer()
-            result.add(Pair(player.name, score.score))
+        for (player in players) {
+            result.add(Pair(player.name, player.getCompetitionScore(this)?.score ?: 0))
         }
-        return result
+        return result.sortedByDescending { it.second }
     }
 }
 
