@@ -110,8 +110,6 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
         dialog {
             spacing = 8.0
             alignment = Pos.CENTER
-
-            title = "Testing password"
             text = "Enter testing password"
 
             val password = passwordfield {

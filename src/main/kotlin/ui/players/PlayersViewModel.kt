@@ -1,5 +1,6 @@
 package ui.players
 
+import bot.BotManager
 import database.*
 import javafx.collections.transformation.SortedList
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,8 @@ class PlayersViewModel: BaseViewModel() {
         var name by dto::name
 
         fun onSelected() { selectedPlayer = dto }
+
+        fun sendMessage(text: String) { BotManager.sendMessageToPlayer(dto.id, text) }
 
         fun pushChanges() { viewModelScope.launch { dto.updateEntity() } }
 
@@ -104,6 +107,8 @@ class PlayersViewModel: BaseViewModel() {
             }
         }
     }
+
+    fun broadcastMessage(text: String) { BotManager.broadcastMessage(text) }
 
     private suspend fun onAddEvent(dto: BaseDTO) {
         when (dto) {

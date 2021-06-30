@@ -16,6 +16,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
     private val playersList = listview<PlayersViewModel.PlayerItem> {
         cellFormat {
             graphic = hbox {
+                alignment = Pos.CENTER_LEFT
                 padding = Insets(0.0, 4.0, 0.0, 4.0)
                 spacing = 8.0
 
@@ -45,10 +46,25 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         add(playersList)
         playersList.fitToParentSize()
 
-        hbox {
+        vbox {
             padding = Insets(8.0)
             alignment = Pos.CENTER
             spacing = 8.0
+
+            button {
+                text = "Send message to player"
+
+                action {
+                    val player = playersList.selectedItem ?: return@action
+                    showSendMessageToPlayerDialog(player)
+                }
+            }.fitToParentWidth()
+
+            button {
+                text = "Broadcast message"
+
+                action { showSendBroadcastMessageDialog() }
+            }.fitToParentWidth()
 
             button {
                 text = "Delete"
@@ -56,8 +72,8 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                     val selectedPlayer = playersList.selectedItem ?: return@action
                     showAcceptPlayerDeletionDialog(selectedPlayer)
                 }
-            }
-        }
+            }.fitToParentWidth()
+        }.fitToParentWidth()
     }
 
     private val playerName = label("") {
@@ -131,8 +147,8 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
             add(leftPane)
             add(rightPane)
 
-            constraintsForColumn(0).percentWidth = 25.0
-            constraintsForColumn(1).percentWidth = 85.0
+            constraintsForColumn(0).percentWidth = 20.0
+            constraintsForColumn(1).percentWidth = 80.0
         }
     }
 
@@ -190,6 +206,70 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                     action { this@dialog.close() }
                 }.fitToParentWidth()
             }.fitToParentWidth()
+        }
+    }
+
+    private fun showSendMessageToPlayerDialog(player: PlayersViewModel.PlayerItem) {
+        dialog {
+            stage.centerOnScreen()
+            prefWidth = 500.0
+            prefHeight = 250.0
+            spacing = 8.0
+            padding = Insets(6.0)
+
+            val messageText = textarea()
+            messageText.fitToParentSize()
+
+            hbox {
+                spacing = 8.0
+
+                button {
+                    text = "Send"
+
+                    action {
+                        if (messageText.text.isNotBlank()) player.sendMessage(messageText.text)
+                        close()
+                    }
+                }.fitToParentWidth()
+
+                button {
+                    text = "Cancel"
+
+                    action { close() }
+                }.fitToParentWidth()
+            }
+        }
+    }
+
+    private fun showSendBroadcastMessageDialog() {
+        dialog {
+            stage.centerOnScreen()
+            prefWidth = 500.0
+            prefHeight = 250.0
+            spacing = 8.0
+            padding = Insets(6.0)
+
+            val messageText = textarea()
+            messageText.fitToParentSize()
+
+            hbox {
+                spacing = 8.0
+
+                button {
+                    text = "Send"
+
+                    action {
+                        if (messageText.text.isNotBlank()) viewModel.broadcastMessage(messageText.text)
+                        close()
+                    }
+                }.fitToParentWidth()
+
+                button {
+                    text = "Cancel"
+
+                    action { close() }
+                }.fitToParentWidth()
+            }
         }
     }
 }
