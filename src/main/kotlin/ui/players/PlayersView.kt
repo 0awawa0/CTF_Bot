@@ -16,6 +16,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
     private val playersList = listview<PlayersViewModel.PlayerItem> {
         cellFormat {
             graphic = hbox {
+                alignment = Pos.CENTER_LEFT
                 padding = Insets(0.0, 4.0, 0.0, 4.0)
                 spacing = 8.0
 
@@ -153,8 +154,8 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
             add(leftPane)
             add(rightPane)
 
-            constraintsForColumn(0).percentWidth = 25.0
-            constraintsForColumn(1).percentWidth = 85.0
+            constraintsForColumn(0).percentWidth = 20.0
+            constraintsForColumn(1).percentWidth = 80.0
         }
     }
 
