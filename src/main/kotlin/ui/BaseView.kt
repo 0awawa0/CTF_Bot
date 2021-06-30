@@ -4,6 +4,7 @@ import tornadofx.View
 
 abstract class BaseView<T: BaseViewModel>(protected val viewModel: T, title: String = ""): View(title) {
 
+    abstract fun refresh()
     override fun onDock() {
         super.onDock()
         viewModel.onViewDock()

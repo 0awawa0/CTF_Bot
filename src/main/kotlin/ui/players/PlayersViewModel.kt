@@ -2,6 +2,7 @@ package ui.players
 
 import bot.BotManager
 import database.*
+import javafx.beans.property.ReadOnlyStringWrapper
 import javafx.collections.transformation.SortedList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -66,7 +67,15 @@ class PlayersViewModel: BaseViewModel() {
                 scoresLoadingMutex.withLock {
                     field = value
                     selectedCompetition = null
-                    withContext(Dispatchers.JavaFx) { scores.clear() }
+                    withContext(Dispatchers.JavaFx) {
+                        scores.clear()
+                        solves.clear()
+                        solves.addAll(value?.getSolves()?.map { SolveItem(it.id, it.getTask().name, it.timestamp) }
+                            ?: emptyList()
+                        )
+                        mPlayerName.set(value?.name ?: "")
+                        mPlayerScore.set(value?.getTotalScore()?.toString() ?: "")
+                    }
 
                     if (value == null) return@launch
                     val newScores = DbHelper.getAllCompetitions().map {
@@ -78,6 +87,12 @@ class PlayersViewModel: BaseViewModel() {
             }
         }
 
+    private val mPlayerName = ReadOnlyStringWrapper("")
+    val playerName = mPlayerName.readOnlyProperty
+
+    private val mPlayerScore = ReadOnlyStringWrapper("")
+    val playerScore = mPlayerScore.readOnlyProperty
+
     private val players = emptyList<PlayerItem>().toObservable()
     val scoreBoard = SortedList(players) { o1, o2 -> o2.totalScore - o1.totalScore }
     val scores = emptyList<CompetitionItem>().toObservable()
@@ -86,14 +101,14 @@ class PlayersViewModel: BaseViewModel() {
     override fun onViewDock() {
         super.onViewDock()
         viewModelScope.launch {
+            selectedPlayer = null
+            selectedCompetition = null
             withContext(Dispatchers.JavaFx) {
                 players.clear()
                 players.setAll(DbHelper.getAllPlayers().map {
                     PlayerItem(it, it.getTotalScore())
                 })
             }
-
-            selectedPlayer = null
             DbHelper.eventsPipe.collect { event ->
                 when (event) {
                     is DbHelper.DbEvent.Add -> onAddEvent(event.dto)
@@ -110,12 +125,12 @@ class PlayersViewModel: BaseViewModel() {
         when (dto) {
             is PlayerDTO -> withContext(Dispatchers.JavaFx) { players.add(PlayerItem(dto, dto.getTotalScore())) }
             is SolveDTO -> {
-                val isForSelectedPlayer = dto.getPlayer().id == selectedPlayer?.id
-                if (!isForSelectedPlayer) return
-
-                val isForSelectedCompetition = dto.getTask().getCompetition().id == selectedCompetition?.id
-                if (isForSelectedCompetition) withContext(Dispatchers.JavaFx) {
-                    solves.add(SolveItem(dto.id, dto.getTask().name, dto.timestamp))
+                val player = dto.getPlayer()
+                withContext(Dispatchers.JavaFx) {
+                    if (players.removeIf { it.id == player.id }) {
+                        players.add(PlayerItem(player, player.getTotalScore()))
+                    }
+                    if (selectedPlayer?.id == player.id) selectedPlayer = player
                 }
             }
         }
@@ -128,11 +143,6 @@ class PlayersViewModel: BaseViewModel() {
                     if (players.removeIf { it.id == dto.id }) players.add(PlayerItem(dto, dto.getTotalScore()))
                 }
             }
-//            is ScoreDTO -> {
-//                withContext(Dispatchers.JavaFx) {
-//                    if (scores.removeIf { it.id == dto.id }) scores.add(ScoreItem(dto, dto.getCompetition().name))
-//                }
-//            }
             is SolveDTO -> {
                 withContext(Dispatchers.JavaFx) {
                     if (solves.removeIf { it.id == dto.id }) {
@@ -147,10 +157,8 @@ class PlayersViewModel: BaseViewModel() {
         when (dto) {
             is PlayerDTO -> {
                 withContext(Dispatchers.JavaFx) { players.removeIf { it.id == dto.id } }
+                if (selectedPlayer?.id == dto.id) selectedPlayer = null
             }
-//            is ScoreDTO -> {
-//                withContext(Dispatchers.JavaFx) { scores.removeIf { it.id == dto.id }}
-//            }
             is SolveDTO -> {
                 withContext(Dispatchers.JavaFx) { solves.removeIf { it.id == dto.id }}
             }

@@ -1,6 +1,8 @@
 package ui.competitions
 
 import database.*
+import javafx.beans.property.ReadOnlyStringWrapper
+import javafx.beans.property.SimpleStringProperty
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -97,10 +99,14 @@ class CompetitionsViewModel: BaseViewModel() {
                         tasks.addAll(newTasks)
                         scoreboard.clear()
                         scoreboard.addAll(newScoreBoard)
+                        mCompetitionName.set(value?.name ?: "")
                     }
                 }
             }
         }
+
+    private val mCompetitionName = ReadOnlyStringWrapper("")
+    val competitionName = mCompetitionName.readOnlyProperty
 
     val competitions: ObservableList<CompetitionItem> = emptyList<CompetitionItem>().toObservable()
     val tasks: ObservableList<TaskItem> = emptyList<TaskItem>().toObservable()
@@ -138,8 +144,10 @@ class CompetitionsViewModel: BaseViewModel() {
                     is DbHelper.DbEvent.Update -> {
                         when (event.dto) {
                             is CompetitionDTO -> withContext(Dispatchers.JavaFx) {
-                                if (competitions.removeIf { it.id == event.dto.id })
+                                if (competitions.removeIf { it.id == event.dto.id }) {
                                     competitions.add(CompetitionItem(event.dto))
+                                }
+                                if (selectedCompetition?.id == event.dto.id) selectedCompetition = event.dto
                             }
                             is TaskDTO -> withContext(Dispatchers.JavaFx) {
                                 if (tasks.removeIf { it.id == event.dto.id })

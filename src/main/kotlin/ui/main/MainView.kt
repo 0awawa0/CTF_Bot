@@ -5,6 +5,7 @@ import javafx.geometry.Pos
 import javafx.scene.control.Alert
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.launch
@@ -18,79 +19,75 @@ import java.util.*
 
 class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
 
-    private val menuBar = menubar {
-        menu("Menu") {
-            item("Competitions") {
-                action { find<CompetitionsView>().openModal() }
-            }
-            item("Players") {
-                action { find<PlayersView>().openModal() }
-            }
-            item("Exit")
-        }
-        menubutton("About")
-    }
+    private var viewScope = CoroutineScope(Dispatchers.JavaFx)
 
-    private val viewScope = CoroutineScope(Dispatchers.JavaFx)
-
-    private val competitionSelector = combobox<MainViewModel.CompetitionItem> {
-        cellFormat { text = it.name }
-    }
+    private val competitionSelector = combobox<MainViewModel.CompetitionItem> { cellFormat { text = it.name } }
     private val logArea = textarea { isEditable = false }
 
-    override val root = vbox {
-        spacing = 8.0
-        alignment = Pos.CENTER
-
-        add(menuBar)
-        menuBar.fitToParentWidth()
-        vbox {
-            spacing = 8.0
-            padding = Insets(8.0)
-            alignment = Pos.CENTER
-
-            add(competitionSelector)
-
-            hbox {
+    override val root = tabpane {
+        tab("Main") {
+            isClosable = false
+            vbox {
                 spacing = 8.0
-                button {
-                    text = "Start"
+                alignment = Pos.CENTER
+                vbox {
+                    spacing = 8.0
+                    padding = Insets(8.0)
+                    alignment = Pos.CENTER
 
-                    disableProperty().bind(viewModel.isRunning)
-                    action {
-                        val competition = competitionSelector.selectedItem ?: return@action
-                        viewModel.startBot(competition)
-                    }
-                }.fitToParentWidth()
+                    add(competitionSelector)
 
-                button {
-                    text = "Start for testing"
-                    disableProperty().bind(viewModel.isRunning)
-                    action {
-                        val competition = competitionSelector.selectedItem ?: return@action
-                        showTestingPasswordDialog(competition)
-                    }
-                }.fitToParentWidth()
+                    hbox {
+                        spacing = 8.0
+                        button {
+                            text = "Start"
 
-                button {
-                    text = "Stop"
-                    disableProperty().bind(
-                        viewModel.isRunning.booleanBinding { return@booleanBinding it?.not() ?: false}
-                    )
-                    action { viewModel.stopBot() }
-                }.fitToParentWidth()
-            }.fitToParentWidth()
+                            disableProperty().bind(viewModel.isRunning)
+                            action {
+                                val competition = competitionSelector.selectedItem ?: return@action
+                                viewModel.startBot(competition)
+                            }
+                        }.fitToParentWidth()
 
-            add(logArea)
+                        button {
+                            text = "Start for testing"
+                            disableProperty().bind(viewModel.isRunning)
+                            action {
+                                val competition = competitionSelector.selectedItem ?: return@action
+                                showTestingPasswordDialog(competition)
+                            }
+                        }.fitToParentWidth()
 
-            competitionSelector.fitToParentWidth()
-            logArea.fitToParentSize()
-        }.fitToParentSize()
+                        button {
+                            text = "Stop"
+                            disableProperty().bind(
+                                viewModel.isRunning.booleanBinding { return@booleanBinding it?.not() ?: false}
+                            )
+                            action { viewModel.stopBot() }
+                        }.fitToParentWidth()
+                    }.fitToParentWidth()
+
+                    add(logArea)
+
+                    competitionSelector.fitToParentWidth()
+                    logArea.fitToParentSize()
+                }.fitToParentSize()
+            }
+        }
+        tab<CompetitionsView>()
+        tab<PlayersView>() {
+            setOnSelectionChanged {
+                find<PlayersView>().refresh()
+            }
+        }
     }
+
+    override fun refresh() {}
 
     override fun onDock() {
         super.onDock()
 
+        viewScope = CoroutineScope(Dispatchers.JavaFx)
         viewScope.launch {
             Logger.messages.collect {
                 val dateFormat = SimpleDateFormat("dd.MM.YYYY HH:mm:ss")
@@ -104,6 +101,12 @@ class MainView: BaseView<MainViewModel>(MainViewModel(), "CTF Bot") {
             }
         }
         competitionSelector.items = viewModel.competitions
+    }
+
+    override fun onUndock() {
+        super.onUndock()
+
+        viewScope.cancel()
     }
 
     private fun showTestingPasswordDialog(competition: MainViewModel.CompetitionItem) {

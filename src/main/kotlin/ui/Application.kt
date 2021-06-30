@@ -14,9 +14,7 @@ class Application:  App(ui.main.MainView::class) {
     override fun start(stage: Stage) {
         super.start(stage)
 
-        stage.minWidth = 800.0
-        stage.minHeight = 600.0
-        stage.centerOnScreen()
+        stage.isMaximized = true
 
         stage.setOnCloseRequest {
             exitProcess(0)
