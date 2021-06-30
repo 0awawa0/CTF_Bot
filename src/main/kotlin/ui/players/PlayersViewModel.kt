@@ -47,16 +47,14 @@ class PlayersViewModel: BaseViewModel() {
             viewModelScope.launch {
                 solvesLoadingMutex.withLock {
                     field = value
-                    withContext(Dispatchers.JavaFx) {
-                        solves.clear()
-                        val player = selectedPlayer ?: return@withContext
-                        if (value == null) return@withContext
-                        solves.addAll(
-                            player.getSolves(value).map {
-                                SolveItem(it.id, it.getTask().name, it.timestamp)
-                            }
-                        )
-                    }
+                    withContext(Dispatchers.JavaFx) { solves.clear() }
+
+                    if (value == null) return@launch
+                    val newSolves = selectedPlayer?.getSolves(value)?.map {
+                        SolveItem(it.id, it.getTask().name, it.timestamp)
+                    } ?: emptyList()
+
+                    withContext(Dispatchers.JavaFx) { solves.addAll(newSolves) }
                 }
             }
         }
@@ -68,15 +66,14 @@ class PlayersViewModel: BaseViewModel() {
                 scoresLoadingMutex.withLock {
                     field = value
                     selectedCompetition = null
-                    withContext(Dispatchers.JavaFx) {
-                        scores.clear()
-                        if (value == null) return@withContext
-                        scores.addAll(
-                            DbHelper.getAllCompetitions().map {
-                                CompetitionItem(it, value.getCompetitionScore(it))
-                            }
-                        )
+                    withContext(Dispatchers.JavaFx) { scores.clear() }
+
+                    if (value == null) return@launch
+                    val newScores = DbHelper.getAllCompetitions().map {
+                        CompetitionItem(it, value.getCompetitionScore(it))
                     }
+
+                    withContext(Dispatchers.JavaFx) { scores.addAll(newScores) }
                 }
             }
         }

@@ -88,16 +88,15 @@ class CompetitionsViewModel: BaseViewModel() {
         set(value) {
             viewModelScope.launch {
                 tasksLoadingMutex.withLock {
+                    field = value
+                    val newTasks = value?.getTasks()?.map { TaskItem(it) } ?: emptyList()
+                    val newScoreBoard = value?.getScoreBoard()?.map { ScoreboardItem(it.first, it.second) }
+                        ?: emptyList()
                     withContext(Dispatchers.JavaFx) {
                         tasks.clear()
-                        tasks.addAll(value?.getTasks()?.map { TaskItem(it) } ?: emptyList())
+                        tasks.addAll(newTasks)
                         scoreboard.clear()
-                        scoreboard.addAll(
-                            value?.getScoreBoard()?.map {
-                                ScoreboardItem(it.first, it.second)
-                            } ?: emptyList()
-                        )
-                        field = value
+                        scoreboard.addAll(newScoreBoard)
                     }
                 }
             }
@@ -113,6 +112,8 @@ class CompetitionsViewModel: BaseViewModel() {
     }
 
     override fun onViewDock() {
+        super.onViewDock()
+
         viewModelScope.launch {
             withContext(Dispatchers.JavaFx) {
                 competitions.clear()

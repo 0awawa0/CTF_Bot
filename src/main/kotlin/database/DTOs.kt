@@ -19,10 +19,6 @@ class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { entity.tasks.map { TaskDTO(it) }}
     }
 
-//    suspend fun getScores(): List<ScoreDTO> {
-//        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
-//    }
-
     suspend fun getScoreBoard(): List<Pair<String, Int>> {
         val players = DbHelper.getAllPlayers()
         val result = ArrayList<Pair<String, Int>>()
