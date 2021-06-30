@@ -2,16 +2,13 @@ package database
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import utils.Logger
 import java.io.File
@@ -107,15 +104,6 @@ object DbHelper {
             return emptyList()
         }
     }
-
-//    suspend fun getAllScores(): List<ScoreDTO> {
-//        try {
-//            return transactionOn(database) { ScoreEntity.all().map { ScoreDTO(it) }}
-//        } catch (ex: Exception) {
-//            Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")
-//            return emptyList()
-//        }
-//    }
 
     suspend fun getScoreboard(): List<PlayerDTO> {
         try {
@@ -250,15 +238,6 @@ object DbHelper {
         }
     }
 
-//    suspend fun update(score: ScoreDTO) {
-//        try {
-//            transactionOn(database) { score.entity.score = score.score }
-//            mEventsPipe.emit(DbEvent.Update(score))
-//        } catch (ex: Exception) {
-//            Logger.error(tag, "Failed to update score: ${ex.message}\n${ex.stackTraceToString()}")
-//        }
-//    }
-
     suspend fun onFlagPassed(competition: CompetitionDTO, playerId: Long, flag: String): FlagCheckResult {
         flagCheckMutex.withLock {
             try {
@@ -267,11 +246,7 @@ object DbHelper {
 
                 val task = competition.getTasks().find { it.flag == flag } ?: return FlagCheckResult.WrongFlag
 
-                // Adding new solution must be synchronized in order to protect of adding solution twice
-                val solvedPlayers = task.getSolvedPlayers()
-                if (solvedPlayers.any { it.id == player.id }) {
-                    return FlagCheckResult.SolveExists
-                }
+                if (player.hasSolved(task)) return FlagCheckResult.SolveExists
 
                 val dto = transactionOn(database) {
                     SolveDTO(SolveEntity.new {
@@ -280,36 +255,7 @@ object DbHelper {
                         this.timestamp = Date().time
                     })
                 }
-
-
                 mEventsPipe.emit(DbEvent.Add(dto))
-
-//                val previousPrice = getNewTaskPrice(solvedPlayers.count() - 1)
-//                val currentPrice = getNewTaskPrice(solvedPlayers.count())
-//
-//                // Updating other players' scores
-//                for (p in solvedPlayers) {
-//                    val score = p.getCompetitionScore(competition) ?: continue
-//                    score.score = score.score - previousPrice + currentPrice
-//                    score.updateEntity()
-//                }
-//
-//                // Add
-//                val playerSore = player.getCompetitionScore(competition)
-//                if (playerSore == null) {
-//                    val scoreDto = transactionOn(database) {
-//                        ScoreDTO(ScoreEntity.new {
-//                            this.competition = competition.entity
-//                            this.player = player.entity
-//                            this.score = currentPrice
-//                        })
-//                    }
-//                    mEventsPipe.emit(DbEvent.Add(scoreDto))
-//                } else {
-//                    playerSore.score += currentPrice
-//                    playerSore.updateEntity()
-//                    mEventsPipe.emit(DbEvent.Update(playerSore))
-//                }
                 return FlagCheckResult.CorrectFlag(task.getSolvedPrice())
             } catch (ex: Exception) {
                 Logger.error(tag, "Failed to check player's flag: ${ex.message}\n${ex.stackTraceToString()}")

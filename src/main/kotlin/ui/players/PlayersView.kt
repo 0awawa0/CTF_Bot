@@ -39,6 +39,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
             it.onSelected()
             playerName.text = it.name
             playerScore.text = it.totalScore.toString()
+            playerNameEdit.replaceWith(playerName)
         }
     }
 
@@ -111,7 +112,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
     private val scoresTable = tableview<PlayersViewModel.CompetitionItem> {
 
         readonlyColumn("Competition", PlayersViewModel.CompetitionItem::name)
-        val scoreColumn = column("Score", PlayersViewModel.CompetitionItem::score) {
+        readonlyColumn("Score", PlayersViewModel.CompetitionItem::score) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
         }
         onUserSelect(1) { it.onSelected() }

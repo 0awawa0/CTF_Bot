@@ -172,31 +172,31 @@ class DatabaseTest {
             )
             val newPlayer = createPlayer(PlayerModel(1, "Player"))
 
-            assert(newPlayer.getTotalScore() == 0L && newPlayer.getScores().isEmpty())
+            assert(newPlayer.getTotalScore() == 0)
             val taskPrice = newTask.getTaskPrice()
             val result = DbHelper.onFlagPassed(newCompetition, newPlayer.id, newTask.flag)
             assert(result is DbHelper.FlagCheckResult.CorrectFlag)
             assert((result as DbHelper.FlagCheckResult.CorrectFlag).price == taskPrice)
 
-            val currScore = newPlayer.getCompetitionScore(newCompetition)!!
+            val currScore = newPlayer.getCompetitionScore(newCompetition)
             val currTotalScore = newPlayer.getTotalScore()
-            assert(currScore.score == taskPrice.toLong() && currTotalScore == taskPrice.toLong())
+            assert(currScore == taskPrice && currTotalScore == taskPrice)
 
             val anotherPass = DbHelper.onFlagPassed(newCompetition, newPlayer.id, newTask.flag)
             assert(anotherPass is DbHelper.FlagCheckResult.SolveExists)
 
             assert(newTask.getSolvedPlayers().any { it.id == newPlayer.id })
 
-            val anotherScore = newPlayer.getCompetitionScore(newCompetition)!!
+            val anotherScore = newPlayer.getCompetitionScore(newCompetition)
             val anotherTotalScore = newPlayer.getTotalScore()
-            assert(currScore.score == anotherScore.score && currTotalScore == anotherTotalScore)
+            assert(currScore == anotherScore && currTotalScore == anotherTotalScore)
 
             val wrongPass = DbHelper.onFlagPassed(newCompetition, newPlayer.id, "Wrong flag")
             assert(wrongPass is DbHelper.FlagCheckResult.WrongFlag)
 
-            val wrongPassScore = newPlayer.getCompetitionScore(newCompetition)!!
+            val wrongPassScore = newPlayer.getCompetitionScore(newCompetition)
             val wrongPassTotalScore = newPlayer.getTotalScore()
-            assert(wrongPassScore.score == currScore.score && wrongPassTotalScore == currTotalScore)
+            assert(wrongPassScore == currScore && wrongPassTotalScore == currTotalScore)
 
             val anotherCompetition = createCompetition(CompetitionModel("Another competition"))
             val anotherTask = createTask(
@@ -214,15 +214,15 @@ class DatabaseTest {
             val newPass = DbHelper.onFlagPassed(anotherCompetition, newPlayer.id, anotherTask.flag)
             assert(newPass is DbHelper.FlagCheckResult.CorrectFlag)
 
-            val newScore = newPlayer.getCompetitionScore(anotherCompetition)!!
+            val newScore = newPlayer.getCompetitionScore(anotherCompetition)
             val newTotalScore = newPlayer.getTotalScore()
-            assert(newScore.score == anotherPrice.toLong() && newTotalScore == currTotalScore + anotherPrice)
+            assert(newScore == anotherPrice && newTotalScore == currTotalScore + anotherPrice)
 
             DbHelper.delete(newPlayer)
             DbHelper.delete(newCompetition)
             DbHelper.delete(anotherCompetition)
             assert(DbHelper.getAllTasks().none { it.id == newTask.id || it.id == anotherTask.id })
-            assert(DbHelper.getAllSolves().isEmpty() && DbHelper.getAllScores().isEmpty())
+            assert(DbHelper.getAllSolves().isEmpty())
         }
     }
 
@@ -258,7 +258,7 @@ class DatabaseTest {
 
             val price1 = task1.getTaskPrice()
             val price2 = task2.getTaskPrice()
-            val expectedScore = (price1 + price2).toLong()
+            val expectedScore = price1 + price2
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             val coroutines: MutableList<Job> = mutableListOf()
             repeat(10) {
@@ -271,24 +271,19 @@ class DatabaseTest {
             }
 
             coroutines.joinAll()
-            val scores = DbHelper.getAllScores()
-            val competitionScore = scores.find {
-                it.getCompetition().id == newCompetition.id && it.getPlayer().id == newPlayer.id
-            }
-            assert(competitionScore != null)
 
+            val competitionScore = newPlayer.getCompetitionScore(newCompetition)
             val totalScore = newPlayer.getTotalScore()
-            assert(competitionScore!!.score == expectedScore && totalScore == expectedScore) {
-                "Expected $expectedScore but received ${competitionScore.score}"
+            assert(competitionScore == expectedScore && totalScore == expectedScore) {
+                "Expected $expectedScore but received ${competitionScore}"
             }
             assert(DbHelper.getAllSolves().size == 2)
-            assert(DbHelper.getAllScores().size == 1)
 
             val secondPlayer = createPlayer(PlayerModel(2, "Second player"))
 
             val newPrice1 = task1.getTaskPrice()
             val newPrice2 = task2.getTaskPrice()
-            val expectedSecondScore = (newPrice1 + newPrice2).toLong()
+            val expectedSecondScore = newPrice1 + newPrice2
 
             val result1 = DbHelper.onFlagPassed(newCompetition, secondPlayer.id, task1.flag)
             val result2 = DbHelper.onFlagPassed(newCompetition, secondPlayer.id, task2.flag)
@@ -304,7 +299,6 @@ class DatabaseTest {
             DbHelper.delete(newPlayer)
             DbHelper.delete(newCompetition)
 
-            assert(DbHelper.getAllScores().isEmpty())
             assert(DbHelper.getAllSolves().isEmpty())
         }
     }

@@ -34,14 +34,9 @@ class PlayersViewModel: BaseViewModel() {
         fun delete() { viewModelScope.launch { DbHelper.delete(dto) } }
     }
 
-    inner class CompetitionItem(private val dto: CompetitionDTO, private val player: PlayerDTO) {
+    inner class CompetitionItem(private val dto: CompetitionDTO, val score: Int) {
         val id by dto::id
         val name by dto::name
-        var score: Int = 0
-
-        init {
-            viewModelScope.launch { score = player.getCompetitionScore(dto) }
-        }
 
         fun onSelected() { selectedCompetition = dto }
     }
@@ -76,14 +71,18 @@ class PlayersViewModel: BaseViewModel() {
                     withContext(Dispatchers.JavaFx) {
                         scores.clear()
                         if (value == null) return@withContext
-                        scores.addAll(DbHelper.getAllCompetitions().map { CompetitionItem(it, value) })
+                        scores.addAll(
+                            DbHelper.getAllCompetitions().map {
+                                CompetitionItem(it, value.getCompetitionScore(it))
+                            }
+                        )
                     }
                 }
             }
         }
 
     private val players = emptyList<PlayerItem>().toObservable()
-    val scoreBoard = SortedList(players) { o1, o2 -> o1.totalScore - o2.totalScore }
+    val scoreBoard = SortedList(players) { o1, o2 -> o2.totalScore - o1.totalScore }
     val scores = emptyList<CompetitionItem>().toObservable()
     val solves = emptyList<SolveItem>().toObservable()
 
