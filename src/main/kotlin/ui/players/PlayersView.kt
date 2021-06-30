@@ -1,5 +1,7 @@
 package ui.players
 
+import javafx.beans.binding.BooleanExpression
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.TableView
@@ -12,6 +14,9 @@ import ui.BaseView
 import ui.Colors
 
 class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
+
+    override val closeable: BooleanExpression
+        get() = BooleanExpression.booleanExpression(SimpleBooleanProperty(false))
 
     private val playersList = listview<PlayersViewModel.PlayerItem> {
         cellFormat {
@@ -35,12 +40,7 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
                 }
             }
         }
-        onUserSelect(1) {
-            it.onSelected()
-            playerName.text = it.name
-            playerScore.text = it.totalScore.toString()
-            playerNameEdit.replaceWith(playerName)
-        }
+        onUserSelect(1) { it.onSelected() }
     }
 
     private val leftPane = vbox {
@@ -78,32 +78,15 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
     }
 
     private val playerName = label("") {
+        textProperty().bind(viewModel.playerName)
         style {
             fontSize = 24.px
             fontWeight = FontWeight.BLACK
         }
-
-        onDoubleClick {
-            playerNameEdit.text = this.text
-            replaceWith(playerNameEdit)
-        }
-    }
-
-    private val playerNameEdit: TextField = textfield {
-        action {
-            val newName = this.text
-            if (newName.isNotEmpty()) {
-                playerName.text = this.text
-                playersList.selectedItem?.apply {
-                    this.name = playerName.text
-                    pushChanges()
-                }
-            }
-            replaceWith(playerName)
-        }
     }
 
     private val playerScore = label("") {
+        textProperty().bind(viewModel.playerScore)
         style {
             fontSize = 20.px
         }
@@ -143,6 +126,11 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         tables.fitToParentSize()
     }
 
+    override fun refresh() {
+        viewModel.onViewUndock()
+        viewModel.onViewDock()
+    }
+
     override val root =  gridpane {
         row {
             add(leftPane)
@@ -156,13 +144,10 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
     override fun onDock() {
         super.onDock()
 
-        currentStage?.width = minOf(1000.0, primaryStage.maxWidth)
-        currentStage?.height = 500.0
-        currentStage?.centerOnScreen()
-
         playersList.items = viewModel.scoreBoard
         scoresTable.items = viewModel.scores
         solvesTable.items = viewModel.solves
+        root.fitToParentSize()
     }
 
     private fun showAcceptPlayerDeletionDialog(player: PlayersViewModel.PlayerItem) {
@@ -194,8 +179,6 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 
                     action {
                         player.delete()
-                        playerName.text = ""
-                        playerScore.text = ""
                         this@dialog.close()
                     }
                 }.fitToParentWidth()

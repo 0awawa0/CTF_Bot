@@ -1,5 +1,7 @@
 package ui.competitions
 
+import javafx.beans.binding.BooleanExpression
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
@@ -17,6 +19,9 @@ import ui.Colors
 
 class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(), "Competitions") {
 
+    override val closeable: BooleanExpression
+        get() = BooleanExpression.booleanExpression(SimpleBooleanProperty(false))
+
     private val competitionsList = listview<CompetitionsViewModel.CompetitionItem> {
 
         cellFormat {
@@ -27,11 +32,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
             }
         }
 
-        onUserSelect(clickCount = 1) {
-            competitionName.text = it.name
-            competitionNameEdit.text = it.name
-            it.onSelected()
-        }
+        onUserSelect(clickCount = 1) { it.onSelected() }
     }
 
     private val leftPane = vbox {
@@ -135,6 +136,7 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
     private val competitionName = label("") {
         padding = Insets(8.0)
 
+        textProperty().bind(viewModel.competitionName)
         style {
             textAlignment = TextAlignment.CENTER
             fontSize = 24.px
@@ -157,9 +159,8 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         action {
             val newName = this.text
             if (newName.isNotEmpty()) {
-                competitionName.text = this.text
                 competitionsList.selectedItem?.apply {
-                    this.name = competitionName.text
+                    this.name = newName
                     pushChanges()
                 }
                 replaceWith(competitionName)
@@ -191,16 +192,18 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         }
     }
 
+    override fun refresh() {
+        viewModel.onViewUndock()
+        viewModel.onViewDock()
+    }
+
     override fun onDock() {
         super.onDock()
-
-        currentStage?.width =  minOf(1000.0, primaryStage.maxWidth)
-        currentStage?.height = 500.0
-        currentStage?.centerOnScreen()
 
         competitionsList.items = viewModel.competitions
         tasksTable.items = viewModel.tasks
         scoreboardTable.items = viewModel.scoreboard
+        root.fitToParentSize()
     }
 
     override fun onUndock() {
