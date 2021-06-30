@@ -92,18 +92,11 @@ class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
         }
     }
 
-    private val scoresTable = tableview<PlayersViewModel.ScoreItem> {
+    private val scoresTable = tableview<PlayersViewModel.CompetitionItem> {
 
-        readonlyColumn("Competition", PlayersViewModel.ScoreItem::competitionName)
-        val scoreColumn = column("Score", PlayersViewModel.ScoreItem::score) {
+        readonlyColumn("Competition", PlayersViewModel.CompetitionItem::name)
+        val scoreColumn = column("Score", PlayersViewModel.CompetitionItem::score) {
             columnResizePolicy = TableView.CONSTRAINED_RESIZE_POLICY
-        }.makeEditable()
-
-        onEditCommit {
-            if (this.tableColumn == scoreColumn) {
-                it.score = this.newValue as Int
-                it.pushChanges()
-            }
         }
         onUserSelect(1) { it.onSelected() }
     }

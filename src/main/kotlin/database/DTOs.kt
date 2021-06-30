@@ -19,15 +19,15 @@ class CompetitionDTO(val entity: CompetitionEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { entity.tasks.map { TaskDTO(it) }}
     }
 
-    suspend fun getScores(): List<ScoreDTO> {
-        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
-    }
+//    suspend fun getScores(): List<ScoreDTO> {
+//        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
+//    }
 
     suspend fun getScoreBoard(): List<Pair<String, Int>> {
         val players = DbHelper.getAllPlayers()
         val result = ArrayList<Pair<String, Int>>()
         for (player in players) {
-            result.add(Pair(player.name, player.getCompetitionScore(this)?.score ?: 0))
+            result.add(Pair(player.name, player.getCompetitionScore(this)))
         }
         return result.sortedByDescending { it.second }
     }
@@ -42,26 +42,22 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
         DbHelper.update(this)
     }
 
-    fun getTotalScoreSynchronous(): Int {
-        return runBlocking { getScores().sumOf { it.score } }
-    }
+    fun getTotalScoreSynchronous(): Int { return runBlocking { getTotalScore() } }
 
-    suspend fun getScores(): List<ScoreDTO> {
-        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
-    }
+//    suspend fun getScores(): List<ScoreDTO> {
+//        return DbHelper.transactionOn(DbHelper.database) { entity.scores.map { ScoreDTO(it) }}
+//    }
 
     suspend fun getSolves(): List<SolveDTO> {
         return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { SolveDTO(it) }}
     }
 
-    suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): ScoreDTO? {
-        return getScores().find {
-            it.getCompetition().id == competitionDTO.id
-        }
+    suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): Int {
+        return getSolvedTasks(competitionDTO).sumBy { it.getSolvedPrice() }
     }
 
     suspend fun getTotalScore(): Int {
-        return getScores().sumOf { it.score }
+        return getSolves().sumBy { it.getTask().getSolvedPrice() }
     }
 
     suspend fun getSolvedTasks(competitionDTO: CompetitionDTO): List<TaskDTO> {
@@ -70,6 +66,10 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
         }.filter {
             it.getCompetition().id == competitionDTO.id
         }
+    }
+
+    suspend fun getSolves(competitionDTO: CompetitionDTO): List<SolveDTO> {
+        return getSolves().filter { it.getTask().getCompetition().id == competitionDTO.id }
     }
 
     suspend fun hasSolved(taskDTO: TaskDTO): Boolean { return getSolves().any { it.getTask().id == taskDTO.id } }
@@ -103,6 +103,8 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
     }
 
     suspend fun getTaskPrice(): Int { return DbHelper.getNewTaskPrice(getSolves().count()) }
+
+    suspend fun getSolvedPrice(): Int { return DbHelper.getNewTaskPrice(getSolves().count() - 1) }
 }
 
 class SolveDTO(val entity: SolveEntity): BaseDTO() {
@@ -125,26 +127,26 @@ class SolveDTO(val entity: SolveEntity): BaseDTO() {
     }
 }
 
-data class ScoreDTO(val entity: ScoreEntity): BaseDTO() {
-    override val id: Long = entity.id.value
-
-    var score = entity.score
-
-    override suspend fun updateEntity() { DbHelper.update(this) }
-
-    suspend fun getCompetition(): CompetitionDTO {
-        return DbHelper.transactionOn(DbHelper.database) { CompetitionDTO(entity.competition) }
-    }
-
-    fun getCompetitionSynchronous(): CompetitionDTO {
-        return runBlocking { getCompetition() }
-    }
-
-    suspend fun getPlayer(): PlayerDTO {
-        return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
-    }
-
-    fun getPlayerName(): String {
-        return runBlocking { getPlayer().name }
-    }
-}
+//data class ScoreDTO(val entity: ScoreEntity): BaseDTO() {
+//    override val id: Long = entity.id.value
+//
+//    var score = entity.score
+//
+//    override suspend fun updateEntity() { DbHelper.update(this) }
+//
+//    suspend fun getCompetition(): CompetitionDTO {
+//        return DbHelper.transactionOn(DbHelper.database) { CompetitionDTO(entity.competition) }
+//    }
+//
+//    fun getCompetitionSynchronous(): CompetitionDTO {
+//        return runBlocking { getCompetition() }
+//    }
+//
+//    suspend fun getPlayer(): PlayerDTO {
+//        return DbHelper.transactionOn(DbHelper.database) { PlayerDTO(entity.player) }
+//    }
+//
+//    fun getPlayerName(): String {
+//        return runBlocking { getPlayer().name }
+//    }
+//}

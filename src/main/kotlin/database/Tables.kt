@@ -27,8 +27,8 @@ object SolvesTable: LongIdTable(name = "Solves") {
     val timestamp = long("timestamp")
 }
 
-object ScoresTable: LongIdTable(name = "Scores") {
-    val competition = reference("competition", CompetitionsTable, onDelete = ReferenceOption.CASCADE)
-    val player = reference("player", PlayersTable, onDelete = ReferenceOption.CASCADE)
-    val score = integer("score")
-}
+//object ScoresTable: LongIdTable(name = "Scores") {
+//    val competition = reference("competition", CompetitionsTable, onDelete = ReferenceOption.CASCADE)
+//    val player = reference("player", PlayersTable, onDelete = ReferenceOption.CASCADE)
+//    val score = integer("score")
+//}

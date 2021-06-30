@@ -212,7 +212,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     private suspend fun getMenuMessage(userName: String, chatId: Long): SendMessage {
         val bot = bot.get() ?: return getErrorMessage(chatId)
         val player = DbHelper.getPlayer(chatId) ?: return getStartMessage(userName, chatId)
-        val playerCompetitionScore = player.getCompetitionScore(bot.competition)?.score ?: 0
+        val playerCompetitionScore = player.getCompetitionScore(bot.competition)
         val playerTotalScore = player.getTotalScore()
 
         val msgText = """<b>${bot.competition.name}</b>
@@ -299,7 +299,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         scoreboard.forEachIndexed { index, player ->
             val name = player.name.padEnd(16, ' ')
             val number = (index + 1).toString().padStart(3, ' ')
-            val score = (player.getCompetitionScore(bot.competition)?.score ?: 0)
+            val score = (player.getCompetitionScore(bot.competition))
                 .toString()
                 .padStart(6, ' ')
             msgText += "%s. %s %s\n".format(number, name, score)
