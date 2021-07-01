@@ -1,8 +1,8 @@
 package ui.competitions
 
 import database.*
+import javafx.beans.property.ReadOnlyStringProperty
 import javafx.beans.property.ReadOnlyStringWrapper
-import javafx.beans.property.SimpleStringProperty
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -10,6 +10,7 @@ import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tornadofx.toObservable
 import ui.BaseViewModel
@@ -55,12 +56,43 @@ class CompetitionsViewModel: BaseViewModel() {
                 try {
                     val text = file.readText()
                     val parse = Json.decodeFromString<Array<TaskModel>>(text)
-                    for (task in parse) {
-                        DbHelper.add(dto, task)
-                    }
+                    for (task in parse) DbHelper.add(dto, task)
                 } catch (ex: Exception) {
-                    onErrorAction()
-                    Logger.error(tag, "Failed to decode JSON. ${ex.message}\n${ex.stackTraceToString()}")
+                    withContext(Dispatchers.JavaFx) { onErrorAction() }
+                    Logger.error(
+                        tag,
+                        "Failed to parse tasks from JSON. ${ex.message}\n${ex.stackTraceToString()}"
+                    )
+                }
+            }
+        }
+
+        fun exportToJson(file: String, onSuccessAction: () -> Unit, onErrorAction: () -> Unit) {
+            viewModelScope.launch {
+                try {
+                    val tasks = dto.getTasks().map {
+                        TaskModel(
+                            it.category,
+                            it.name,
+                            it.description,
+                            it.flag,
+                            it.attachment
+                        )
+                    }
+                    val text = Json.encodeToString(arrayOf(
+                        CompetitionModel(
+                            dto.name,
+                            tasks
+                        )
+                    ))
+                    File(file).writeText(text)
+                    withContext(Dispatchers.JavaFx) { onSuccessAction() }
+                } catch (ex: Exception) {
+                    withContext(Dispatchers.JavaFx) { onErrorAction() }
+                    Logger.error(
+                        tag,
+                        "Failed to extract competition to JSON. ${ex.message}\n${ex.stackTraceToString()}"
+                    )
                 }
             }
         }
@@ -80,6 +112,20 @@ class CompetitionsViewModel: BaseViewModel() {
 
         fun delete() { viewModelScope.launch { DbHelper.delete(dto) } }
 
+        fun exportToJson(file: String, onSuccessAction: () -> Unit, onErrorAction: () -> Unit) {
+            viewModelScope.launch {
+                try {
+                    val text = Json.encodeToString(arrayOf(
+                        TaskModel(category, name, description, flag, attachment)
+                    ))
+                    File(file).writeText(text)
+                    withContext(Dispatchers.JavaFx) { onSuccessAction() }
+                } catch (ex: Exception) {
+                    withContext(Dispatchers.JavaFx) { onErrorAction() }
+                    Logger.error(tag, "Failed to export task to JSON: ${ex.message}\n${ex.stackTraceToString()}")
+                }
+            }
+        }
         fun pushChanges() { viewModelScope.launch { dto.updateEntity() } }
     }
 
@@ -106,7 +152,7 @@ class CompetitionsViewModel: BaseViewModel() {
         }
 
     private val mCompetitionName = ReadOnlyStringWrapper("")
-    val competitionName = mCompetitionName.readOnlyProperty
+    val competitionName: ReadOnlyStringProperty = mCompetitionName.readOnlyProperty
 
     val competitions: ObservableList<CompetitionItem> = emptyList<CompetitionItem>().toObservable()
     val tasks: ObservableList<TaskItem> = emptyList<TaskItem>().toObservable()
@@ -167,6 +213,22 @@ class CompetitionsViewModel: BaseViewModel() {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    fun addCompetitionsFromJson(file: File, onErrorAction: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val text = file.readText()
+                val parse = Json.decodeFromString<Array<CompetitionModel>>(text)
+                for (competition in parse) DbHelper.add(competition)
+            } catch (ex: Exception) {
+                withContext(Dispatchers.JavaFx) { onErrorAction() }
+                Logger.error(
+                    tag,
+                    "Failed to parse competitions from JSON. ${ex.message}\n${ex.stackTraceToString()}"
+                )
             }
         }
     }

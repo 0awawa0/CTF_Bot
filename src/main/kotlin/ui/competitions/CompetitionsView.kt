@@ -16,6 +16,7 @@ import javafx.stage.FileChooser
 import tornadofx.*
 import ui.BaseView
 import ui.Colors
+import java.io.File
 
 class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(), "Competitions") {
 
@@ -39,25 +40,55 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         add(competitionsList)
         competitionsList.fitToParentSize()
 
-        hbox {
+        vbox {
             padding = Insets(8.0)
-            alignment = Pos.CENTER
             spacing = 8.0
+            alignment = Pos.CENTER
+            hbox {
+                alignment = Pos.CENTER
+                spacing = 8.0
+
+                button {
+                    text = "Add"
+
+                    action { showNewCompetitionDialog() }
+                }.fitToParentWidth()
+                button {
+                    text = "Delete"
+
+                    action {
+                        val competition = competitionsList.selectedItem ?: return@action
+                        showAcceptCompetitionDeletionDialog(competition)
+                    }
+                }.fitToParentWidth()
+            }.fitToParentWidth()
 
             button {
-                text = "Add"
+                text = "Add from JSON"
 
-                action { showNewCompetitionDialog() }
-            }
+                action {
+                    val file = chooseFile(
+                        "Choose file",
+                        arrayOf(FileChooser.ExtensionFilter("JSON", "*.json"))
+                    ).firstOrNull() ?: return@action
+                    viewModel.addCompetitionsFromJson(file) { showFailedToParseJsonError() }
+                }
+            }.fitToParentWidth()
+
             button {
-                text = "Delete"
+                text = "Export to JSON"
 
                 action {
                     val competition = competitionsList.selectedItem ?: return@action
-                    showAcceptCompetitionDeletionDialog(competition)
+                    val dir = chooseDirectory("Choose directory") ?: return@action
+                    competition.exportToJson(
+                        "${dir.absolutePath}/${competition.name}.json",
+                        onSuccessAction = ::showExtractionSuccessfulMessage,
+                        onErrorAction = ::showFailedToExportToJsonError
+                    )
                 }
-            }
-        }.fitToParentWidth()
+            }.fitToParentWidth()
+        }
     }
 
     private val tasksTable = tableview<CompetitionsViewModel.TaskItem> {
@@ -110,7 +141,21 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                         "Choose file",
                         arrayOf(FileChooser.ExtensionFilter("JSON", "*.json"))
                     ).firstOrNull() ?: return@action
-                    competition.addTasksFromJson(file) { showFailedToParseJson() }
+                    competition.addTasksFromJson(file) { showFailedToParseJsonError() }
+                }
+            }
+
+            button {
+                text = "Export to JSON"
+
+                action {
+                    val task = tasksTable.selectedItem ?: return@action
+                    val dir = chooseDirectory("Choose directory") ?: return@action
+                    task.exportToJson(
+                        "${dir.absolutePath}/${task.name}.json",
+                        onSuccessAction = ::showExtractionSuccessfulMessage,
+                        onErrorAction = ::showFailedToExportToJsonError
+                    )
                 }
             }
 
@@ -321,8 +366,8 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
                     val file = chooseFile(
                         "Choose file",
                         filters = arrayOf(FileChooser.ExtensionFilter("*", "*.*"))
-                    ).firstOrNull()
-                    attachmentContent.text = file?.absolutePath ?: ""
+                    ).firstOrNull() ?: return@action
+                    attachmentContent.text = file.absolutePath.replace(File("").absolutePath, ".")
                 }
             }
             add(attachmentContent)
@@ -413,11 +458,29 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         }
     }
 
-    private fun showFailedToParseJson() {
+    private fun showFailedToParseJsonError() {
         alert(
             Alert.AlertType.ERROR,
             header = "JSON parsing failed",
-            "Failed to import tasks from JSON, check your JSON file",
+            "Failed to import competitions or tasks from JSON, check your JSON file",
+            ButtonType.OK
+        )
+    }
+
+    private fun showFailedToExportToJsonError() {
+        alert(
+            Alert.AlertType.ERROR,
+            header = "Exporting failed",
+            "Failed to export competition or task to JSON, check your JSON file",
+            ButtonType.OK
+        )
+    }
+
+    private fun showExtractionSuccessfulMessage() {
+        alert(
+            Alert.AlertType.INFORMATION,
+            header = "Success",
+            "Entity successfully exported",
             ButtonType.OK
         )
     }

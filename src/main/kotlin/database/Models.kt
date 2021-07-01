@@ -30,10 +30,3 @@ data class SolveModel(
     val task: TaskModel,
     val timestamp: Long
 )
-
-@Serializable
-data class ScoreModel(
-    val competition: CompetitionModel,
-    val player: PlayerModel,
-    val score: Int
-)

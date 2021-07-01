@@ -2,6 +2,7 @@ package ui.players
 
 import bot.BotManager
 import database.*
+import javafx.beans.property.ReadOnlyStringProperty
 import javafx.beans.property.ReadOnlyStringWrapper
 import javafx.collections.transformation.SortedList
 import kotlinx.coroutines.Dispatchers
@@ -88,10 +89,10 @@ class PlayersViewModel: BaseViewModel() {
         }
 
     private val mPlayerName = ReadOnlyStringWrapper("")
-    val playerName = mPlayerName.readOnlyProperty
+    val playerName: ReadOnlyStringProperty = mPlayerName.readOnlyProperty
 
     private val mPlayerScore = ReadOnlyStringWrapper("")
-    val playerScore = mPlayerScore.readOnlyProperty
+    val playerScore: ReadOnlyStringProperty = mPlayerScore.readOnlyProperty
 
     private val players = emptyList<PlayerItem>().toObservable()
     val scoreBoard = SortedList(players) { o1, o2 -> o2.totalScore - o1.totalScore }

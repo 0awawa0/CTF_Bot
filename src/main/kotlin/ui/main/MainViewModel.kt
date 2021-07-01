@@ -3,6 +3,7 @@ package ui.main
 import bot.BotManager
 import database.CompetitionDTO
 import database.DbHelper
+import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.beans.property.ReadOnlyBooleanWrapper
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
@@ -22,7 +23,7 @@ class MainViewModel: BaseViewModel() {
     )
 
     private val mIsRunning = ReadOnlyBooleanWrapper(false)
-    val isRunning = mIsRunning.readOnlyProperty
+    val isRunning: ReadOnlyBooleanProperty = mIsRunning.readOnlyProperty
 
     val competitions: ObservableList<CompetitionItem> = emptyList<CompetitionItem>().toObservable()
     private val dbEvents = DbHelper.eventsPipe
