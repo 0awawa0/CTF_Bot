@@ -39,7 +39,7 @@ At the bottom there is a log area.
 
 ![competitions_view](./screenshots/competitions_view.png)
 
-Competitions view allows you to add manage your competitions.
+Competitions view allows you to manage your competitions.
 Left pane contains list of all competitions in the database and buttons to add and delete currently selected competition.
 Also, there is a buttons to import and export competitions from JSON file.
 
