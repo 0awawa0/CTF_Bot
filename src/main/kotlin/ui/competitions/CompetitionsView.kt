@@ -103,6 +103,41 @@ class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(),
         val columnAttachment = column("Attachment", CompetitionsViewModel.TaskItem::attachment).makeEditable()
         readonlyColumn("Solves count", CompetitionsViewModel.TaskItem::solvesCount)
 
+        onEditStart {
+            if (this.tableColumn == columnDescription) {
+                val item = selectedItem ?: return@onEditStart
+
+                dialog(title = "Edit task description") {
+                    prefWidth = 400.0
+                    spacing = 8.0
+
+                    val taDescription = textarea {
+                        text = item.description
+                        positionCaret(text.length)
+                    }
+                    taDescription.fitToParentSize()
+                    hbox {
+                        spacing = 8.0
+
+                        button("Ok") {
+                            action {
+                                item.description = taDescription.text
+                                item.pushChanges()
+                                this@dialog.close()
+                                this@onEditStart.cancel()
+                            }
+                        }.fitToParentWidth()
+
+                        button("Cancel") {
+                            action {
+                                this@dialog.close()
+                                this@onEditStart.cancel()
+                            }
+                        }.fitToParentWidth()
+                    }
+                }?.setOnCloseRequest { this@onEditStart.cancel() }
+            }
+        }
         onEditCommit {
             val item = selectedItem ?: return@onEditCommit
             when (this.tableColumn) {
