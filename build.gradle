@@ -17,7 +17,7 @@ jar {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
-version '2.0.2'
+version '2.0.3'
 
 sourceCompatibility = 1.8
 
@@ -32,7 +32,7 @@ test {
 }
 
 dependencies {
-    def coroutines_version = '1.5.1-native-mt'
+    def coroutines_version = '1.5.2-native-mt'
 
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.21'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
@@ -45,13 +45,13 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
 
     // Database
-    implementation 'org.jetbrains.exposed:exposed-core:0.33.1'
-    implementation 'org.jetbrains.exposed:exposed-dao:0.33.1'
-    implementation 'org.jetbrains.exposed:exposed-jdbc:0.33.1'
-    implementation 'org.xerial:sqlite-jdbc:3.36.0.1'
+    implementation 'org.jetbrains.exposed:exposed-core:0.34.1'
+    implementation 'org.jetbrains.exposed:exposed-dao:0.34.1'
+    implementation 'org.jetbrains.exposed:exposed-jdbc:0.34.1'
+    implementation 'org.xerial:sqlite-jdbc:3.36.0.2'
     implementation 'no.tornado:tornadofx:2.0.0-SNAPSHOT'
 
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
 }
 
 compileKotlin {

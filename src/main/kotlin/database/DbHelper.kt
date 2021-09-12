@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import utils.Logger
 import java.io.File
 import java.util.*
+import java.util.Collections.emptyList
 
 
 object DbHelper {
@@ -66,7 +67,7 @@ object DbHelper {
 
     fun getNewTaskPrice(solvesCount: Int): Int {
         val x = maxOf(0, solvesCount)
-        return (MIN_POINTS - INITIAL_TASK_PRICE) / (DECAY * DECAY) * (x * x) + INITIAL_TASK_PRICE
+        return maxOf(MIN_POINTS, (MIN_POINTS - INITIAL_TASK_PRICE) / (DECAY * DECAY) * (x * x) + INITIAL_TASK_PRICE)
     }
 
     suspend fun getAllCompetitions(): List<CompetitionDTO> {
