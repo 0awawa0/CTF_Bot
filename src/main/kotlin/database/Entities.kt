@@ -10,7 +10,6 @@ class CompetitionEntity(id: EntityID<Long>): LongEntity(id) {
     var name by CompetitionsTable.name
 
     val tasks by TaskEntity referrersOn TasksTable.competition
-//    val scores by ScoreEntity referrersOn ScoresTable.competition
 
     suspend fun updateName(newName: String) {
         DbHelper.transactionOn(DbHelper.database) { name = newName }
@@ -21,8 +20,6 @@ class PlayerEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<PlayerEntity>(PlayersTable)
 
     var name by PlayersTable.name
-
-//    val scores by ScoreEntity referrersOn ScoresTable.player
     val solves by SolveEntity referrersOn SolvesTable.player
 }
 
@@ -45,11 +42,3 @@ class SolveEntity(id: EntityID<Long>): LongEntity(id) {
     var player by PlayerEntity referencedOn SolvesTable.player
     var timestamp by SolvesTable.timestamp
 }
-
-//class ScoreEntity(id: EntityID<Long>): LongEntity(id) {
-//    companion object: LongEntityClass<ScoreEntity>(ScoresTable)
-//
-//    var competition by CompetitionEntity referencedOn ScoresTable.competition
-//    var player by PlayerEntity referencedOn ScoresTable.player
-//    var score by ScoresTable.score
-//}

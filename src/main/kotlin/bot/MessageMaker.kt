@@ -336,7 +336,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
     suspend fun getCurrentScoreboard(callback: CallbackQuery): SendMessage {
         val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
-        val scoreboard = DbHelper.getScoreboard()
+        val scoreboard = DbHelper.getScoreboard(bot.competition)
         var msgText = """
                 <b>${bot.competition.name}</b>
                 |
@@ -346,11 +346,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
                 """.trimMargin()
 
         scoreboard.forEachIndexed { index, player ->
-            val name = player.name.padEnd(16, ' ')
+            val name = player.first.padEnd(16, ' ')
             val number = (index + 1).toString().padStart(3, ' ')
-            val score = (player.getCompetitionScore(bot.competition))
-                .toString()
-                .padStart(6, ' ')
+            val score = player.second.toString().padStart(6, ' ')
             msgText += "%s. %s %s\n".format(number, name, score)
         }
         msgText += "</code>"
@@ -377,9 +375,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
                 """.trimMargin()
 
         scoreboard.forEachIndexed { index, player ->
-            val name = player.name.padEnd(16, ' ')
+            val name = player.first.padEnd(16, ' ')
             val number = (index + 1).toString().padStart(3, ' ')
-            val score = player.getTotalScore().toString().padStart(6, ' ')
+            val score = player.second.toString().padStart(6, ' ')
             msgText += "%s. %s %s\n".format(number, name, score)
         }
         msgText += "</code>"

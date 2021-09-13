@@ -106,10 +106,61 @@ object DbHelper {
         }
     }
 
-    suspend fun getScoreboard(): List<PlayerDTO> {
+    suspend fun getScoreboard(competition: CompetitionDTO): List<Pair<String, Int>> {
         try {
             return transactionOn(database) {
-                PlayerEntity.all().map { PlayerDTO(it) }.sortedByDescending { it.getTotalScoreSynchronous() }
+                val result = LinkedList<Pair<String, Int>>()
+                val players = PlayerEntity.all()
+                val prices = HashMap<Long, Int>()
+                val tasks = competition.entity.tasks.map { it.id.value }
+                for (player in players) {
+                    var playerScore = 0
+                    val solves = player.solves
+                    for (solve in solves) {
+                        val taskId = solve.task.id.value
+                        if (taskId !in tasks) continue
+                        if (taskId in prices) playerScore += prices[taskId] ?: 0
+                        else {
+                            val price = getNewTaskPrice(solve.task.solves.count().toInt())
+                            prices[taskId] = price
+                            playerScore += price
+                        }
+                    }
+                    result.add(Pair(player.name, playerScore))
+                }
+
+                return@transactionOn result.sortedByDescending { it.second }
+//                PlayerEntity.all().map { PlayerDTO(it) }.sortedByDescending { it.getTotalScoreSynchronous() }
+            }
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")
+            return emptyList()
+        }
+    }
+
+    suspend fun getScoreboard(): List<Pair<String, Int>> {
+        try {
+            return transactionOn(database) {
+                val result = LinkedList<Pair<String, Int>>()
+                val players = PlayerEntity.all()
+                val prices = HashMap<Long, Int>()
+                for (player in players) {
+                    var playerScore = 0
+                    val solves = player.solves
+                    for (solve in solves) {
+                        val taskId = solve.task.id.value
+                        if (taskId in prices) playerScore += prices[taskId] ?: 0
+                        else {
+                            val price = getNewTaskPrice(solve.task.solves.count().toInt())
+                            prices[taskId] = price
+                            playerScore += price
+                        }
+                    }
+                    result.add(Pair(player.name, playerScore))
+                }
+
+                return@transactionOn result.sortedByDescending { it.second }
+//                PlayerEntity.all().map { PlayerDTO(it) }.sortedByDescending { it.getTotalScoreSynchronous() }
             }
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")

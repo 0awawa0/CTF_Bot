@@ -49,11 +49,11 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
     }
 
     suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): Int {
-        return getSolvedTasks(competitionDTO).sumBy { it.getSolvedPrice() }
+        return getSolvedTasks(competitionDTO).sumOf { it.getSolvedPrice() }
     }
 
     suspend fun getTotalScore(): Int {
-        return getSolves().sumBy { it.getTask().getSolvedPrice() }
+        return getSolves().sumOf { it.getTask().getSolvedPrice() }
     }
 
     suspend fun getSolvedTasks(competitionDTO: CompetitionDTO): List<TaskDTO> {
@@ -98,9 +98,9 @@ class TaskDTO(val entity: TaskEntity): BaseDTO() {
         return DbHelper.transactionOn(DbHelper.database) { entity.solves.map { PlayerDTO(it.player) } }
     }
 
-    suspend fun getTaskPrice(): Int { return DbHelper.getNewTaskPrice(getSolves().count()) }
+    suspend fun getTaskPrice(): Int { return DbHelper.getNewTaskPrice(getSolvesCountSynchronous()) }
 
-    suspend fun getSolvedPrice(): Int { return DbHelper.getNewTaskPrice(getSolves().count() - 1) }
+    suspend fun getSolvedPrice(): Int { return DbHelper.getNewTaskPrice(getSolvesCountSynchronous() - 1) }
 }
 
 class SolveDTO(val entity: SolveEntity): BaseDTO() {
