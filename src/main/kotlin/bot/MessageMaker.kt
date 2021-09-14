@@ -20,11 +20,14 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
+import utils.Logger
 import java.io.File
 import java.lang.ref.WeakReference
 
 
 class MessageMaker(private val bot: WeakReference<Bot>) {
+
+    private val tag = "MessageMaker"
 
     //This chars must be escaped in markdown
     //'_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
@@ -185,6 +188,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     )
 
     suspend fun getFlagSticker(message: Message, flag: String): SendSticker? {
+        val start = System.nanoTime()
         val bot = bot.get() ?: return null
         val sticker = SendSticker()
         var msgText = ""
@@ -206,9 +210,11 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
         sticker.chatId = message.chatId.toString()
         val menuButton = InlineKeyboardButton(msgText)
-        menuButton.callbackData = Bot.DATA_MENU
+        menuButton.callbackData = DATA_MENU
         sticker.replyMarkup = InlineKeyboardMarkup(listOf(listOf(menuButton)))
 
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared flag sticker in: ${(end - start) / 1000000} ms")
         return sticker
     }
 
@@ -223,6 +229,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
     private suspend fun getStartMessage(userName: String, chatId: Long): SendMessage {
+        val start = System.nanoTime()
         val usrName = userName.filter { it in allowedCharacters }
         val playerName = usrName.let { if (it.length > 16) it.substring(0..15) else it }
         val player = DbHelper.getPlayer(chatId) ?: DbHelper.add(PlayerModel(chatId, playerName))
@@ -245,6 +252,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(menuButton)))
         msg.chatId = chatId.toString()
         msg.enableHtml(true)
+
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared start message in ${(end - start) / 1000000} ms")
         return msg
     }
 
@@ -259,6 +269,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
     }
 
     private suspend fun getMenuMessage(userName: String, chatId: Long): SendMessage {
+        val start = System.nanoTime()
         val bot = bot.get() ?: return getErrorMessage(chatId)
         val player = DbHelper.getPlayer(chatId) ?: return getStartMessage(userName, chatId)
         val playerCompetitionScore = player.getCompetitionScore(bot.competition)
@@ -289,6 +300,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.enableHtml(true)
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsTable)
+
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared menu message in ${(end - start) / 1000000} ms")
         return msg
     }
 
@@ -311,6 +325,7 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
 
     suspend fun getTasksMessage(callback: CallbackQuery): SendMessage {
+        val start = System.nanoTime()
         val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
         val player = DbHelper.getPlayer(callback.message.chatId) ?: return getStartMessage(callback)
         val msgText = "<b>${bot.competition.name}</b>\n\nСписок заданий: "
@@ -318,9 +333,11 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
 
         for (task in bot.competition.getTasks()) {
             val taskSolved = player.hasSolved(task)
+            val taskPrice = DbHelper.getTaskPrice(task)
+
             buttonsList.add(listOf(
                 InlineKeyboardButton(
-                    "${task.category} - ${task.getTaskPrice()}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
+                    "${task.category} - ${taskPrice}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
                 ).apply { callbackData = "${Bot.DATA_TASK} ${task.id}" }
             ))
         }
@@ -330,11 +347,15 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.chatId = callback.message.chatId.toString()
         msg.text = msgText
         msg.replyMarkup = InlineKeyboardMarkup(buttonsList)
+
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared task list message in ${(end - start) / 1000000}")
         return msg
     }
 
 
     suspend fun getCurrentScoreboard(callback: CallbackQuery): SendMessage {
+        val start = System.nanoTime()
         val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
         val scoreboard = DbHelper.getScoreboard(bot.competition)
         var msgText = """
@@ -360,10 +381,14 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
             InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
         )))
+
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared current scoreboard message in ${(end - start) / 1000000} ms")
         return msg
     }
 
     suspend fun getGlobalScoreboard(callback: CallbackQuery): SendMessage {
+        val start = System.nanoTime()
         val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
         val scoreboard = DbHelper.getScoreboard()
         var msgText = """
@@ -389,16 +414,22 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
             InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }
         )))
+
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared global scoreboard in ${(end - start) / 1000000} ms")
         return msg
     }
 
 
     suspend fun getTaskMessage(callback: CallbackQuery, taskId: Long): SendMessage {
+        val start = System.nanoTime()
         val bot = bot.get() ?: return getErrorMessage(callback.message.chatId)
         val task = DbHelper.getTask(taskId) ?: return getErrorMessage(callback.message.chatId)
         val attachmentFile = File(task.attachment)
+        val taskPrice = DbHelper.getTaskPrice(task)
+
         val msgText = "<b>${bot.competition.name}</b>\n" +
-                "\n${task.name}           ${task.getTaskPrice()}\n\n${task.description}"
+                "\n${task.name}           ${taskPrice}\n\n${task.description}"
         val msg = SendMessage()
         msg.enableHtml(true)
 
@@ -414,10 +445,13 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         buttons.add(listOf(InlineKeyboardButton("Меню").apply { callbackData = DATA_MENU }))
         msg.replyMarkup = InlineKeyboardMarkup(buttons)
 
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared task message in ${(end - start) / 1000000} ms")
         return msg
     }
 
     suspend fun getFileMessage(callback: CallbackQuery, taskId: Long): SendDocument? {
+        val start = System.nanoTime()
         val task = DbHelper.getTask(taskId) ?: return null
         val attachmentFile = File(task.attachment)
         if (!attachmentFile.exists()) return null
@@ -428,6 +462,9 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         msg.replyMarkup = InlineKeyboardMarkup(listOf(listOf(
             InlineKeyboardButton("Меню").apply { callbackData =  DATA_MENU}
         )))
+
+        val end = System.nanoTime()
+        Logger.debug(tag, "Prepared task file message in ${(end - start) / 1000000} ms")
         return msg
     }
 

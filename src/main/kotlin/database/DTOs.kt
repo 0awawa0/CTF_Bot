@@ -49,7 +49,7 @@ class PlayerDTO(val entity: PlayerEntity): BaseDTO() {
     }
 
     suspend fun getCompetitionScore(competitionDTO: CompetitionDTO): Int {
-        return getSolvedTasks(competitionDTO).sumOf { it.getSolvedPrice() }
+        return getSolvedTasks(competitionDTO).sumOf { DbHelper.getSolvedTaskPrice(it) }
     }
 
     suspend fun getTotalScore(): Int {

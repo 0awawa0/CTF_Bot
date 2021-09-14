@@ -84,10 +84,20 @@ class Bot(
 
         botScope.launch {
             if (update.hasMessage()) {
-                if (update.message.hasText()) answerMessage(update.message)
+                if (update.message.hasText()) {
+                    val start = System.nanoTime()
+                    answerMessage(update.message)
+                    val end = System.nanoTime()
+                    Logger.debug(tag, "Message processed in ${(end - start) / 1000000} ms")
+                }
                 if (update.message.hasSticker()) Logger.info(tag, "Received sticker: ${update.message.sticker.fileId}")
             }
-            if (update.hasCallbackQuery()) answerCallback(update.callbackQuery)
+            if (update.hasCallbackQuery()) {
+                val start = System.nanoTime()
+                answerCallback(update.callbackQuery)
+                val end = System.nanoTime()
+                Logger.debug(tag, "Callback processed in ${(end - start) / 1000000} ms")
+            }
         }
     }
 

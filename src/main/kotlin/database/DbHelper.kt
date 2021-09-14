@@ -14,6 +14,7 @@ import utils.Logger
 import java.io.File
 import java.util.*
 import java.util.Collections.emptyList
+import java.util.concurrent.ConcurrentHashMap
 
 
 object DbHelper {
@@ -47,6 +48,9 @@ object DbHelper {
     private val mEventsPipe = MutableSharedFlow<DbEvent>()
     val eventsPipe = mEventsPipe.asSharedFlow()
 
+    private val taskPrices = ConcurrentHashMap<Long, Int>()
+    private val solvedTasksPrices = ConcurrentHashMap<Long, Int>()
+
     suspend fun init(): Boolean {
         try {
             if (!File(DATABASE_FOLDER).exists()) File(DATABASE_FOLDER).mkdir()
@@ -62,7 +66,13 @@ object DbHelper {
     }
 
     suspend fun <T> transactionOn(database: Database, action: () -> T): T {
-        return withContext(Dispatchers.IO) { transaction(db = database) { action() } }
+        return withContext(Dispatchers.IO) {
+            val start = System.nanoTime()
+            val result = transaction(db = database) { action() }
+            val end = System.nanoTime()
+            Logger.debug(tag, "Transaction finished in ${(end - start) / 1000000} ms")
+            return@withContext result
+        }
     }
 
     fun getNewTaskPrice(solvesCount: Int): Int {
@@ -111,7 +121,6 @@ object DbHelper {
             return transactionOn(database) {
                 val result = LinkedList<Pair<String, Int>>()
                 val players = PlayerEntity.all()
-                val prices = HashMap<Long, Int>()
                 val tasks = competition.entity.tasks.map { it.id.value }
                 for (player in players) {
                     var playerScore = 0
@@ -119,18 +128,15 @@ object DbHelper {
                     for (solve in solves) {
                         val taskId = solve.task.id.value
                         if (taskId !in tasks) continue
-                        if (taskId in prices) playerScore += prices[taskId] ?: 0
-                        else {
-                            val price = getNewTaskPrice(solve.task.solves.count().toInt())
-                            prices[taskId] = price
-                            playerScore += price
-                        }
+                        val price = solvedTasksPrices[taskId]
+                        if (price == null)
+                            solvedTasksPrices[taskId] = getNewTaskPrice(solve.task.solves.count().toInt() - 1)
+                        playerScore += solvedTasksPrices[taskId] ?: 0
                     }
                     result.add(Pair(player.name, playerScore))
                 }
 
                 return@transactionOn result.sortedByDescending { it.second }
-//                PlayerEntity.all().map { PlayerDTO(it) }.sortedByDescending { it.getTotalScoreSynchronous() }
             }
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")
@@ -143,24 +149,20 @@ object DbHelper {
             return transactionOn(database) {
                 val result = LinkedList<Pair<String, Int>>()
                 val players = PlayerEntity.all()
-                val prices = HashMap<Long, Int>()
                 for (player in players) {
                     var playerScore = 0
                     val solves = player.solves
                     for (solve in solves) {
                         val taskId = solve.task.id.value
-                        if (taskId in prices) playerScore += prices[taskId] ?: 0
-                        else {
-                            val price = getNewTaskPrice(solve.task.solves.count().toInt())
-                            prices[taskId] = price
-                            playerScore += price
-                        }
+                        val price = solvedTasksPrices[taskId]
+                        if (price == null)
+                            solvedTasksPrices[taskId] = getNewTaskPrice(solve.task.solves.count().toInt() - 1)
+                        playerScore += solvedTasksPrices[taskId] ?: 0
                     }
                     result.add(Pair(player.name, playerScore))
                 }
 
                 return@transactionOn result.sortedByDescending { it.second }
-//                PlayerEntity.all().map { PlayerDTO(it) }.sortedByDescending { it.getTotalScoreSynchronous() }
             }
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to retrieve all scores: ${ex.message}\n${ex.stackTraceToString()}")
@@ -184,6 +186,18 @@ object DbHelper {
             Logger.error(tag, "Failed to get task by id: ${ex.message}\n${ex.stackTraceToString()}")
             return null
         }
+    }
+
+    suspend fun getTaskPrice(task: TaskDTO): Int {
+        val price = taskPrices[task.id]
+        if (price == null) taskPrices[task.id] = task.getTaskPrice()
+        return taskPrices[task.id] ?: 0
+    }
+
+    suspend fun getSolvedTaskPrice(task: TaskDTO): Int {
+        val price = solvedTasksPrices[task.id]
+        if (price == null) solvedTasksPrices[task.id] = task.getSolvedPrice()
+        return solvedTasksPrices[task.id] ?: 0
     }
 
     suspend fun getPlayer(id: Long): PlayerDTO? {
@@ -297,7 +311,6 @@ object DbHelper {
                     ?: return FlagCheckResult.NoSuchPlayer
 
                 val task = competition.getTasks().find { it.flag == flag } ?: return FlagCheckResult.WrongFlag
-
                 if (player.hasSolved(task)) return FlagCheckResult.SolveExists
 
                 val dto = transactionOn(database) {
@@ -307,8 +320,13 @@ object DbHelper {
                         this.timestamp = Date().time
                     })
                 }
+
+                val solves = task.getSolves().count()
+                solvedTasksPrices[task.id] = getNewTaskPrice(solves - 1)
+                taskPrices[task.id] = getNewTaskPrice(solves)
+
                 mEventsPipe.emit(DbEvent.Add(dto))
-                return FlagCheckResult.CorrectFlag(task.getSolvedPrice())
+                return FlagCheckResult.CorrectFlag(solvedTasksPrices[task.id] ?: 0)
             } catch (ex: Exception) {
                 Logger.error(tag, "Failed to check player's flag: ${ex.message}\n${ex.stackTraceToString()}")
                 return FlagCheckResult.NoSuchPlayer
@@ -329,6 +347,7 @@ object DbHelper {
         try {
             transactionOn(database) { CompetitionsTable.deleteWhere { CompetitionsTable.id eq competitionDTO.id } }
             mEventsPipe.emit(DbEvent.Delete(competitionDTO))
+            clearCache()
             return true
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to delete competition: ${ex.message}\n${ex.stackTraceToString()}")
@@ -340,6 +359,7 @@ object DbHelper {
         try {
             transactionOn(database) { TasksTable.deleteWhere { TasksTable.id eq taskDTO.id } }
             mEventsPipe.emit(DbEvent.Delete(taskDTO))
+            clearCache()
             return true
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to delete task: ${ex.message}\n${ex.stackTraceToString()}")
@@ -351,10 +371,16 @@ object DbHelper {
         try {
             transactionOn(database) { PlayersTable.deleteWhere { PlayersTable.id eq playerDTO.id } }
             mEventsPipe.emit(DbEvent.Delete(playerDTO))
+            clearCache()
             return true
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to delete player: ${ex.message}\n${ex.stackTraceToString()}")
             return false
         }
+    }
+
+    private fun clearCache() {
+        taskPrices.clear()
+        solvedTasksPrices.clear()
     }
 }
