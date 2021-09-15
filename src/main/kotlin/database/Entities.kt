@@ -8,12 +8,7 @@ class CompetitionEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<CompetitionEntity>(CompetitionsTable)
 
     var name by CompetitionsTable.name
-
     val tasks by TaskEntity referrersOn TasksTable.competition
-
-    suspend fun updateName(newName: String) {
-        DbHelper.transactionOn(DbHelper.database) { name = newName }
-    }
 }
 
 class PlayerEntity(id: EntityID<Long>): LongEntity(id) {

@@ -52,7 +52,7 @@ class PlayersViewModel: BaseViewModel() {
                     withContext(Dispatchers.JavaFx) { solves.clear() }
 
                     if (value == null) return@launch
-                    val newSolves = selectedPlayer?.getSolves(value)?.map {
+                    val newSolves = selectedPlayer?.getSolves()?.map {
                         SolveItem(it.id, it.getTask().name, it.timestamp)
                     } ?: emptyList()
 
@@ -68,19 +68,19 @@ class PlayersViewModel: BaseViewModel() {
                 scoresLoadingMutex.withLock {
                     field = value
                     selectedCompetition = null
+                    val solvedTasks = if (value != null) DbHelper.getSolves(value) else emptyList()
+                    val score = if (value != null) DbHelper.getCompetitionAndTotalScores(value).second else 0
                     withContext(Dispatchers.JavaFx) {
                         scores.clear()
                         solves.clear()
-                        solves.addAll(value?.getSolves()?.map { SolveItem(it.id, it.getTask().name, it.timestamp) }
-                            ?: emptyList()
-                        )
+                        solves.addAll(solvedTasks.map { SolveItem(0, it.first.name, it.second) })
                         mPlayerName.set(value?.name ?: "")
-                        mPlayerScore.set(value?.getTotalScore()?.toString() ?: "")
+                        mPlayerScore.set(score.toString())
                     }
 
                     if (value == null) return@launch
                     val newScores = DbHelper.getAllCompetitions().map {
-                        CompetitionItem(it, value.getCompetitionScore(it))
+                        CompetitionItem(it, DbHelper.getCompetitionAndTotalScores(value, it).first)
                     }
 
                     withContext(Dispatchers.JavaFx) { scores.addAll(newScores) }
@@ -107,7 +107,8 @@ class PlayersViewModel: BaseViewModel() {
             withContext(Dispatchers.JavaFx) {
                 players.clear()
                 players.setAll(DbHelper.getAllPlayers().map {
-                    PlayerItem(it, it.getTotalScore())
+                    val score = DbHelper.getCompetitionAndTotalScores(it).second
+                    PlayerItem(it, score)
                 })
             }
             DbHelper.eventsPipe.collect { event ->
@@ -124,12 +125,18 @@ class PlayersViewModel: BaseViewModel() {
 
     private suspend fun onAddEvent(dto: BaseDTO) {
         when (dto) {
-            is PlayerDTO -> withContext(Dispatchers.JavaFx) { players.add(PlayerItem(dto, dto.getTotalScore())) }
+            is PlayerDTO -> {
+                val score = DbHelper.getCompetitionAndTotalScores(dto).second
+                withContext(Dispatchers.JavaFx) {
+                    players.add(PlayerItem(dto, score))
+                }
+            }
             is SolveDTO -> {
                 val player = dto.getPlayer()
+                val score = DbHelper.getCompetitionAndTotalScores(player).second
                 withContext(Dispatchers.JavaFx) {
                     if (players.removeIf { it.id == player.id }) {
-                        players.add(PlayerItem(player, player.getTotalScore()))
+                        players.add(PlayerItem(player, score))
                     }
                     if (selectedPlayer?.id == player.id) selectedPlayer = player
                 }
@@ -140,8 +147,9 @@ class PlayersViewModel: BaseViewModel() {
     private suspend fun onUpdateEvent(dto: BaseDTO) {
         when (dto) {
             is PlayerDTO -> {
+                val score = DbHelper.getCompetitionAndTotalScores(dto).second
                 withContext(Dispatchers.JavaFx) {
-                    if (players.removeIf { it.id == dto.id }) players.add(PlayerItem(dto, dto.getTotalScore()))
+                    if (players.removeIf { it.id == dto.id }) players.add(PlayerItem(dto, score))
                 }
             }
             is SolveDTO -> {

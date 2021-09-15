@@ -138,13 +138,12 @@ class CompetitionsViewModel: BaseViewModel() {
                 tasksLoadingMutex.withLock {
                     field = value
                     val newTasks = value?.getTasks()?.map { TaskItem(it) } ?: emptyList()
-                    val newScoreBoard = value?.getScoreBoard()?.map { ScoreboardItem(it.first, it.second) }
-                        ?: emptyList()
+                    val newScoreBoard = if (value != null) DbHelper.getScoreboard(value) else emptyList()
                     withContext(Dispatchers.JavaFx) {
                         tasks.clear()
                         tasks.addAll(newTasks)
                         scoreboard.clear()
-                        scoreboard.addAll(newScoreBoard)
+                        scoreboard.addAll(newScoreBoard.map { ScoreboardItem(it.first, it.second) })
                         mCompetitionName.set(value?.name ?: "")
                     }
                 }

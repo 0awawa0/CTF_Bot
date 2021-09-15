@@ -51,9 +51,6 @@ object DbHelper {
     private val taskPrices = ConcurrentHashMap<Long, Int>()
     private val solvedTasksPrices = ConcurrentHashMap<Long, Int>()
 
-    private val currentScoreboard = ConcurrentHashMap<Long, Pair<String, Int>>()
-    private val globalScoreboard = ConcurrentHashMap<Long, Pair<String, Int>>()
-
     suspend fun init(): Boolean {
         try {
             if (!File(DATABASE_FOLDER).exists()) File(DATABASE_FOLDER).mkdir()
@@ -193,13 +190,13 @@ object DbHelper {
 
     suspend fun getTaskPrice(task: TaskDTO): Int {
         val price = taskPrices[task.id]
-        if (price == null) taskPrices[task.id] = task.getTaskPrice()
+        if (price == null) taskPrices[task.id] = getNewTaskPrice(task.getSolves().count())
         return taskPrices[task.id] ?: 0
     }
 
     suspend fun getSolvedTaskPrice(task: TaskDTO): Int {
         val price = solvedTasksPrices[task.id]
-        if (price == null) solvedTasksPrices[task.id] = task.getSolvedPrice()
+        if (price == null) solvedTasksPrices[task.id] = getNewTaskPrice(task.getSolves().count() - 1)
         return solvedTasksPrices[task.id] ?: 0
     }
 
@@ -212,7 +209,7 @@ object DbHelper {
         }
     }
 
-    suspend fun getCompetitionAndTotalScores(player: PlayerDTO, competition: CompetitionDTO): Pair<Int, Int> {
+    suspend fun getCompetitionAndTotalScores(player: PlayerDTO, competition: CompetitionDTO? = null): Pair<Int, Int> {
         try {
             var competitionScore = 0
             var totalScore = 0
@@ -222,7 +219,7 @@ object DbHelper {
 
             for (task in tasks) {
                 val price = getSolvedTaskPrice(task.second)
-                if (task.first == competition.id) competitionScore += price
+                if (competition != null && task.first == competition.id) competitionScore += price
                 totalScore += price
             }
 
@@ -252,6 +249,25 @@ object DbHelper {
             Logger.error(
                 tag,
                 "Failed to get tasks list for player: ${ex.message}\n${ex.stackTraceToString()}"
+            )
+            return emptyList()
+        }
+    }
+
+    suspend fun getSolves(player: PlayerDTO, competition: CompetitionDTO? = null): List<Pair<TaskDTO, Long>> {
+        try {
+            return transactionOn(database) {
+                val result = player.entity.solves
+                return@transactionOn result.filter {
+                    competition == null || it.task.competition.id == competition.entity.id
+                }.map {
+                    Pair(TaskDTO(it.task), it.timestamp)
+                }
+            }
+        } catch (ex: Exception) {
+            Logger.error(
+                tag,
+                "Failed to retrieve player solves for competition: ${ex.message}\n${ex.stackTraceToString()}"
             )
             return emptyList()
         }
@@ -355,11 +371,19 @@ object DbHelper {
     suspend fun onFlagPassed(competition: CompetitionDTO, playerId: Long, flag: String): FlagCheckResult {
         flagCheckMutex.withLock {
             try {
-                val player = transactionOn(database) { PlayerEntity.findById(playerId)?.let { PlayerDTO(it) }}
-                    ?: return FlagCheckResult.NoSuchPlayer
+                val (player, task, solved) = transactionOn(database) {
+                    val player = PlayerEntity.findById(playerId)
+                    val task = competition.entity.tasks.firstOrNull { it.flag == flag }
+                    val solved = player?.solves?.any { it.task == task } ?: false
+                    return@transactionOn if (player != null && task != null)
+                        Triple(PlayerDTO(player), TaskDTO(task), solved)
+                    else
+                        Triple(null, null, false)
+                }
 
-                val task = competition.getTasks().find { it.flag == flag } ?: return FlagCheckResult.WrongFlag
-                if (player.hasSolved(task)) return FlagCheckResult.SolveExists
+                if (player == null) return FlagCheckResult.NoSuchPlayer
+                if (task == null) return FlagCheckResult.WrongFlag
+                if (solved) return FlagCheckResult.SolveExists
 
                 val dto = transactionOn(database) {
                     SolveDTO(SolveEntity.new {
