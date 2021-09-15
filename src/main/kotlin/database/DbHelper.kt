@@ -51,6 +51,9 @@ object DbHelper {
     private val taskPrices = ConcurrentHashMap<Long, Int>()
     private val solvedTasksPrices = ConcurrentHashMap<Long, Int>()
 
+    private val currentScoreboard = ConcurrentHashMap<Long, Pair<String, Int>>()
+    private val globalScoreboard = ConcurrentHashMap<Long, Pair<String, Int>>()
+
     suspend fun init(): Boolean {
         try {
             if (!File(DATABASE_FOLDER).exists()) File(DATABASE_FOLDER).mkdir()
@@ -206,6 +209,51 @@ object DbHelper {
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to get player by id: ${ex.message}\n${ex.stackTraceToString()}")
             return null
+        }
+    }
+
+    suspend fun getCompetitionAndTotalScores(player: PlayerDTO, competition: CompetitionDTO): Pair<Int, Int> {
+        try {
+            var competitionScore = 0
+            var totalScore = 0
+            val tasks = transactionOn(database) {
+                player.entity.solves.map { Pair(it.task.competition.id.value, TaskDTO(it.task)) }
+            }
+
+            for (task in tasks) {
+                val price = getSolvedTaskPrice(task.second)
+                if (task.first == competition.id) competitionScore += price
+                totalScore += price
+            }
+
+            return Pair(competitionScore, totalScore)
+        } catch (ex: Exception) {
+            Logger.error(
+                tag,
+                "Failed to get competition and global score for player: ${ex.message}\n${ex.stackTraceToString()}"
+            )
+            return Pair(0, 0)
+        }
+    }
+
+    suspend fun getTasksList(player: PlayerDTO, competition: CompetitionDTO): List<Triple<TaskDTO, Int, Boolean>> {
+        try {
+            val tasks = transactionOn(database) {
+                val playerSolves = player.entity.solves.map { it.task.id.value }.toHashSet()
+
+                val result = competition.entity.tasks.map {
+                    Pair(TaskDTO(it), it.id.value in playerSolves)
+                }
+                return@transactionOn result
+            }
+
+            return tasks.map { Triple(it.first, getTaskPrice(it.first), it.second) }
+        } catch (ex: Exception) {
+            Logger.error(
+                tag,
+                "Failed to get tasks list for player: ${ex.message}\n${ex.stackTraceToString()}"
+            )
+            return emptyList()
         }
     }
 

@@ -272,13 +272,12 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         val start = System.nanoTime()
         val bot = bot.get() ?: return getErrorMessage(chatId)
         val player = DbHelper.getPlayer(chatId) ?: return getStartMessage(userName, chatId)
-        val playerCompetitionScore = player.getCompetitionScore(bot.competition)
-        val playerTotalScore = player.getTotalScore()
+        val (competitionScore, totalScore) = DbHelper.getCompetitionAndTotalScores(player, bot.competition)
 
         val msgText = """<b>${bot.competition.name}</b>
                 |
-                |Привет, <i>${player.name}</i>! Твой текущий счёт: $playerCompetitionScore. 
-                |Твой общий счёт: $playerTotalScore.
+                |Привет, <i>${player.name}</i>! Твой текущий счёт: $competitionScore. 
+                |Твой общий счёт: $totalScore.
                 |Для управления используй кнопки. Чтобы сдать флаг напиши
                 |<i>${Bot.MSG_FLAG} __твой_флаг__</i>
                 |""".trimMargin()
@@ -331,16 +330,23 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         val msgText = "<b>${bot.competition.name}</b>\n\nСписок заданий: "
         val buttonsList = arrayListOf<List<InlineKeyboardButton>>()
 
-        for (task in bot.competition.getTasks()) {
-            val taskSolved = player.hasSolved(task)
-            val taskPrice = DbHelper.getTaskPrice(task)
+        val tasksList = DbHelper.getTasksList(player, bot.competition)
+        for (task in tasksList) {
+            val taskSolved = task.third
+            val taskPrice = task.second
 
             buttonsList.add(listOf(
                 InlineKeyboardButton(
-                    "${task.category} - ${taskPrice}: ${task.name} ${if (taskSolved) "\u2705" else ""}"
-                ).apply { callbackData = "${Bot.DATA_TASK} ${task.id}" }
+                    "${task.first.category} - ${taskPrice}: ${task.first.name} ${if (taskSolved) "\u2705" else ""}"
+                ).apply { callbackData = "${Bot.DATA_TASK} ${task.first.id}" }
             ))
         }
+
+        buttonsList.add(listOf(
+            InlineKeyboardButton(
+                "Menu"
+            ).apply { callbackData = DATA_MENU }
+        ))
 
         val msg = SendMessage()
         msg.enableHtml(true)
