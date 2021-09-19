@@ -17,7 +17,7 @@ jar {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
-version '2.0.3'
+version '2.0.4-alpha'
 
 sourceCompatibility = 1.8
 
