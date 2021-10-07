@@ -3,13 +3,13 @@ package database
 import kotlinx.serialization.Serializable
 
 
-@Serializable
+@kotlinx.serialization.Serializable
 data class CompetitionModel(
     val name: String,
     val tasks: List<TaskModel> = emptyList()
 )
 
-@Serializable
+@kotlinx.serialization.Serializable
 data class TaskModel(
     val category: String,
     val name: String,
@@ -18,7 +18,7 @@ data class TaskModel(
     val attachment: String = ""
 )
 
-@Serializable
+@kotlinx.serialization.Serializable
 data class PlayerModel(
     val id: Long,
     val name: String
