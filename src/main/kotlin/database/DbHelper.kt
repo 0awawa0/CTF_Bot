@@ -66,13 +66,7 @@ object DbHelper {
     }
 
     suspend fun <T> transactionOn(database: Database, action: () -> T): T {
-        return withContext(Dispatchers.IO) {
-            val start = System.nanoTime()
-            val result = transaction(db = database) { action() }
-            val end = System.nanoTime()
-            Logger.debug(tag, "Transaction finished in ${(end - start) / 1000000} ms")
-            return@withContext result
-        }
+        return withContext(Dispatchers.IO) { return@withContext transaction(db = database) { action() } }
     }
 
     fun getNewTaskPrice(solvesCount: Int): Int {
@@ -375,10 +369,11 @@ object DbHelper {
                     val player = PlayerEntity.findById(playerId)
                     val task = competition.entity.tasks.firstOrNull { it.flag == flag }
                     val solved = player?.solves?.any { it.task == task } ?: false
-                    return@transactionOn if (player != null && task != null)
-                        Triple(PlayerDTO(player), TaskDTO(task), solved)
-                    else
-                        Triple(null, null, false)
+                    return@transactionOn Triple(
+                        if (player != null) PlayerDTO(player) else null,
+                        if (task != null) TaskDTO(task) else null,
+                        solved
+                    )
                 }
 
                 if (player == null) return FlagCheckResult.NoSuchPlayer

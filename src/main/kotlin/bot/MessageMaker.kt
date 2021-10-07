@@ -184,7 +184,18 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
         "CAACAgUAAxkBAAI5mGDcsAlvYQiSy0wGSoBB4aYvEP8uAAIWAgACvmg4V8C7X5YCmtsIIAQ",
         "CAACAgIAAxkBAAI5l2Dcr-6mrJqPwgb3suZ8uAbR5aHwAALJCQAC8UK_Bb4s9k3VGvUYIAQ",
         "CAACAgIAAxkBAAI5lmDcr-a3PhsW8e3AN_TNPkDRA1D0AALlBQAC8UK_BaqB4N4nVb7CIAQ",
-        "CAACAgQAAxkBAAI5lWDcr9XrzEzMpNh6DfJd07mtHmS2AAJ4AwACT_8wAy_xB518R7yXIAQ"
+        "CAACAgQAAxkBAAI5lWDcr9XrzEzMpNh6DfJd07mtHmS2AAJ4AwACT_8wAy_xB518R7yXIAQ",
+        "CAACAgIAAxkBAAJPIWFfH-xazOyCZtlUeD8xIe3S3F2vAAIgEwACbGP5Sclvzp4nFlBqIQQ",
+        "CAACAgIAAxkBAAJPImFfIA-prnk2NSHbXq5EJcZBCD4HAAK8DgACwuTJSerenq_Wha94IQQ",
+        "CAACAgIAAxkBAAJPI2FfICZGTrj8v6IDyAM7OPpNJrK4AAKoEgACKCvJSUOeNPh2wLFvIQQ",
+        "CAACAgIAAxkBAAJPJ2FfIUQYp0rK6qIfSc7LaghG5kK5AALZAAPjUDAAAXSP3cnTgRsnIQQ",
+        "CAACAgIAAxkBAAJPKGFfIVfOT4jamlrsr44_L93_-Nl1AAJwNwAC6VUFGB9vFXHcw39zIQQ",
+        "CAACAgIAAxkBAAJPJGFfIF_mCz-mtK8Trg77GEQki52tAAInAAO8kAwAAa0AAdPhv0r58SEE",
+        "CAACAgIAAxkBAAJPLGFfIrMb1cfn2UQuTZKkGpoIrATvAAKDNwAC6VUFGE3AeiebO1AGIQQ",
+        "CAACAgIAAxkBAAJPK2FfIq8THoiU7kx1mjeILy-3eBOOAAKINwAC6VUFGF6SbZdVkWd8IQQ",
+        "CAACAgIAAxkBAAJPKmFfIo2I5eauluhnb1B-Q_5m4eE6AAKFNwAC6VUFGCfr7J2USamTIQQ",
+        "CAACAgIAAxkBAAJPKWFfInQ7bOFV3kYlNX5x8qtqe_ZKAAJ3NwAC6VUFGOeBCWwUnjhEIQQ",
+        "CAACAgIAAxkBAAJPLWFfIvp2KbEI3_9ZQPgHqhH_p5nMAAIQAANr7XwKju-aDNxNg50hBA",
     )
 
     suspend fun getFlagSticker(message: Message, flag: String): SendSticker? {
@@ -205,6 +216,11 @@ class MessageMaker(private val bot: WeakReference<Bot>) {
             is DbHelper.FlagCheckResult.SolveExists -> {
                 sticker.sticker = InputFile(niceStickers.random())
                 msgText = "Этот флаг ты уже сдал"
+            }
+
+            is DbHelper.FlagCheckResult.NoSuchPlayer -> {
+                sticker.sticker = InputFile(badStickers.random())
+                msgText = "Упс, кажется мы не знакомы... Выполни команду /start"
             }
         }
 
