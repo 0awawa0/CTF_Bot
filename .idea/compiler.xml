@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-serialization/1.8.10/afda0c70038a9b38639277a2739fd7cf7148118a/kotlin-serialization-1.8.10-gradle71.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/1.8.10/71bb7a6e45dfa34ee566f88280c2b1d0514cb473/kotlin-gradle-plugin-api-1.8.10-gradle71.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-native-utils/1.8.10/e1de66d607c11818ccc6bddf36b1eb5f903327e8/kotlin-native-utils-1.8.10.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-project-model/1.8.10/b08f8eca6a556f00b9f2fbacc7aeafc6914b9f1d/kotlin-project-model-1.8.10.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-tooling-core/1.8.10/da3a4252e4b48833eb566227b2baecbaede8993/kotlin-tooling-core-1.8.10.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-util-io/1.8.10/aa7685d78461d1098087d8816075d5ae27ac413b/kotlin-util-io-1.8.10.jar" />
+        </processorPath>
+        <module name="CTF_Bot.main" />
+      </profile>
+    </annotationProcessing>
     <bytecodeTargetLevel target="1.8" />
   </component>
 </project>
