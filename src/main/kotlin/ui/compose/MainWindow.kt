@@ -56,6 +56,7 @@ import androidx.compose.ui.window.WindowSize
 import androidx.compose.ui.window.rememberDialogState
 import androidx.compose.ui.window.rememberWindowState
 import ui.compose.main.MainViewModel
+import ui.compose.shared.LogBackgroundColor
 
 @Composable
 fun ApplicationScope.MainWindow() {
@@ -106,6 +107,7 @@ object MainWindow {
                 CompetitionsSection(
                     competitions = viewModel.competitions,
                     onCompetitionSelected = viewModel::onSelected,
+                    enabled = !canStopBot,
                     modifier = Modifier.fillMaxHeight()
                 )
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -122,7 +124,10 @@ object MainWindow {
                 state = rememberDialogState(size = DpSize(400.dp, 200.dp))
             ) {
                 TestingModeSection(
-                    onStartClicked = viewModel::startTesting,
+                    onStartClicked = {
+                        viewModel.startTesting(it)
+                        testDialogVisible = false
+                    },
                     onCancelClicked = { testDialogVisible = false }
                 )
             }
@@ -133,6 +138,7 @@ object MainWindow {
     fun CompetitionsSection(
         competitions: List<MainViewModel.Competition>,
         onCompetitionSelected: (MainViewModel.Competition) -> Unit,
+        enabled: Boolean,
         modifier: Modifier = Modifier
     ) {
         LazyColumn(
@@ -146,12 +152,12 @@ object MainWindow {
         ) {
             items(competitions) {
                 Row(
-                    modifier = Modifier.clickable { onCompetitionSelected(it) }
+                    modifier = Modifier.clickable(enabled = enabled) { onCompetitionSelected(it) }
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start)
                 {
-                    RadioButton(it.selected, onClick = { onCompetitionSelected(it) })
+                    RadioButton(it.selected, enabled = enabled, onClick = { onCompetitionSelected(it) })
                     Text(it.name)
                 }
             }
@@ -189,7 +195,7 @@ object MainWindow {
         modifier: Modifier = Modifier
     ) {
         LazyColumn(modifier = modifier
-            .background(Color.White)
+            .background(LogBackgroundColor)
             .border(1.dp, Color.Gray, shape = RoundedCornerShape(CornerSize(4.dp)))
         ) {
             items(log) { LogEntry(it, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) }

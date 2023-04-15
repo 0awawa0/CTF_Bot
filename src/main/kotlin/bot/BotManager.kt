@@ -1,8 +1,11 @@
 package bot
 
 import database.CompetitionDTO
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.telegram.telegrambots.meta.TelegramBotsApi
@@ -37,6 +40,7 @@ object BotManager {
         session = api.registerBot(bot)
         Logger.info(tag, "Bot registered")
         _botRunning.value = true
+        operationPending.set(false)
         return true
     }
 
@@ -52,6 +56,7 @@ object BotManager {
         session = api.registerBot(bot)
         Logger.info(tag, "Bot registered")
         _botRunning.value = true
+        operationPending.set(false)
         return true
     }
 
@@ -59,10 +64,14 @@ object BotManager {
         if (!operationPending.compareAndSet(false, true)) return false
 
         Logger.info(tag, "Stopping bot...")
-        session?.stop()
-        session = null
-        Logger.info(tag, "Bot stopped")
-        _botRunning.value = false
+
+        GlobalScope.launch(Dispatchers.IO) {
+            session?.stop()
+            session = null
+            Logger.info(tag, "Bot stopped")
+            _botRunning.value = false
+            operationPending.set(false)
+        }
         return true
     }
 

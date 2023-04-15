@@ -9,6 +9,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import ui.compose.shared.LogDebugColor
+import ui.compose.shared.LogErrorColor
+import ui.compose.shared.LogInfoColor
 import utils.Logger
 
 class MainViewModel {
@@ -65,9 +68,9 @@ class MainViewModel {
         }
         text.append(message)
         return LogMessage(text.toString(), when(importance) {
-            Logger.Message.Importance.DEBUG -> Color.Green
-            Logger.Message.Importance.INFO -> Color.Blue
-            Logger.Message.Importance.ERROR -> Color.Red
+            Logger.Message.Importance.DEBUG -> LogDebugColor
+            Logger.Message.Importance.INFO -> LogInfoColor
+            Logger.Message.Importance.ERROR -> LogErrorColor
         })
     }
 

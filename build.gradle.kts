@@ -1,5 +1,6 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
-version = "2.0.4"
+version = "2.1.0-dev01"
 val javafxVersion = "17.0.2"
 javafx { version = javafxVersion }
 
@@ -56,7 +57,11 @@ dependencies {
 
     // UI
     implementation("no.tornado:tornadofx:2.0.0-SNAPSHOT")
-    implementation(compose.desktop.currentOs)
+    implementation(compose.desktop.macos_arm64)
+    implementation(compose.desktop.macos_x64)
+    implementation(compose.desktop.windows_x64)
+    implementation(compose.desktop.linux_arm64)
+    implementation(compose.desktop.linux_x64)
     implementation(compose.material)
     implementation(compose.materialIconsExtended)
 
@@ -64,12 +69,15 @@ dependencies {
 }
 
 tasks.withType<Jar> {
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes["Main-Class"] = "ui.ApplicationKt"
+        attributes["Main-Class"] = "ui.compose.ComposeApplication"
     }
     from (
         configurations.compileClasspath.get().map {
+            if (it.isDirectory) it else zipTree(it)
+        },
+        configurations.runtimeClasspath.get().map {
             if (it.isDirectory) it else zipTree(it)
         }
     )
