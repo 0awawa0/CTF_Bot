@@ -57,6 +57,8 @@ dependencies {
     // UI
     implementation("no.tornado:tornadofx:2.0.0-SNAPSHOT")
     implementation(compose.desktop.currentOs)
+    implementation(compose.material)
+    implementation(compose.materialIconsExtended)
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.7.2")
 }

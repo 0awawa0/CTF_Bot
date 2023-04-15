@@ -1,6 +1,8 @@
 package bot
 
 import database.CompetitionDTO
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.telegram.telegrambots.meta.TelegramBotsApi
@@ -13,6 +15,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 object BotManager {
     const val CREDENTIALS_FILE = "BotCredentials.json"
+
+    private val _botRunning = MutableStateFlow(false)
+    val botRunning: StateFlow<Boolean> get() = _botRunning
 
     private val tag = "BotManager"
 
@@ -31,6 +36,7 @@ object BotManager {
         val api = TelegramBotsApi(DefaultBotSession::class.java)
         session = api.registerBot(bot)
         Logger.info(tag, "Bot registered")
+        _botRunning.value = true
         return true
     }
 
@@ -45,6 +51,7 @@ object BotManager {
         val api = TelegramBotsApi(DefaultBotSession::class.java)
         session = api.registerBot(bot)
         Logger.info(tag, "Bot registered")
+        _botRunning.value = true
         return true
     }
 
@@ -55,6 +62,7 @@ object BotManager {
         session?.stop()
         session = null
         Logger.info(tag, "Bot stopped")
+        _botRunning.value = false
         return true
     }
 
