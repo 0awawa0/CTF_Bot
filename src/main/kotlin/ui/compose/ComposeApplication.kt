@@ -5,6 +5,7 @@ import database.DbHelper
 import kotlinx.coroutines.runBlocking
 
 object ComposeApplication {
+
     @JvmStatic
     fun main(args: Array<String>) {
         runBlocking {

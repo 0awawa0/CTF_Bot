@@ -1,26 +1,25 @@
 package ui.compose.main
 
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.graphics.Color
 import bot.BotManager
 import database.DbHelper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ui.compose.shared.LogDebugColor
 import ui.compose.shared.LogErrorColor
 import ui.compose.shared.LogInfoColor
+import ui.compose.shared.dto.Competition
 import utils.Logger
 
 class MainViewModel {
-
-    data class Competition(
-        val id: Long,
-        val name: String,
-        val selected: Boolean = false
-    )
 
     data class LogMessage(
         val message: String,
@@ -34,28 +33,36 @@ class MainViewModel {
     }
     val started = BotManager.botRunning
 
-    private val _competitions = mutableStateListOf<Competition>()
-    val competitions: List<Competition> get() = _competitions
+    private val _competitions = mutableStateMapOf<Long?, Competition>()
+    val competitions: List<Competition> get() = _competitions.values.toList().sortedBy { it.id }
 
     private val _log = mutableStateListOf<LogMessage>()
     val log: List<LogMessage> get() = _log
 
-    suspend fun loadCompetitions() {
-        _competitions.clear()
-        _competitions.addAll(DbHelper.getAllCompetitions().map { Competition(it.id, it.name) })
-        Logger.messages.collect { _log.add(it.mapToLogMessage()) }
+    private val viewModelScope = CoroutineScope(Dispatchers.Default)
+
+    init {
+        viewModelScope.launch { Logger.messages.collect { _log.add(it.mapToLogMessage()) }  }
+    }
+
+    suspend fun updateCompetitionsList() {
+        withContext(Dispatchers.Default) {
+            _competitions.clear()
+            _competitions.putAll(DbHelper.getAllCompetitions().map { it.id to Competition(it.id, it.name) })
+
+            _competitions[selectedCompetitionId.value]?.let {
+                _competitions[selectedCompetitionId.value] = it.copy(selected = true)
+            } ?: run { selectedCompetitionId.value = null }
+        }
     }
 
     fun onSelected(competition: Competition) {
-        _competitions.indexOfFirst { it.selected }.let { idx ->
-            if (idx >= 0) _competitions[idx] = _competitions[idx].copy(selected = false)
+        _competitions[selectedCompetitionId.value]?.let {
+            _competitions[selectedCompetitionId.value] = it.copy(selected = false)
         }
-
-        _competitions.indexOfFirst { it.id == competition.id }.let { idx ->
-            if (idx >= 0) {
-                _competitions[idx] = _competitions[idx].copy(selected = true)
-                selectedCompetitionId.value = competition.id
-            }
+        _competitions[competition.id]?.let {
+            _competitions[competition.id] = competition.copy(selected = true)
+            selectedCompetitionId.value = competition.id
         }
     }
 
