@@ -64,8 +64,9 @@ dependencies {
     implementation(compose.desktop.linux_x64)
     implementation(compose.material)
     implementation(compose.materialIconsExtended)
+    implementation("com.darkrockstudios:mpfilepicker:1.0.0")
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.7.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 }
 
 tasks.withType<Jar> {

@@ -6,8 +6,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -35,11 +38,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 
-data class Column(
-    val name: String,
+interface Column {
+    val name: String
     val editable: Boolean
-)
+}
+
+open class BasicColumn(override val name: String, override val editable: Boolean): Column
 
 interface Row {
     val columns: List<Column>
@@ -48,12 +54,17 @@ interface Row {
 }
 
 @Composable
-fun Table(columns: List<Column>, items: List<Row>, modifier: Modifier = Modifier) {
-    Column {
+fun <T: Column> Table(
+    columns: List<T>,
+    items: List<Row>,
+    modifier: Modifier = Modifier,
+    rowMaxLines: Int = 3
+) {
+    Column(modifier) {
         TableHeader(columns)
         LazyVerticalGrid(GridCells.Fixed(1)) {
             items(items) {
-                TableRow(it)
+                TableRow(it, maxLines = rowMaxLines)
                 Divider()
             }
         }
@@ -77,17 +88,18 @@ fun TableHeader(columns: List<Column>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TableRow(row: Row, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth()) {
+fun TableRow(row: Row, modifier: Modifier = Modifier, maxLines: Int = 3) {
+    Row(modifier.fillMaxWidth().height(intrinsicSize = IntrinsicSize.Max)) {
         for (field in row.columns) {
             TableField(
                 value = row.values[field] ?: "",
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(1f),
                 editable = field.editable,
                 onValueChanged = {
                     row.values[field] = it
                     row.commitChanges()
-                }
+                },
+                maxLines = maxLines
             )
         }
     }
@@ -99,7 +111,8 @@ fun TableField(
     value: String,
     modifier: Modifier = Modifier,
     onValueChanged: (String) -> Unit = {},
-    editable: Boolean = false
+    editable: Boolean = false,
+    maxLines: Int = 3
 ) {
     var editEnabled by remember { mutableStateOf(false) }
 
@@ -128,16 +141,16 @@ fun TableField(
                 }
                     .focusRequester(focusRequester),
                 onValueChange = { updatedValue = it },
-                maxLines = 1,
+                maxLines = maxLines,
                 textStyle = MaterialTheme.typography.subtitle2
             )
             LaunchedEffect(Unit) { focusRequester.requestFocus() }
         } else {
             Text(
                 text = value,
-                maxLines = 1,
+                maxLines = maxLines,
                 style = MaterialTheme.typography.subtitle2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

@@ -2,18 +2,25 @@ package ui.compose.competitions
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import database.CompetitionModel
 import database.DbHelper
-import database.TaskDTO
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import ui.compose.shared.components.BasicColumn
 import ui.compose.shared.components.Column
 import ui.compose.shared.components.Row
 import ui.compose.shared.dto.Competition
+import ui.compose.shared.dto.Score
 import ui.compose.shared.dto.Task
+import utils.Logger
+import java.io.File
 
 class CompetitionsViewModel {
 
@@ -24,13 +31,16 @@ class CompetitionsViewModel {
     val selectedCompetition: Competition? get() = _competitions[selectedCompetitionId.value]
 
     companion object {
-        val idColumn = Column("id", false)
-        val categoryColumn = Column("Category", true)
-        val nameColumn = Column("Name", true)
-        val descriptionColumn = Column("Description", true)
-        val attachmentColumn = Column("Attachment", true)
-        val flagColumn = Column("Flag", true)
-        val solvesColumn = Column("Solves count", false)
+        class TaskColumn(name: String, editable: Boolean): BasicColumn(name, editable)
+        class ScoreboardColumn(name: String, editable: Boolean): BasicColumn(name, editable)
+
+        val idColumn = TaskColumn("id", false)
+        val categoryColumn = TaskColumn("Category", true)
+        val nameColumn = TaskColumn("Name", true)
+        val descriptionColumn = TaskColumn("Description", true)
+        val attachmentColumn = TaskColumn("Attachment", true)
+        val flagColumn = TaskColumn("Flag", true)
+        val solvesColumn = TaskColumn("Solves count", false)
         val tasksColumns = listOf(
             idColumn,
             categoryColumn,
@@ -40,13 +50,24 @@ class CompetitionsViewModel {
             flagColumn,
             solvesColumn
         )
+
+        val playerNameColumn = ScoreboardColumn("Player", false)
+        val playerScoreColumn = ScoreboardColumn("Score", false)
+        val playersColumns = listOf(playerNameColumn, playerScoreColumn)
     }
 
-    inner class TaskRow(
-        private val dto: Task
-    ) : Row {
-        override val columns = tasksColumns
+    inner class ScoreboardRow(private val dto: Score): Row {
+        override val columns: List<Column> = playersColumns
+        override val values: MutableMap<Column, String> = mutableMapOf(
+            playerNameColumn to dto.name,
+            playerScoreColumn to dto.score.toString()
+        )
 
+        override fun commitChanges() = throw UnsupportedOperationException("Players editing is not allowed")
+    }
+
+    inner class TaskRow(private val dto: Task) : Row {
+        override val columns = tasksColumns
         override val values: MutableMap<Column, String> = mutableMapOf(
             idColumn to dto.id.toString(),
             categoryColumn to dto.category,
@@ -76,6 +97,9 @@ class CompetitionsViewModel {
     private val _tasks = mutableStateListOf<TaskRow>()
     val tasks: List<TaskRow> get() = _tasks
 
+    private val _scoreboard = mutableStateListOf<ScoreboardRow>()
+    val scoreboard: List<ScoreboardRow> get() = _scoreboard
+
     private val viewModelScope = CoroutineScope(Dispatchers.Default)
 
     suspend fun updateCompetitionsList() {
@@ -87,6 +111,7 @@ class CompetitionsViewModel {
                 _competitions[selectedCompetitionId.value] = it.copy(selected = true)
             } ?: run { selectedCompetitionId.value = null }
             updateTasksList()
+            updatePlayersList()
         }
     }
 
@@ -109,6 +134,19 @@ class CompetitionsViewModel {
         }
     }
 
+    suspend fun updatePlayersList() {
+        withContext(Dispatchers.Default) {
+            _scoreboard.clear()
+            val board = selectedCompetitionId.value?.let {
+                val competition = DbHelper.getCompetition(it) ?: return@let null
+                DbHelper.getScoreboard(competition).map { scoreValue ->
+                    ScoreboardRow(Score(scoreValue.first, scoreValue.second))
+                }
+            } ?: emptyList()
+            _scoreboard.addAll(board)
+        }
+    }
+
     fun onSelected(competition: Competition) {
         _competitions[selectedCompetitionId.value]?.let {
             _competitions[selectedCompetitionId.value] = it.copy(selected = false)
@@ -116,7 +154,27 @@ class CompetitionsViewModel {
         _competitions[competition.id]?.let {
             _competitions[competition.id] = competition.copy(selected = true)
             selectedCompetitionId.value = competition.id
-            viewModelScope.launch { updateTasksList() }
+            viewModelScope.launch {
+                updateTasksList()
+                updateCompetitionsList()
+            }
+        }
+    }
+
+    fun addCompetitionsFromJson(path: String) {
+        val error = kotlin.runCatching {
+            viewModelScope.launch {
+                val text = File(path).readText()
+                val parse = Json.decodeFromString<Array<CompetitionModel>>(text)
+                for (competition in parse) DbHelper.add(competition)
+            }
+        }
+
+        error.exceptionOrNull()?.let {
+            Logger.error(
+                "CompetitionsViewModel",
+                "Failed to parse competitions from JSON. ${it.message}\n${it.stackTraceToString()}"
+            )
         }
     }
 }
