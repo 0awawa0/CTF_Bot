@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
+import ui.compose.shared.components.FileChooser
+import ui.compose.shared.components.FileChooserDialog
 import ui.compose.shared.components.SelectableItemsList
 import ui.compose.shared.components.TabPage
 import ui.compose.shared.components.Table
@@ -68,6 +70,8 @@ class CompetitionsPage: TabPage {
 
     @Composable
     fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
+        var addFromJsonDialogVisible by remember { mutableStateOf(false) }
+
         Column(
             modifier.border(
                 border = BorderStroke(1.dp, MaterialTheme.colors.onBackground),
@@ -75,12 +79,16 @@ class CompetitionsPage: TabPage {
             ).padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ButtonsPane()
+            ButtonsPane(onAddFromJsonClicked = { addFromJsonDialogVisible = true })
             Divider(Modifier.width(150.dp))
-            SelectableItemsList(
-                items = viewModel.competitions,
-                onItemSelected = viewModel::onSelected
-            )
+            SelectableItemsList(items = viewModel.competitions, onItemSelected = viewModel::onSelected)
+        }
+
+        if (addFromJsonDialogVisible) {
+            FileChooserDialog { file ->
+                addFromJsonDialogVisible = false
+                file?.let { viewModel.addCompetitionsFromJson(it) }
+            }
         }
     }
 
@@ -143,13 +151,6 @@ class CompetitionsPage: TabPage {
                     rowMaxLines = 1
                 )
             }
-        }
-    }
-
-    @Composable
-    fun AddFromJsonDialog(modifier: Modifier = Modifier, visible: Boolean = false) {
-        Dialog(visible = visible, onCloseRequest = {}) {
-
         }
     }
 }

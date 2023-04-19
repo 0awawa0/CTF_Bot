@@ -161,10 +161,10 @@ class CompetitionsViewModel {
         }
     }
 
-    fun addCompetitionsFromJson(path: String) {
+    fun addCompetitionsFromJson(file: File) {
         val error = kotlin.runCatching {
             viewModelScope.launch {
-                val text = File(path).readText()
+                val text = file.readText()
                 val parse = Json.decodeFromString<Array<CompetitionModel>>(text)
                 for (competition in parse) DbHelper.add(competition)
             }
