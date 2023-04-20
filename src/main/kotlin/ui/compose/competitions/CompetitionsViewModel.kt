@@ -8,7 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
@@ -24,11 +24,33 @@ import java.io.File
 
 class CompetitionsViewModel {
 
+    data class AddFromJsonDialogState(val isVisible: Boolean = false)
+
+    data class MessageDialogState(
+        val isVisible: Boolean = false,
+        val message: String = "",
+        val type: MessageDialogState.Type = Type.Message
+    ) {
+        enum class Type {
+            Message,
+            Error
+        }
+    }
+
+
+    private val tag = "CompetitionsViewModel"
+
     private val _competitions = mutableStateMapOf<Long?, Competition>()
     val competitions: List<Competition> get() = _competitions.values.toList().sortedBy { it.id }
 
     private val selectedCompetitionId: MutableStateFlow<Long?> = MutableStateFlow(null)
     val selectedCompetition: Competition? get() = _competitions[selectedCompetitionId.value]
+
+    private val _addFromJsonDialogState = MutableStateFlow(AddFromJsonDialogState())
+    val addFromJsonDialogState: StateFlow<AddFromJsonDialogState> get() = _addFromJsonDialogState
+
+    private val _messageDialogState = MutableStateFlow(MessageDialogState())
+    val messageDialogState: StateFlow<MessageDialogState> get() = _messageDialogState
 
     companion object {
         class TaskColumn(name: String, editable: Boolean): BasicColumn(name, editable)
@@ -161,20 +183,68 @@ class CompetitionsViewModel {
         }
     }
 
-    fun addCompetitionsFromJson(file: File) {
+    fun onAddFileFromJson() {
+        _addFromJsonDialogState.value = addFromJsonDialogState.value.copy(isVisible = true)
+    }
+
+    fun addCompetitionsFromJson(file: File?) {
+        _addFromJsonDialogState.value = addFromJsonDialogState.value.copy(isVisible = false)
+        file ?: return
+
         viewModelScope.launch {
             val result = kotlin.runCatching {
                 val text = file.readText()
                 val parse = Json.decodeFromString<Array<CompetitionModel>>(text)
                 for (competition in parse) DbHelper.add(competition)
+                updateCompetitionsList()
             }
 
             result.exceptionOrNull()?.let {
-                Logger.error(
-                    "CompetitionsViewModel",
-                    "Failed to parse competitions from JSON. ${it.message}\n${it.stackTraceToString()}"
-                )
+                reportError("Failed to parse competitions from file.", it)
             }
         }
+    }
+
+    fun deleteCompetition() {
+        viewModelScope.launch {
+            val result = kotlin.runCatching {
+                selectedCompetitionId.value?.let { id ->
+                    DbHelper.getCompetition(id)?.let { competition ->
+                        DbHelper.delete(competition)
+                        showMessage("Competition deleted successfully")
+                        updateCompetitionsList()
+                    }
+                }
+            }
+
+            result.exceptionOrNull()?.let {
+                reportError("Failed to delete competition from database.", it)
+            }
+        }
+    }
+
+    fun hideMessage() { _messageDialogState.value = MessageDialogState() }
+
+    private fun showMessage(message: String) {
+        _messageDialogState.value = MessageDialogState(
+            isVisible = true,
+            message = message,
+            type = MessageDialogState.Type.Message
+        )
+    }
+
+    private fun reportError(message: String, exception: Throwable? = null) {
+        _messageDialogState.value = MessageDialogState(
+            isVisible = true,
+            message = message,
+            type = MessageDialogState.Type.Error
+        )
+
+        Logger.error(
+            tag = tag,
+            msg = message + exception?.let {
+                "\n${it.message}\n${it.stackTraceToString()}"
+            }
+        )
     }
 }

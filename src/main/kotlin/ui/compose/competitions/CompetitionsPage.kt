@@ -22,18 +22,13 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.darkrockstudios.libraries.mpfilepicker.FilePicker
-import ui.compose.shared.components.FileChooser
 import ui.compose.shared.components.FileChooserDialog
 import ui.compose.shared.components.SelectableItemsList
 import ui.compose.shared.components.TabPage
@@ -56,6 +51,8 @@ class CompetitionsPage: TabPage {
 
     @Composable
     fun Content(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
+        val messageDialogState = viewModel.messageDialogState.collectAsState()
+
         Box(modifier, contentAlignment = Alignment.Center) {
             Row(
                 modifier = modifier,
@@ -63,14 +60,34 @@ class CompetitionsPage: TabPage {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
-                RightPane(viewModel, Modifier.fillMaxWidth())
+                RightPane(viewModel, modifier = Modifier.fillMaxWidth())
+            }
+        }
+
+        Dialog(
+            visible = messageDialogState.value.isVisible,
+            title = when (messageDialogState.value.type) {
+                CompetitionsViewModel.MessageDialogState.Type.Message -> "Message"
+                CompetitionsViewModel.MessageDialogState.Type.Error -> "Error"
+            },
+            onCloseRequest = { viewModel.hideMessage() }
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(messageDialogState.value.message)
+                Button(onClick = { viewModel.hideMessage() }) {
+                    Text("OK")
+                }
             }
         }
     }
 
     @Composable
     fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        var addFromJsonDialogVisible by remember { mutableStateOf(false) }
+        val addFromJsonDialogState = viewModel.addFromJsonDialogState.collectAsState()
 
         Column(
             modifier.border(
@@ -79,16 +96,16 @@ class CompetitionsPage: TabPage {
             ).padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ButtonsPane(onAddFromJsonClicked = { addFromJsonDialogVisible = true })
+            ButtonsPane(
+                onAddFromJsonClicked = { viewModel.onAddFileFromJson() },
+                onDeleteClicked = { viewModel.deleteCompetition() }
+            )
             Divider(Modifier.width(150.dp))
-            SelectableItemsList(items = viewModel.competitions, onItemSelected = viewModel::onSelected)
+            SelectableItemsList(items = viewModel.competitions, onItemSelected = { viewModel.onSelected(it) })
         }
 
-        if (addFromJsonDialogVisible) {
-            FileChooserDialog { file ->
-                addFromJsonDialogVisible = false
-                file?.let { viewModel.addCompetitionsFromJson(it) }
-            }
+        if (addFromJsonDialogState.value.isVisible) {
+            FileChooserDialog { viewModel.addCompetitionsFromJson(it) }
         }
     }
 
