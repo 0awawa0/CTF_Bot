@@ -162,19 +162,19 @@ class CompetitionsViewModel {
     }
 
     fun addCompetitionsFromJson(file: File) {
-        val error = kotlin.runCatching {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            val result = kotlin.runCatching {
                 val text = file.readText()
                 val parse = Json.decodeFromString<Array<CompetitionModel>>(text)
                 for (competition in parse) DbHelper.add(competition)
             }
-        }
 
-        error.exceptionOrNull()?.let {
-            Logger.error(
-                "CompetitionsViewModel",
-                "Failed to parse competitions from JSON. ${it.message}\n${it.stackTraceToString()}"
-            )
+            result.exceptionOrNull()?.let {
+                Logger.error(
+                    "CompetitionsViewModel",
+                    "Failed to parse competitions from JSON. ${it.message}\n${it.stackTraceToString()}"
+                )
+            }
         }
     }
 }

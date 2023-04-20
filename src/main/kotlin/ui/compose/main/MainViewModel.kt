@@ -42,7 +42,11 @@ class MainViewModel {
     private val viewModelScope = CoroutineScope(Dispatchers.Default)
 
     init {
-        viewModelScope.launch { Logger.messages.collect { _log.add(it.mapToLogMessage()) }  }
+        viewModelScope.launch {
+            Logger.messages.collect {
+                _log.add(it.mapToLogMessage())
+            }
+        }
     }
 
     suspend fun updateCompetitionsList() {
