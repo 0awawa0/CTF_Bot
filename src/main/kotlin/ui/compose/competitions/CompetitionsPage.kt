@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonColors
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
@@ -25,10 +26,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.rememberDialogState
+import ui.compose.shared.BlueButtonColor
+import ui.compose.shared.GreenButtonColor
+import ui.compose.shared.RedButtonColor
 import ui.compose.shared.components.FileChooserDialog
 import ui.compose.shared.components.SelectableItemsList
 import ui.compose.shared.components.TabPage
@@ -52,6 +59,7 @@ class CompetitionsPage: TabPage {
     @Composable
     fun Content(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
         val messageDialogState = viewModel.messageDialogState.collectAsState()
+        val acceptDialogState = viewModel.acceptDialogState.collectAsState()
 
         Box(modifier, contentAlignment = Alignment.Center) {
             Row(
@@ -64,25 +72,8 @@ class CompetitionsPage: TabPage {
             }
         }
 
-        Dialog(
-            visible = messageDialogState.value.isVisible,
-            title = when (messageDialogState.value.type) {
-                CompetitionsViewModel.MessageDialogState.Type.Message -> "Message"
-                CompetitionsViewModel.MessageDialogState.Type.Error -> "Error"
-            },
-            onCloseRequest = { viewModel.hideMessage() }
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(messageDialogState.value.message)
-                Button(onClick = { viewModel.hideMessage() }) {
-                    Text("OK")
-                }
-            }
-        }
+        MessageDialog(messageDialogState.value)
+        AcceptDialog(acceptDialogState.value)
     }
 
     @Composable
@@ -96,21 +87,19 @@ class CompetitionsPage: TabPage {
             ).padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ButtonsPane(
+            LeftButtonsPane(
                 onAddFromJsonClicked = { viewModel.onAddFileFromJson() },
-                onDeleteClicked = { viewModel.deleteCompetition() }
+                onDeleteClicked = { viewModel.onCompetitionDeleteClicked() }
             )
             Divider(Modifier.width(150.dp))
             SelectableItemsList(items = viewModel.competitions, onItemSelected = { viewModel.onSelected(it) })
         }
 
-        if (addFromJsonDialogState.value.isVisible) {
-            FileChooserDialog { viewModel.addCompetitionsFromJson(it) }
-        }
+        if (addFromJsonDialogState.value.isVisible) FileChooserDialog { viewModel.addCompetitionsFromJson(it) }
     }
 
     @Composable
-    fun ButtonsPane(
+    fun LeftButtonsPane(
         modifier: Modifier = Modifier,
         onAddClicked: () -> Unit = {},
         onDeleteClicked: () -> Unit = {},
@@ -167,6 +156,62 @@ class CompetitionsPage: TabPage {
                     modifier = Modifier.fillMaxWidth().weight(4f),
                     rowMaxLines = 1
                 )
+            }
+        }
+    }
+
+    @Composable
+    fun MessageDialog(state: CompetitionsViewModel.MessageDialogState) {
+        Dialog(
+            visible = state.isVisible,
+            title = when (state.type) {
+                CompetitionsViewModel.MessageDialogState.Type.Message -> "Message"
+                CompetitionsViewModel.MessageDialogState.Type.Error -> "Error"
+            },
+            onCloseRequest = { viewModel.hideMessage() },
+            state = rememberDialogState(size = DpSize(400.dp, 200.dp))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Text(state.message, textAlign = TextAlign.Center)
+                Button(
+                    onClick = { viewModel.hideMessage() },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = when (state.type) {
+                        CompetitionsViewModel.MessageDialogState.Type.Message -> BlueButtonColor
+                        CompetitionsViewModel.MessageDialogState.Type.Error -> RedButtonColor
+                    })
+                ) { Text("OK", color = Color.White) }
+            }
+        }
+    }
+
+    @Composable
+    fun AcceptDialog(state: CompetitionsViewModel.AcceptDialogState) {
+        Dialog(
+            visible = state.isVisible,
+            title = "Are you sure?",
+            onCloseRequest = { state.onDecline },
+            state = rememberDialogState(size = DpSize(400.dp, 200.dp))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Text(state.message, textAlign = TextAlign.Center)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Button(
+                        onClick = state.onAccept,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = RedButtonColor)
+                    ) { Text("OK", color = Color.White) }
+                    Button(
+                        onClick = state.onDecline,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = GreenButtonColor)
+                    ) { Text("Cancel", color = Color.White) }
+                }
             }
         }
     }

@@ -29,13 +29,20 @@ class CompetitionsViewModel {
     data class MessageDialogState(
         val isVisible: Boolean = false,
         val message: String = "",
-        val type: MessageDialogState.Type = Type.Message
+        val type: Type = Type.Message
     ) {
         enum class Type {
             Message,
             Error
         }
     }
+
+    data class AcceptDialogState(
+        val isVisible: Boolean = false,
+        val message: String = "",
+        val onAccept: () -> Unit = {},
+        val onDecline: () -> Unit = {}
+    )
 
 
     private val tag = "CompetitionsViewModel"
@@ -51,6 +58,9 @@ class CompetitionsViewModel {
 
     private val _messageDialogState = MutableStateFlow(MessageDialogState())
     val messageDialogState: StateFlow<MessageDialogState> get() = _messageDialogState
+
+    private val _acceptDialogState = MutableStateFlow(AcceptDialogState())
+    val acceptDialogState: StateFlow<AcceptDialogState> get() = _acceptDialogState
 
     companion object {
         class TaskColumn(name: String, editable: Boolean): BasicColumn(name, editable)
@@ -200,18 +210,41 @@ class CompetitionsViewModel {
             }
 
             result.exceptionOrNull()?.let {
-                reportError("Failed to parse competitions from file.", it)
+                reportError("Failed to parse competitions from file '${file.name}'.", it)
             }
         }
     }
 
-    fun deleteCompetition() {
+    fun hideMessage() { _messageDialogState.value = MessageDialogState() }
+
+    fun onCompetitionDeleteClicked() {
+        val competitionName = selectedCompetition?.name
+        _acceptDialogState.value = AcceptDialogState(
+            isVisible = true,
+            message = "This will delete competition '$competitionName' from database. This action is unrecoverable. Continue?",
+            onAccept = {
+                deleteCompetition()
+                _acceptDialogState.value = AcceptDialogState()
+            },
+            onDecline = { _acceptDialogState.value = AcceptDialogState() }
+        )
+    }
+
+    private fun showMessage(message: String) {
+        _messageDialogState.value = MessageDialogState(
+            isVisible = true,
+            message = message,
+            type = MessageDialogState.Type.Message
+        )
+    }
+
+    private fun deleteCompetition() {
         viewModelScope.launch {
             val result = kotlin.runCatching {
                 selectedCompetitionId.value?.let { id ->
                     DbHelper.getCompetition(id)?.let { competition ->
                         DbHelper.delete(competition)
-                        showMessage("Competition deleted successfully")
+                        showMessage("Competition '${competition.name}' deleted successfully.")
                         updateCompetitionsList()
                     }
                 }
@@ -221,16 +254,6 @@ class CompetitionsViewModel {
                 reportError("Failed to delete competition from database.", it)
             }
         }
-    }
-
-    fun hideMessage() { _messageDialogState.value = MessageDialogState() }
-
-    private fun showMessage(message: String) {
-        _messageDialogState.value = MessageDialogState(
-            isVisible = true,
-            message = message,
-            type = MessageDialogState.Type.Message
-        )
     }
 
     private fun reportError(message: String, exception: Throwable? = null) {
