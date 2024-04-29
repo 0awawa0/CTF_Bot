@@ -1,6 +1,7 @@
 *.iml
 .gradle
 /local.properties
+.idea
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -17,3 +18,4 @@ BotCredentials.json
 /db/
 /tasks/
 /out/
+.DS_Store

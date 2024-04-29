@@ -1,4 +1,4 @@
-package ui.players
+package ui.fx.players
 
 import bot.BotManager
 import database.*
@@ -6,14 +6,13 @@ import javafx.beans.property.ReadOnlyStringProperty
 import javafx.beans.property.ReadOnlyStringWrapper
 import javafx.collections.transformation.SortedList
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import tornadofx.toObservable
-import ui.BaseViewModel
+import ui.fx.BaseViewModel
 
 class PlayersViewModel: BaseViewModel() {
 

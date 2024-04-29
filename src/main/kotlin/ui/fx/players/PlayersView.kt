@@ -1,17 +1,16 @@
-package ui.players
+package ui.fx.players
 
 import javafx.beans.binding.BooleanExpression
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.control.TableView
-import javafx.scene.control.TextField
 import javafx.scene.paint.Paint
 import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import tornadofx.*
-import ui.BaseView
-import ui.Colors
+import ui.fx.BaseView
+import ui.common.Colors
 
 class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 

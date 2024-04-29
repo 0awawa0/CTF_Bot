@@ -1,4 +1,4 @@
-package ui.competitions
+package ui.fx.competitions
 
 import javafx.beans.binding.BooleanExpression
 import javafx.beans.property.SimpleBooleanProperty
@@ -14,8 +14,8 @@ import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import javafx.stage.FileChooser
 import tornadofx.*
-import ui.BaseView
-import ui.Colors
+import ui.fx.BaseView
+import ui.common.Colors
 import java.io.File
 
 class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(), "Competitions") {

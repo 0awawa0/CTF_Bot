@@ -1,4 +1,4 @@
-package ui.main
+package ui.fx.main
 
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -6,13 +6,12 @@ import javafx.scene.control.Alert
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.launch
 import tornadofx.*
-import ui.BaseView
-import ui.competitions.CompetitionsView
-import ui.players.PlayersView
+import ui.fx.BaseView
+import ui.fx.competitions.CompetitionsView
+import ui.fx.players.PlayersView
 import utils.Logger
 import java.text.SimpleDateFormat
 import java.util.*
