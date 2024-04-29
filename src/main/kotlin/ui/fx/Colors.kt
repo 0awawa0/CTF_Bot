@@ -1,4 +1,4 @@
-package ui.common
+package ui.fx
 
 object Colors {
     const val RED = "e30742"

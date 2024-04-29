@@ -1,5 +1,6 @@
 package ui.compose.competitions
 
+import androidx.compose.ui.text.style.TextAlign
 import database.DbHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -7,13 +8,13 @@ import ui.compose.shared.components.Column
 import ui.compose.shared.components.Row
 import ui.compose.shared.dto.Task
 
-private val idColumn = Column("id", false)
-private val categoryColumn = Column("Category", true)
-private val nameColumn = Column("Name", true)
-private val descriptionColumn = Column("Description", true)
-private val attachmentColumn = Column("Attachment", true)
-private val flagColumn = Column("Flag", true)
-private val solvesColumn = Column("Solves count", false)
+private val idColumn = Column("id", false, 1.5f, 1, TextAlign.Center)
+private val categoryColumn = Column("Category", true, 2f, 1, TextAlign.Center)
+private val nameColumn = Column("Name", true, 3f, 2, TextAlign.Center)
+private val descriptionColumn = Column("Description", true, 4f, 4)
+private val attachmentColumn = Column("Attachment", true, 3f, 3)
+private val flagColumn = Column("Flag", true, 6f, 2)
+private val solvesColumn = Column("Solves", false, 2f, 1, TextAlign.Center)
 
 val taskColumns = listOf(
     idColumn,

@@ -15,7 +15,7 @@ import javafx.scene.text.TextAlignment
 import javafx.stage.FileChooser
 import tornadofx.*
 import ui.fx.BaseView
-import ui.common.Colors
+import ui.fx.Colors
 import java.io.File
 
 class CompetitionsView: BaseView<CompetitionsViewModel>(CompetitionsViewModel(), "Competitions") {
