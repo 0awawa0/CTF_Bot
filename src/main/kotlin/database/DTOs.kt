@@ -1,7 +1,5 @@
 package database
 
-import kotlinx.coroutines.runBlocking
-
 abstract class BaseDTO {
     abstract val id: Long
 

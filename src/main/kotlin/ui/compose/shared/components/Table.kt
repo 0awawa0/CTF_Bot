@@ -25,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -34,18 +33,11 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 
-interface Column {
-    val name: String
-    val editable: Boolean
-}
-
-open class BasicColumn(override val name: String, override val editable: Boolean): Column
+open class Column(val name: String, val editable: Boolean)
 
 interface Row {
     val columns: List<Column>
@@ -62,10 +54,9 @@ fun <T: Column> Table(
 ) {
     Column(modifier) {
         TableHeader(columns)
-        LazyVerticalGrid(GridCells.Fixed(1)) {
+        LazyVerticalGrid(columns = GridCells.Fixed(1)) {
             items(items) {
                 TableRow(it, maxLines = rowMaxLines)
-                Divider()
             }
         }
     }
@@ -105,7 +96,6 @@ fun TableRow(row: Row, modifier: Modifier = Modifier, maxLines: Int = 3) {
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TableField(
     value: String,

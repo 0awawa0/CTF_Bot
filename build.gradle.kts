@@ -15,7 +15,7 @@ plugins {
     kotlin("jvm") version "1.8.10"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
     id("org.openjfx.javafxplugin") version "0.0.9"
-    id("org.jetbrains.compose") version "1.4.0"
+    id("org.jetbrains.compose") version "1.6.2"
 }
 
 dependencies {
@@ -53,7 +53,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:0.41.1")
     implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
-    implementation("org.xerial:sqlite-jdbc:3.41.2.1")
+    implementation("org.xerial:sqlite-jdbc:3.41.2.2")
 
     // UI
     implementation("no.tornado:tornadofx:2.0.0-SNAPSHOT")

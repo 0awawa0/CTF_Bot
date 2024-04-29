@@ -3,7 +3,6 @@ package ui.compose.competitions
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
-import androidx.compose.material.ButtonColors
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
@@ -31,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
 import ui.compose.shared.BlueButtonColor
 import ui.compose.shared.GreenButtonColor
@@ -57,19 +55,17 @@ class CompetitionsPage: TabPage {
     }
 
     @Composable
-    fun Content(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
+    private fun Content(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
         val messageDialogState = viewModel.messageDialogState.collectAsState()
         val acceptDialogState = viewModel.acceptDialogState.collectAsState()
 
-        Box(modifier, contentAlignment = Alignment.Center) {
-            Row(
-                modifier = modifier,
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
-                RightPane(viewModel, modifier = Modifier.fillMaxWidth())
-            }
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
+            RightPane(viewModel, modifier = Modifier.fillMaxWidth())
         }
 
         MessageDialog(messageDialogState.value)
@@ -77,7 +73,7 @@ class CompetitionsPage: TabPage {
     }
 
     @Composable
-    fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
+    private fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
         val addFromJsonDialogState = viewModel.addFromJsonDialogState.collectAsState()
 
         Column(
@@ -99,7 +95,7 @@ class CompetitionsPage: TabPage {
     }
 
     @Composable
-    fun LeftButtonsPane(
+    private fun LeftButtonsPane(
         modifier: Modifier = Modifier,
         onAddClicked: () -> Unit = {},
         onDeleteClicked: () -> Unit = {},
@@ -135,7 +131,7 @@ class CompetitionsPage: TabPage {
     }
 
     @Composable
-    fun RightPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
+    private fun RightPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
         Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             Divider(Modifier.padding(8.dp))
             Text(
@@ -146,12 +142,12 @@ class CompetitionsPage: TabPage {
             )
             Row(Modifier.fillMaxSize()) {
                 Table(
-                    columns = CompetitionsViewModel.tasksColumns,
+                    columns = taskColumns,
                     items = viewModel.tasks,
                     modifier = Modifier.fillMaxWidth().weight(16f)
                 )
                 Table(
-                    columns = CompetitionsViewModel.playersColumns,
+                    columns = playersColumns,
                     items = viewModel.scoreboard,
                     modifier = Modifier.fillMaxWidth().weight(4f),
                     rowMaxLines = 1
@@ -161,8 +157,8 @@ class CompetitionsPage: TabPage {
     }
 
     @Composable
-    fun MessageDialog(state: CompetitionsViewModel.MessageDialogState) {
-        Dialog(
+    private fun MessageDialog(state: CompetitionsViewModel.MessageDialogState) {
+        DialogWindow(
             visible = state.isVisible,
             title = when (state.type) {
                 CompetitionsViewModel.MessageDialogState.Type.Message -> "Message"
@@ -189,8 +185,8 @@ class CompetitionsPage: TabPage {
     }
 
     @Composable
-    fun AcceptDialog(state: CompetitionsViewModel.AcceptDialogState) {
-        Dialog(
+    private fun AcceptDialog(state: CompetitionsViewModel.AcceptDialogState) {
+        DialogWindow(
             visible = state.isVisible,
             title = "Are you sure?",
             onCloseRequest = { state.onDecline },

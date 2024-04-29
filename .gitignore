@@ -18,3 +18,4 @@ BotCredentials.json
 /db/
 /tasks/
 /out/
+.DS_Store
