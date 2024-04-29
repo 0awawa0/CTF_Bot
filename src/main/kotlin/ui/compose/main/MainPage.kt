@@ -99,10 +99,12 @@ class MainPage: TabPage {
                     items = viewModel.competitions,
                     onItemSelected = viewModel::onSelected,
                     enabled = !canStopBot,
-                    modifier = Modifier.fillMaxHeight().border(
-                        border = BorderStroke(1.dp, MaterialTheme.colors.onBackground),
-                        shape = RoundedCornerShape(CornerSize(4.dp))
-                    )
+                    modifier = Modifier.fillMaxHeight()
+                        .border(
+                            border = BorderStroke(1.dp, MaterialTheme.colors.onBackground),
+                            shape = RoundedCornerShape(CornerSize(4.dp))
+                        )
+                        .width(250.dp)
                 )
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     ButtonsSection(buttonsConfiguration)

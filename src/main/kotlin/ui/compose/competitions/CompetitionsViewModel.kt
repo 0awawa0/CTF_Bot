@@ -2,6 +2,7 @@ package ui.compose.competitions
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import database.CompetitionModel
 import database.DbHelper
 import database.TaskDTO
@@ -13,13 +14,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import ui.compose.shared.BaseViewModel
 import ui.compose.shared.dto.Competition
 import ui.compose.shared.dto.Score
 import ui.compose.shared.dto.Task
+import ui.compose.shared.dto.toTask
 import utils.Logger
 import java.io.File
 
-class CompetitionsViewModel {
+class CompetitionsViewModel: BaseViewModel() {
 
     data class AddFromJsonDialogState(val isVisible: Boolean = false)
 
@@ -54,6 +57,7 @@ class CompetitionsViewModel {
     private val _acceptDialogState = MutableStateFlow(AcceptDialogState())
     private val _tasks = mutableStateListOf<TaskRow>()
     private val _scoreboard = mutableStateListOf<ScoreboardRow>()
+    private val _showAddTask = MutableStateFlow(false)
 
     val competitions: List<Competition> get() = _competitions.values.toList().sortedBy { it.id }
     val selectedCompetition: Competition? get() = _competitions[selectedCompetitionId.value]
@@ -62,8 +66,7 @@ class CompetitionsViewModel {
     val acceptDialogState: StateFlow<AcceptDialogState> get() = _acceptDialogState
     val tasks: List<TaskRow> get() = _tasks
     val scoreboard: List<ScoreboardRow> get() = _scoreboard
-
-    private val viewModelScope = CoroutineScope(Dispatchers.Default)
+    val showAddTask: StateFlow<Boolean> get() = _showAddTask
 
     fun onSelected(competition: Competition) {
         _competitions[selectedCompetitionId.value]?.let {
@@ -101,6 +104,20 @@ class CompetitionsViewModel {
         }
     }
 
+    fun addCompetition() {
+        _showAddTask.value = true
+    }
+
+    fun addCompetitionFinished(isAdded: Boolean) {
+        _showAddTask.value = false
+        if (isAdded) {
+            viewModelScope.launch {
+                updateCompetitionsList()
+                showMessage("New competition created")
+            }
+        }
+    }
+
     fun hideMessage() { _messageDialogState.value = MessageDialogState() }
 
     fun onCompetitionDeleteClicked() {
@@ -132,9 +149,9 @@ class CompetitionsViewModel {
     private suspend fun updateTasksList() {
         withContext(Dispatchers.Default) {
             val selectedCompetition = selectedCompetitionId.value ?: return@withContext
-            val tasks = (DbHelper.getCompetition(selectedCompetition)?.getTasks() ?: emptyList()).map {
+            val tasks = (DbHelper.getCompetition(selectedCompetition)?.getTasks() ?: emptyList()).map { taskDbo ->
                 TaskRow(
-                    dto = it.toTask(),
+                    dto = taskDbo.toTask(),
                     changesCoroutineScope = viewModelScope,
                     onChangesSaved = ::updateTasksList
                 )
@@ -182,16 +199,6 @@ class CompetitionsViewModel {
             }
         }
     }
-
-    private suspend fun TaskDTO.toTask() = Task(
-        id = id,
-        category = category,
-        name = name,
-        description = description,
-        flag = flag,
-        attachment = attachment,
-        solvesCount = getSolves().count()
-    )
 
     private fun reportError(message: String, exception: Throwable? = null) {
         _messageDialogState.value = MessageDialogState(

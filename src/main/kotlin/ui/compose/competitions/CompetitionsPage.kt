@@ -3,6 +3,7 @@ package ui.compose.competitions
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +34,8 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
+import ui.compose.competitions.add.AddCompetition
+import ui.compose.competitions.add.AddCompetitionViewModel
 import ui.compose.shared.BlueButtonColor
 import ui.compose.shared.GreenButtonColor
 import ui.compose.shared.RedButtonColor
@@ -69,20 +73,27 @@ class CompetitionsPage: TabPage {
 
     @Composable
     private fun Content(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        val messageDialogState = viewModel.messageDialogState.collectAsState()
-        val acceptDialogState = viewModel.acceptDialogState.collectAsState()
+        val messageDialogState by viewModel.messageDialogState.collectAsState()
+        val acceptDialogState by viewModel.acceptDialogState.collectAsState()
+        val showAddTask by viewModel.showAddTask.collectAsState()
 
-        Row(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
-            RightPane(viewModel, modifier = Modifier.fillMaxWidth())
+        Box(modifier) {
+            Row(
+                modifier = Modifier.matchParentSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
+                RightPane(viewModel, modifier = Modifier.fillMaxWidth())
+            }
+            if (showAddTask) {
+                val addCompetitionViewModel = remember { AddCompetitionViewModel(viewModel::addCompetitionFinished) }
+                AddCompetition(modifier = Modifier.matchParentSize(), viewModel = addCompetitionViewModel)
+            }
         }
 
-        MessageDialog(messageDialogState.value)
-        AcceptDialog(acceptDialogState.value)
+        MessageDialog(messageDialogState)
+        AcceptDialog(acceptDialogState)
     }
 
     @Composable
@@ -91,7 +102,7 @@ class CompetitionsPage: TabPage {
 
         val buttonsState = remember(viewModel.selectedCompetition) {
             LeftPaneButtonsState(
-                addButtonState = ButtonState(false) { }, // TODO CTF_Bot#4
+                addButtonState = ButtonState(true, viewModel::addCompetition),
                 addFromJsonButtonState = ButtonState(true, viewModel::onAddFileFromJson),
                 exportToJsonButtonState = ButtonState(false) { }, // TODO CTF_Bot#6
                 deleteButtonState = ButtonState(
@@ -109,7 +120,11 @@ class CompetitionsPage: TabPage {
         ) {
             LeftButtonsPane(buttonsState = buttonsState)
             Divider(Modifier.width(150.dp))
-            SelectableItemsList(items = viewModel.competitions, onItemSelected = { viewModel.onSelected(it) })
+            SelectableItemsList(
+                modifier = Modifier.width(200.dp),
+                items = viewModel.competitions,
+                onItemSelected = { viewModel.onSelected(it) }
+            )
         }
 
         if (addFromJsonDialogState.value.isVisible) FileChooserDialog { viewModel.addCompetitionsFromJson(it) }
@@ -154,8 +169,7 @@ class CompetitionsPage: TabPage {
 
     @Composable
     private fun RightPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-            Divider(Modifier.padding(8.dp))
+        Column(modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = viewModel.selectedCompetition?.name ?: "",
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -166,13 +180,13 @@ class CompetitionsPage: TabPage {
                 Table(
                     columns = taskColumns,
                     items = viewModel.tasks,
-                    modifier = Modifier.fillMaxWidth().weight(16f)
+                    modifier = Modifier.fillMaxWidth().weight(17f)
                 )
+                Spacer(Modifier.width(4.dp))
                 Table(
                     columns = playersColumns,
                     items = viewModel.scoreboard,
                     modifier = Modifier.fillMaxWidth().weight(4f),
-                    rowMaxLines = 1
                 )
             }
         }

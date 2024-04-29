@@ -10,7 +10,7 @@ import javafx.scene.text.FontWeight
 import javafx.scene.text.TextAlignment
 import tornadofx.*
 import ui.fx.BaseView
-import ui.common.Colors
+import ui.fx.Colors
 
 class PlayersView: BaseView<PlayersViewModel>(PlayersViewModel(), "Players") {
 

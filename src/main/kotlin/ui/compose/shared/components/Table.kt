@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -37,7 +36,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-open class Column(val name: String, val editable: Boolean)
+open class Column(
+    val name: String,
+    val editable: Boolean = false,
+    val weight: Float = 1f,
+    val maxLines: Int = 1,
+    val textAlign: TextAlign = TextAlign.Start
+)
 
 interface Row {
     val columns: List<Column>
@@ -49,14 +54,13 @@ interface Row {
 fun <T: Column> Table(
     columns: List<T>,
     items: List<Row>,
-    modifier: Modifier = Modifier,
-    rowMaxLines: Int = 3
+    modifier: Modifier = Modifier
 ) {
     Column(modifier) {
         TableHeader(columns)
-        LazyVerticalGrid(columns = GridCells.Fixed(1)) {
+        LazyColumn {
             items(items) {
-                TableRow(it, maxLines = rowMaxLines)
+                TableRow(it)
             }
         }
     }
@@ -68,7 +72,10 @@ fun TableHeader(columns: List<Column>, modifier: Modifier = Modifier) {
         for (column in columns) {
             Text(
                 text = column.name,
-                modifier = Modifier.fillMaxWidth().weight(1f).border(BorderStroke(1.dp, Color.Black)).padding(4.dp),
+                modifier = Modifier.fillMaxWidth()
+                    .weight(column.weight)
+                    .border(BorderStroke(1.dp, Color.Black))
+                    .padding(4.dp),
                 maxLines = 1,
                 style = MaterialTheme.typography.subtitle1,
                 overflow = TextOverflow.Ellipsis,
@@ -79,18 +86,19 @@ fun TableHeader(columns: List<Column>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TableRow(row: Row, modifier: Modifier = Modifier, maxLines: Int = 3) {
+fun TableRow(row: Row, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().height(intrinsicSize = IntrinsicSize.Max)) {
         for (field in row.columns) {
             TableField(
                 value = row.values[field] ?: "",
-                modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(1f),
+                modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(field.weight),
                 editable = field.editable,
                 onValueChanged = {
                     row.values[field] = it
                     row.commitChanges()
                 },
-                maxLines = maxLines
+                maxLines = field.maxLines,
+                textAlign = field.textAlign
             )
         }
     }
@@ -102,7 +110,8 @@ fun TableField(
     modifier: Modifier = Modifier,
     onValueChanged: (String) -> Unit = {},
     editable: Boolean = false,
-    maxLines: Int = 3
+    maxLines: Int = 3,
+    textAlign: TextAlign = TextAlign.Start
 ) {
     var editEnabled by remember { mutableStateOf(false) }
 
@@ -113,7 +122,8 @@ fun TableField(
     }
         .border(BorderStroke(1.dp, if (editEnabled) Color.Black else Color.LightGray))
         .background(if (editEnabled) Color.White else Color.Transparent)
-        .padding(4.dp)
+        .padding(4.dp),
+        contentAlignment = Alignment.Center
     ) {
         if (editEnabled) {
 
@@ -137,10 +147,12 @@ fun TableField(
             LaunchedEffect(Unit) { focusRequester.requestFocus() }
         } else {
             Text(
+                modifier = Modifier.fillMaxWidth(),
                 text = value,
                 maxLines = maxLines,
                 style = MaterialTheme.typography.subtitle2,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = textAlign
             )
         }
     }
