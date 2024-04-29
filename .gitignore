@@ -19,3 +19,4 @@ BotCredentials.json
 /tasks/
 /out/
 .DS_Store
+.release
