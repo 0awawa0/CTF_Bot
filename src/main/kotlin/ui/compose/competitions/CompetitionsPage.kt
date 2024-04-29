@@ -22,6 +22,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +41,18 @@ import ui.compose.shared.components.TabPage
 import ui.compose.shared.components.Table
 
 class CompetitionsPage: TabPage {
+
+    private data class ButtonState(
+        val isEnabled: Boolean,
+        val onClick: () -> Unit
+    )
+
+    private data class LeftPaneButtonsState(
+        val addButtonState: ButtonState,
+        val addFromJsonButtonState: ButtonState,
+        val exportToJsonButtonState: ButtonState,
+        val deleteButtonState: ButtonState
+    )
 
     private val viewModel by lazy { CompetitionsViewModel() }
 
@@ -76,6 +89,17 @@ class CompetitionsPage: TabPage {
     private fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
         val addFromJsonDialogState = viewModel.addFromJsonDialogState.collectAsState()
 
+        val buttonsState = remember(viewModel.selectedCompetition) {
+            LeftPaneButtonsState(
+                addButtonState = ButtonState(false) { }, // TODO CTF_Bot#4
+                addFromJsonButtonState = ButtonState(true, viewModel::onAddFileFromJson),
+                exportToJsonButtonState = ButtonState(false) { }, // TODO CTF_Bot#6
+                deleteButtonState = ButtonState(
+                    isEnabled = viewModel.selectedCompetition != null,
+                    onClick = viewModel::onCompetitionDeleteClicked
+                )
+            )
+        }
         Column(
             modifier.border(
                 border = BorderStroke(1.dp, MaterialTheme.colors.onBackground),
@@ -83,10 +107,7 @@ class CompetitionsPage: TabPage {
             ).padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LeftButtonsPane(
-                onAddFromJsonClicked = { viewModel.onAddFileFromJson() },
-                onDeleteClicked = { viewModel.onCompetitionDeleteClicked() }
-            )
+            LeftButtonsPane(buttonsState = buttonsState)
             Divider(Modifier.width(150.dp))
             SelectableItemsList(items = viewModel.competitions, onItemSelected = { viewModel.onSelected(it) })
         }
@@ -97,35 +118,36 @@ class CompetitionsPage: TabPage {
     @Composable
     private fun LeftButtonsPane(
         modifier: Modifier = Modifier,
-        onAddClicked: () -> Unit = {},
-        onDeleteClicked: () -> Unit = {},
-        onAddFromJsonClicked: () -> Unit = {},
-        onExportToJsonClicked: () -> Unit = {}
+        buttonsState: LeftPaneButtonsState
     ) {
         val buttonColors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
         Column(modifier.width(IntrinsicSize.Max), verticalArrangement = Arrangement.SpaceEvenly) {
             Row(modifier = Modifier.width(IntrinsicSize.Max), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    onClick = onAddClicked,
-                    colors = buttonColors
+                    onClick = buttonsState.addButtonState.onClick,
+                    colors = buttonColors,
+                    enabled = buttonsState.addButtonState.isEnabled
                 ) { Text("Add") }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    onClick = onDeleteClicked,
-                    colors = buttonColors
+                    onClick = buttonsState.deleteButtonState.onClick,
+                    colors = buttonColors,
+                    enabled = buttonsState.deleteButtonState.isEnabled
                 ) { Text("Delete") }
             }
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = onAddFromJsonClicked,
-                colors = buttonColors
+                onClick = buttonsState.addFromJsonButtonState.onClick,
+                colors = buttonColors,
+                enabled = buttonsState.addFromJsonButtonState.isEnabled
             ) { Text("Add from JSON") }
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = onExportToJsonClicked,
-                colors = buttonColors
+                onClick = buttonsState.exportToJsonButtonState.onClick,
+                colors = buttonColors,
+                enabled = buttonsState.exportToJsonButtonState.isEnabled
             ) { Text("Export to JSON") }
         }
     }

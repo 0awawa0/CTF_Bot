@@ -41,6 +41,10 @@ class CompetitionsViewModel {
         val onDecline: () -> Unit = {}
     )
 
+    data class ButtonsState(
+        val isDeleteEnabled: Boolean
+    )
+
     private val tag = "CompetitionsViewModel"
 
     private val _competitions = mutableStateMapOf<Long?, Competition>()
