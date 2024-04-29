@@ -72,7 +72,7 @@ dependencies {
 tasks.withType<Jar> {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes["Main-Class"] = "ui.compose.ComposeApplication"
+        attributes["Main-Class"] = "ui.ApplicationKt"
     }
     from (
         configurations.compileClasspath.get().map {

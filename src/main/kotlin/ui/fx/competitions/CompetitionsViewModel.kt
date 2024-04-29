@@ -1,11 +1,10 @@
-package ui.competitions
+package ui.fx.competitions
 
 import database.*
 import javafx.beans.property.ReadOnlyStringProperty
 import javafx.beans.property.ReadOnlyStringWrapper
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,7 +12,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tornadofx.toObservable
-import ui.BaseViewModel
+import ui.fx.BaseViewModel
 import utils.Logger
 import java.io.File
 

@@ -1,4 +1,4 @@
-package ui.main
+package ui.fx.main
 
 import bot.BotManager
 import database.CompetitionDTO
@@ -7,10 +7,9 @@ import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.beans.property.ReadOnlyBooleanWrapper
 import javafx.collections.ObservableList
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.javafx.JavaFx
 import tornadofx.toObservable
-import ui.BaseViewModel
+import ui.fx.BaseViewModel
 import utils.Logger
 
 class MainViewModel: BaseViewModel() {

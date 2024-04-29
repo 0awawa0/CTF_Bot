@@ -1,4 +1,4 @@
-package ui
+package ui.fx
 
 import tornadofx.View
 
