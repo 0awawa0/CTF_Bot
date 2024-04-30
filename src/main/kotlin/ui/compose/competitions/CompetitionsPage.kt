@@ -27,36 +27,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogWindow
-import androidx.compose.ui.window.rememberDialogState
-import ui.compose.competitions.add.AddCompetition
-import ui.compose.competitions.add.AddCompetitionViewModel
-import ui.compose.shared.BlueButtonColor
-import ui.compose.shared.GreenButtonColor
-import ui.compose.shared.RedButtonColor
-import ui.compose.shared.components.FileChooserDialog
+import ui.compose.shared.components.dialogs.Dialog
+import ui.compose.shared.components.dialogs.FileChooserDialog
 import ui.compose.shared.components.SelectableItemsList
 import ui.compose.shared.components.TabPage
 import ui.compose.shared.components.Table
+import ui.compose.shared.components.dialogs.InstanceCreationDialog
 
 class CompetitionsPage: TabPage {
-
-    private data class ButtonState(
-        val isEnabled: Boolean,
-        val onClick: () -> Unit
-    )
-
-    private data class LeftPaneButtonsState(
-        val addButtonState: ButtonState,
-        val addFromJsonButtonState: ButtonState,
-        val exportToJsonButtonState: ButtonState,
-        val deleteButtonState: ButtonState
-    )
 
     private val viewModel by lazy { CompetitionsViewModel() }
 
@@ -73,9 +54,9 @@ class CompetitionsPage: TabPage {
 
     @Composable
     private fun Content(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        val messageDialogState by viewModel.messageDialogState.collectAsState()
-        val acceptDialogState by viewModel.acceptDialogState.collectAsState()
-        val showAddTask by viewModel.showAddTask.collectAsState()
+        val dialog by viewModel.dialog.collectAsState()
+        val fileChooseDialog by viewModel.fileChooseDialog.collectAsState()
+        val instanceCreationDialog by viewModel.instanceCreationModel.collectAsState()
 
         Box(modifier) {
             Row(
@@ -86,25 +67,25 @@ class CompetitionsPage: TabPage {
                 LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
                 RightPane(viewModel, modifier = Modifier.fillMaxWidth())
             }
-            if (showAddTask) {
-                val addCompetitionViewModel = remember { AddCompetitionViewModel(viewModel::addCompetitionFinished) }
-                AddCompetition(modifier = Modifier.matchParentSize(), viewModel = addCompetitionViewModel)
-            }
+
+            InstanceCreationDialog(modifier = Modifier.matchParentSize(), model = instanceCreationDialog)
         }
 
-        MessageDialog(messageDialogState)
-        AcceptDialog(acceptDialogState)
+        Dialog(model = dialog)
+        FileChooserDialog(model = fileChooseDialog)
     }
 
     @Composable
     private fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        val addFromJsonDialogState = viewModel.addFromJsonDialogState.collectAsState()
 
         val buttonsState = remember(viewModel.selectedCompetition) {
             LeftPaneButtonsState(
                 addButtonState = ButtonState(true, viewModel::addCompetition),
                 addFromJsonButtonState = ButtonState(true, viewModel::onAddFileFromJson),
-                exportToJsonButtonState = ButtonState(false) { }, // TODO CTF_Bot#6
+                exportToJsonButtonState = ButtonState(
+                    isEnabled = viewModel.selectedCompetition != null,
+                    onClick = viewModel::exportCompetition
+                ),
                 deleteButtonState = ButtonState(
                     isEnabled = viewModel.selectedCompetition != null,
                     onClick = viewModel::onCompetitionDeleteClicked
@@ -126,8 +107,6 @@ class CompetitionsPage: TabPage {
                 onItemSelected = { viewModel.onSelected(it) }
             )
         }
-
-        if (addFromJsonDialogState.value.isVisible) FileChooserDialog { viewModel.addCompetitionsFromJson(it) }
     }
 
     @Composable
@@ -192,59 +171,15 @@ class CompetitionsPage: TabPage {
         }
     }
 
-    @Composable
-    private fun MessageDialog(state: CompetitionsViewModel.MessageDialogState) {
-        DialogWindow(
-            visible = state.isVisible,
-            title = when (state.type) {
-                CompetitionsViewModel.MessageDialogState.Type.Message -> "Message"
-                CompetitionsViewModel.MessageDialogState.Type.Error -> "Error"
-            },
-            onCloseRequest = { viewModel.hideMessage() },
-            state = rememberDialogState(size = DpSize(400.dp, 200.dp))
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Text(state.message, textAlign = TextAlign.Center)
-                Button(
-                    onClick = { viewModel.hideMessage() },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = when (state.type) {
-                        CompetitionsViewModel.MessageDialogState.Type.Message -> BlueButtonColor
-                        CompetitionsViewModel.MessageDialogState.Type.Error -> RedButtonColor
-                    })
-                ) { Text("OK", color = Color.White) }
-            }
-        }
-    }
+    private data class ButtonState(
+        val isEnabled: Boolean,
+        val onClick: () -> Unit
+    )
 
-    @Composable
-    private fun AcceptDialog(state: CompetitionsViewModel.AcceptDialogState) {
-        DialogWindow(
-            visible = state.isVisible,
-            title = "Are you sure?",
-            onCloseRequest = { state.onDecline },
-            state = rememberDialogState(size = DpSize(400.dp, 200.dp))
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Text(state.message, textAlign = TextAlign.Center)
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    Button(
-                        onClick = state.onAccept,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = RedButtonColor)
-                    ) { Text("OK", color = Color.White) }
-                    Button(
-                        onClick = state.onDecline,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = GreenButtonColor)
-                    ) { Text("Cancel", color = Color.White) }
-                }
-            }
-        }
-    }
+    private data class LeftPaneButtonsState(
+        val addButtonState: ButtonState,
+        val addFromJsonButtonState: ButtonState,
+        val exportToJsonButtonState: ButtonState,
+        val deleteButtonState: ButtonState
+    )
 }
