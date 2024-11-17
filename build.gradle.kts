@@ -1,6 +1,7 @@
+import org.gradle.kotlin.dsl.support.kotlinCompilerOptions
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
-version = "2.1.0-dev01"
+version = "2.1.0"
 val javafxVersion = "17.0.2"
 javafx { version = javafxVersion }
 
@@ -18,8 +19,13 @@ plugins {
     id("org.jetbrains.compose") version "1.6.2"
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
 dependencies {
-    val telegramBotsVersion = "6.5.0"
+    val telegramBotsVersion = "6.9.7.1"
     val kotlinVersion = "1.8.10"
     val serializationJsonVersion = "1.5.0"
     val coroutinesVersion = "1.6.4"

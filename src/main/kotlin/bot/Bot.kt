@@ -38,7 +38,9 @@ class Bot(
 
         const val DATA_MENU = "/menu"
         const val DATA_CURRENT_SCOREBOARD = "/current_scoreboard"
+        const val DATA_CURRENT_SCOREBOARD_PAGE = "/current_scoreboard_"
         const val DATA_GLOBAL_SCOREBOARD = "/global_scoreboard"
+        const val DATA_GLOBAL_SCOREBOARD_PAGE = "/global_scoreboard_"
         const val DATA_TASKS = "/tasks"
         const val DATA_TASK = "/task"
         const val DATA_FILE = "/file"
@@ -205,6 +207,18 @@ class Bot(
 
             val command = callback.data.split(" ").find { it.startsWith("/") }!!
             val content = callback.data.replace(command, "").trim()
+
+            if (command.startsWith(DATA_GLOBAL_SCOREBOARD_PAGE)) {
+                val page = command.removePrefix(DATA_GLOBAL_SCOREBOARD_PAGE).toIntOrNull() ?: 1
+                execute(messageMaker.getGlobalScoreBoardPage(page, callback))
+                return
+            }
+
+            if (command.startsWith(DATA_CURRENT_SCOREBOARD_PAGE)) {
+                val page = command.removePrefix(DATA_CURRENT_SCOREBOARD_PAGE).toIntOrNull() ?: 1
+                execute(messageMaker.getCurrentScoreboardPage(page, callback))
+                return
+            }
 
             when (command) {
                 DATA_FILE -> execute(messageMaker.getFileMessage(callback, content.toLong()))
