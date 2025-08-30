@@ -1,8 +1,12 @@
 package database
 
+import androidx.compose.ui.graphics.Paint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -311,6 +315,68 @@ object DbHelper {
             Logger.error(tag, "Failed to add task: ${ex.message}\n${ex.stackTraceToString()}")
             return null
         }
+    }
+
+    suspend fun add(taskModel: TaskModel, competitionId: Long): TaskDTO? {
+        val result = runCatching {
+            val dto = transactionOn(database) {
+                val competition = CompetitionEntity.findById(competitionId)
+                return@transactionOn competition?.let {
+                    TaskDTO(TaskEntity.new {
+                        this.category = taskModel.category
+                        this.name = taskModel.name
+                        this.description = taskModel.description
+                        this.flag = taskModel.flag
+                        this.attachment = taskModel.attachment
+                        this.competition = it
+                    })
+                }
+            }
+
+            if (dto != null) {
+                mEventsPipe.emit(DbEvent.Add(dto))
+            }
+
+            dto
+        }
+
+        result.exceptionOrNull()?.let {
+            Logger.error(tag, "Failed to add task: ${it.message}\n${it.stackTraceToString()}")
+        }
+
+        return result.getOrNull()
+    }
+
+    suspend fun add(tasks: List<TaskModel>, competitionId: Long): List<TaskDTO> {
+        val result = runCatching {
+            val tasks = transactionOn(database) {
+                val competition = CompetitionEntity.findById(competitionId)
+                return@transactionOn competition?.let {
+                    tasks.map { task ->
+                        TaskDTO(TaskEntity.new {
+                            this.category = task.category
+                            this.name = task.name
+                            this.description = task.description
+                            this.flag = task.flag
+                            this.attachment = task.attachment
+                            this.competition = it
+                        })
+                    }
+                }
+            }
+
+            if (tasks?.isNotEmpty() == true) {
+                mEventsPipe.emitAll(tasks.asFlow().map { DbEvent.Add(it) })
+            }
+
+            tasks
+        }
+
+        result.exceptionOrNull()?.let {
+            Logger.error(tag, "Failed to add task: ${it.message}\n${it.stackTraceToString()}")
+        }
+
+        return result.getOrNull() ?: emptyList()
     }
 
     suspend fun add(playerModel: PlayerModel): PlayerDTO? {

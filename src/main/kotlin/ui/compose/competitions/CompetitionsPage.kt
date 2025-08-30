@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerSize
@@ -21,6 +22,7 @@ import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,6 +50,12 @@ class CompetitionsPage: TabPage {
 
     @Composable
     override fun PageContent(modifier: Modifier) {
+        DisposableEffect(Unit) {
+            viewModel.onStart()
+
+            onDispose { viewModel.onDispose() }
+        }
+
         LaunchedEffect(viewModel.hashCode()) { viewModel.updateCompetitionsList() }
         Content(viewModel, modifier = modifier.fillMaxSize())
     }
@@ -67,12 +75,11 @@ class CompetitionsPage: TabPage {
                 LeftPane(viewModel, modifier = Modifier.fillMaxHeight())
                 RightPane(viewModel, modifier = Modifier.fillMaxWidth())
             }
-
-            InstanceCreationDialog(modifier = Modifier.matchParentSize(), model = instanceCreationDialog)
         }
 
         Dialog(model = dialog)
         FileChooserDialog(model = fileChooseDialog)
+        InstanceCreationDialog(model = instanceCreationDialog)
     }
 
     @Composable
@@ -148,6 +155,15 @@ class CompetitionsPage: TabPage {
 
     @Composable
     private fun RightPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
+        val buttonsState = remember(viewModel.selectedCompetition) {
+            RightPaneButtonsState(
+                add = ButtonState(isEnabled = viewModel.selectedCompetition != null, viewModel::addTask),
+                addFromJson = ButtonState(isEnabled = viewModel.selectedCompetition != null, viewModel::addTaskFromJson),
+                exportToJson = ButtonState(isEnabled = false, viewModel::exportCompetition),
+                delete = ButtonState(isEnabled = false, viewModel::deleteTask)
+            )
+        }
+
         Column(modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = viewModel.selectedCompetition?.name ?: "",
@@ -155,7 +171,7 @@ class CompetitionsPage: TabPage {
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
             )
-            Row(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxWidth().weight(1f)) {
                 Table(
                     columns = taskColumns,
                     items = viewModel.tasks,
@@ -167,6 +183,26 @@ class CompetitionsPage: TabPage {
                     items = viewModel.scoreboard,
                     modifier = Modifier.fillMaxWidth().weight(4f),
                 )
+            }
+            Spacer(Modifier.height(4.dp))
+            RightPaneButtons(buttonsState, Modifier.fillMaxWidth())
+        }
+    }
+
+    @Composable
+    private fun RightPaneButtons(state: RightPaneButtonsState, modifier: Modifier) {
+        Row(modifier, horizontalArrangement = Arrangement.SpaceEvenly) {
+            Button(onClick = state.add.onClick, enabled = state.add.isEnabled) {
+                Text("Add")
+            }
+            Button(onClick = state.addFromJson.onClick, enabled = state.addFromJson.isEnabled) {
+                Text("Add from JSON")
+            }
+            Button(onClick = state.exportToJson.onClick, enabled = state.exportToJson.isEnabled) {
+                Text("Export to JSON")
+            }
+            Button(onClick = state.delete.onClick, enabled = state.delete.isEnabled) {
+                Text("Delete")
             }
         }
     }
@@ -181,5 +217,12 @@ class CompetitionsPage: TabPage {
         val addFromJsonButtonState: ButtonState,
         val exportToJsonButtonState: ButtonState,
         val deleteButtonState: ButtonState
+    )
+
+    private data class RightPaneButtonsState(
+        val add: ButtonState,
+        val addFromJson: ButtonState,
+        val exportToJson: ButtonState,
+        val delete: ButtonState,
     )
 }

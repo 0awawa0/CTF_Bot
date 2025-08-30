@@ -140,6 +140,8 @@ class PlayersViewModel: BaseViewModel() {
                     if (selectedPlayer?.id == player.id) selectedPlayer = player
                 }
             }
+
+            else -> {}
         }
     }
 
@@ -158,6 +160,8 @@ class PlayersViewModel: BaseViewModel() {
                     }
                 }
             }
+
+            else -> {}
         }
     }
 
@@ -170,6 +174,8 @@ class PlayersViewModel: BaseViewModel() {
             is SolveDTO -> {
                 withContext(Dispatchers.JavaFx) { solves.removeIf { it.id == dto.id }}
             }
+
+            else -> {}
         }
     }
 }

@@ -7,9 +7,10 @@ import kotlin.coroutines.CoroutineContext
 
 open class BaseViewModel(private val coroutineContext: CoroutineContext = Dispatchers.Default) {
 
-    protected var viewModelScope: CoroutineScope = CoroutineScope(coroutineContext)
-        private set
+    protected val viewModelScope: CoroutineScope by lazy {
+        CoroutineScope(coroutineContext)
+    }
 
-    open fun onViewDock() { viewModelScope = CoroutineScope(coroutineContext) }
+    open fun onViewDock() { }
     open fun onViewUndock() { viewModelScope.cancel() }
 }
