@@ -1,6 +1,6 @@
 package database
 
-abstract class BaseDTO {
+sealed class BaseDTO {
     abstract val id: Long
 
     abstract suspend fun updateEntity()

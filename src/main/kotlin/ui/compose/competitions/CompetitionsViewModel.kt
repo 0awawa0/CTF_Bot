@@ -3,13 +3,16 @@ package ui.compose.competitions
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import database.CompetitionDTO
 import database.CompetitionModel
 import database.DbHelper
+import database.PlayerDTO
+import database.SolveDTO
+import database.TaskDTO
 import database.TaskModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
@@ -47,6 +50,16 @@ class CompetitionsViewModel: BaseViewModel() {
     val dialog: StateFlow<DialogModel?> get() = _dialog
     val instanceCreationModel: StateFlow<InstanceCreationModel?> get() = _instanceCreationDialog
 
+    override fun onStart() {
+        super.onStart()
+
+        viewModelScope.launch {
+            DbHelper.eventsPipe.collect {
+                it.handle()
+            }
+        }
+    }
+
     fun onSelected(competition: Competition) {
         _competitions[selectedCompetitionId.value]?.let {
             _competitions[selectedCompetitionId.value] = it.copy(selected = false)
@@ -72,8 +85,9 @@ class CompetitionsViewModel: BaseViewModel() {
     fun addCompetition() {
         val competitionName = mutableStateOf("")
         _instanceCreationDialog.value = InstanceCreationModel(
+            title = "Add competition",
             fields = listOf(
-                InstanceCreationModel.InstanceField(
+                InstanceCreationModel.InstanceField.Text(
                     name = "Competition name",
                     value = competitionName,
                     onValueChanged = { competitionName.value = it }
@@ -116,6 +130,102 @@ class CompetitionsViewModel: BaseViewModel() {
         )
     }
 
+    fun addTask() {
+        val category = mutableStateOf("")
+        val name = mutableStateOf("")
+        val description = mutableStateOf("")
+        val flag = mutableStateOf("")
+        val attachment = mutableStateOf("")
+
+        _instanceCreationDialog.value = InstanceCreationModel(
+            title = "Add task",
+            fields = listOf(
+                InstanceCreationModel.InstanceField.Text(
+                    name = "Category",
+                    value = category,
+                    onValueChanged = { category.value = it }
+                ),
+                InstanceCreationModel.InstanceField.Text(
+                    name = "Name",
+                    value = name,
+                    onValueChanged = { name.value = it }
+                ),
+                InstanceCreationModel.InstanceField.Text(
+                    name = "Description",
+                    value = description,
+                    onValueChanged = { description.value = it }
+                ),
+                InstanceCreationModel.InstanceField.Text(
+                    name = "Flag",
+                    value = flag,
+                    onValueChanged = { flag.value = it }
+                ),
+                InstanceCreationModel.InstanceField.File(
+                    name = "Attachment",
+                    selectedPath = attachment,
+                    onOpenFileSelection = {
+                        _fileChooseDialog.value = FileChooseModel(
+                            title = "Choose file",
+                            mode = FileChooseModel.Mode.OPEN_FILE,
+                            onResult = {
+                                _fileChooseDialog.value = null
+                                attachment.value = it?.absolutePath ?: ""
+                            }
+                        )
+                    }
+                )
+            ),
+            onSave = {
+                viewModelScope.launch {
+                    selectedCompetitionId.value?.let {
+                        DbHelper.add(
+                            TaskModel(
+                                category = category.value,
+                                name = name.value,
+                                description = description.value,
+                                flag = flag.value,
+                                attachment = attachment.value
+                            ),
+                            competitionId = it
+                        )
+                    }
+                }
+                _instanceCreationDialog.value = null
+            },
+            onCancel = {
+                _instanceCreationDialog.value = null
+            }
+        )
+    }
+
+    fun addTaskFromJson() {
+        _fileChooseDialog.value = FileChooseModel(
+            title = "Choose file",
+            mode = FileChooseModel.Mode.OPEN_FILE,
+            onResult = { file ->
+                _fileChooseDialog.value = null
+                viewModelScope.launch {
+                    file?.let { file ->
+                        try {
+                            val parsedTasks = Json.decodeFromString<List<TaskModel>>(file.readText())
+                            selectedCompetitionId.value?.let { DbHelper.add(parsedTasks, it) }
+                        } catch (ex: Exception) {
+                            reportError("Failed to parse tasks from file", ex)
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    fun exportTaskToJson() {
+
+    }
+
+    fun deleteTask() {
+
+    }
+
     suspend fun updateCompetitionsList() {
         withContext(Dispatchers.Default) {
             _competitions.clear()
@@ -153,7 +263,6 @@ class CompetitionsViewModel: BaseViewModel() {
         _instanceCreationDialog.value = null
         if (isSuccessful) {
             viewModelScope.launch {
-                updateCompetitionsList()
                 showMessage("New competition created")
             }
         }
@@ -239,7 +348,7 @@ class CompetitionsViewModel: BaseViewModel() {
                 TaskRow(
                     dto = taskDbo.toTask(),
                     changesCoroutineScope = viewModelScope,
-                    onChangesSaved = ::updateTasksList
+                    onChangesSaved = {}
                 )
             }
             _tasks.clear()
@@ -257,6 +366,15 @@ class CompetitionsViewModel: BaseViewModel() {
             } ?: emptyList()
             _scoreboard.clear()
             _scoreboard.addAll(board)
+        }
+    }
+
+    private suspend fun DbHelper.DbEvent.handle() {
+        when (dto) {
+            is CompetitionDTO -> updateCompetitionsList()
+            is TaskDTO -> updateTasksList()
+            is SolveDTO -> updateTasksList()
+            is PlayerDTO -> updateTasksList()
         }
     }
 }

@@ -1,8 +1,8 @@
-import org.gradle.kotlin.dsl.support.kotlinCompilerOptions
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 version = "2.1.0"
 val javafxVersion = "17.0.2"
+val kotlinVersion = "1.9.10"
 javafx { version = javafxVersion }
 
 repositories {
@@ -12,11 +12,12 @@ repositories {
 }
 
 plugins {
+    val kotlinVersion = "1.9.10"
     java
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version kotlinVersion
+    id("org.jetbrains.compose") version "1.6.2"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
     id("org.openjfx.javafxplugin") version "0.0.9"
-    id("org.jetbrains.compose") version "1.6.2"
 }
 
 java {
@@ -26,7 +27,6 @@ java {
 
 dependencies {
     val telegramBotsVersion = "6.9.7.1"
-    val kotlinVersion = "1.8.10"
     val serializationJsonVersion = "1.5.0"
     val coroutinesVersion = "1.6.4"
 
@@ -63,6 +63,8 @@ dependencies {
 
     // UI
     implementation("no.tornado:tornadofx:2.0.0-SNAPSHOT")
+    implementation(compose.foundation)
+    implementation(compose.ui)
     implementation(compose.desktop.macos_arm64)
     implementation(compose.desktop.macos_x64)
     implementation(compose.desktop.windows_x64)

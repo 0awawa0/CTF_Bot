@@ -183,7 +183,10 @@ class CompetitionsViewModel: BaseViewModel() {
                                     withContext(Dispatchers.JavaFx) {
                                         tasks.add(TaskItem(event.dto))
                                     }
-                            }}
+                            }
+
+                            else -> {}
+                        }
                     }
                     is DbHelper.DbEvent.Update -> {
                         when (event.dto) {
@@ -197,6 +200,8 @@ class CompetitionsViewModel: BaseViewModel() {
                                 if (tasks.removeIf { it.id == event.dto.id })
                                     tasks.add(TaskItem(event.dto))
                             }
+
+                            else -> {}
                         }
                     }
                     is DbHelper.DbEvent.Delete -> {
@@ -208,6 +213,8 @@ class CompetitionsViewModel: BaseViewModel() {
                             is TaskDTO -> withContext(Dispatchers.JavaFx) {
                                 tasks.removeIf { it.id == event.dto.id }
                             }
+
+                            else -> {}
                         }
                     }
                 }
