@@ -155,12 +155,12 @@ class CompetitionsPage: TabPage {
 
     @Composable
     private fun RightPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        val buttonsState = remember(viewModel.selectedCompetition) {
+        val buttonsState = remember(viewModel.selectedCompetition, viewModel.selectedTask) {
             RightPaneButtonsState(
                 add = ButtonState(isEnabled = viewModel.selectedCompetition != null, viewModel::addTask),
                 addFromJson = ButtonState(isEnabled = viewModel.selectedCompetition != null, viewModel::addTaskFromJson),
-                exportToJson = ButtonState(isEnabled = false, viewModel::exportCompetition),
-                delete = ButtonState(isEnabled = false, viewModel::deleteTask)
+                exportToJson = ButtonState(isEnabled = viewModel.selectedTask != null, viewModel::exportCompetition),
+                delete = ButtonState(isEnabled = viewModel.selectedTask != null, viewModel::deleteTask)
             )
         }
 
@@ -175,7 +175,9 @@ class CompetitionsPage: TabPage {
                 Table(
                     columns = taskColumns,
                     items = viewModel.tasks,
-                    modifier = Modifier.fillMaxWidth().weight(17f)
+                    modifier = Modifier.fillMaxWidth().weight(17f),
+                    onSelectRow = { viewModel.onSelectTask(it) },
+                    onEditColumn = { viewModel.onEditField(it) }
                 )
                 Spacer(Modifier.width(4.dp))
                 Table(

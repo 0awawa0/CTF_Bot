@@ -29,8 +29,13 @@ val taskColumns = listOf(
 class TaskRow(
     private val dto: Task,
     private val changesCoroutineScope: CoroutineScope,
-    private val onChangesSaved: suspend () -> Unit
+    private val onChangesSaved: suspend () -> Unit,
+    override val isSelected: Boolean = false,
+    override val editingColumn: Column? = null,
 ) : Row {
+    override val id: Long
+        get() = dto.id
+
     override val columns = taskColumns
     override val values: MutableMap<Column, String> = mutableMapOf(
         idColumn to dto.id.toString(),

@@ -11,11 +11,17 @@ private val playerScoreColumn = Column("Score", false, 1f, 1, TextAlign.Center)
 val playersColumns = listOf(playerNameColumn, playerScoreColumn)
 
 data class ScoreboardRow(private val dto: Score): Row {
+    override val id: Long
+        get() = dto.hashCode().toLong()
+
     override val columns: List<Column> = playersColumns
     override val values: MutableMap<Column, String> = mutableMapOf(
         playerNameColumn to dto.name,
         playerScoreColumn to dto.score.toString()
     )
+
+    override val editingColumn: Column?
+        get() = null
 
     override fun commitChanges() = throw UnsupportedOperationException("Players editing is not allowed")
 

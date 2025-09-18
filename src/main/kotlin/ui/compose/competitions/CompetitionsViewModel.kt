@@ -19,6 +19,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import ui.compose.shared.BaseViewModel
+import ui.compose.shared.components.Column
 import ui.compose.shared.components.dialogs.DialogModel
 import ui.compose.shared.components.dialogs.FileChooseModel
 import ui.compose.shared.components.dialogs.InstanceCreationModel
@@ -34,6 +35,7 @@ class CompetitionsViewModel: BaseViewModel() {
 
     private val _competitions = mutableStateMapOf<Long?, Competition>()
     private val selectedCompetitionId: MutableStateFlow<Long?> = MutableStateFlow(null)
+    private val selectedTaskId: MutableStateFlow<Long?> = MutableStateFlow(null)
     private val _tasks = mutableStateListOf<TaskRow>()
     private val _scoreboard = mutableStateListOf<ScoreboardRow>()
 
@@ -43,12 +45,17 @@ class CompetitionsViewModel: BaseViewModel() {
 
     val competitions: List<Competition> get() = _competitions.values.toList().sortedBy { it.id }
     val selectedCompetition: Competition? get() = _competitions[selectedCompetitionId.value]
+    val selectedTask: TaskRow? get() = selectedTaskId.value?.let {
+        _tasks[it.toInt()]
+    }
     val tasks: List<TaskRow> get() = _tasks
     val scoreboard: List<ScoreboardRow> get() = _scoreboard
 
     val fileChooseDialog: StateFlow<FileChooseModel?> get() = _fileChooseDialog
     val dialog: StateFlow<DialogModel?> get() = _dialog
     val instanceCreationModel: StateFlow<InstanceCreationModel?> get() = _instanceCreationDialog
+
+    private var editingColumn: Column? = null
 
     override fun onStart() {
         super.onStart()
@@ -239,6 +246,16 @@ class CompetitionsViewModel: BaseViewModel() {
         }
     }
 
+    fun onSelectTask(task: TaskRow) {
+        selectedTaskId.value = task.id
+        viewModelScope.launch { updateTasksList() }
+    }
+
+    fun onEditField(column: Column) {
+        editingColumn = column
+        viewModelScope.launch { updateTasksList() }
+    }
+
     private fun hideMessage() { _dialog.value = null }
 
     private fun addCompetitionsFromJson(file: File?) {
@@ -348,7 +365,13 @@ class CompetitionsViewModel: BaseViewModel() {
                 TaskRow(
                     dto = taskDbo.toTask(),
                     changesCoroutineScope = viewModelScope,
-                    onChangesSaved = {}
+                    onChangesSaved = {},
+                    isSelected = selectedTaskId.value == taskDbo.id,
+                    editingColumn = if (selectedTaskId.value == taskDbo.id) {
+                        editingColumn
+                    } else {
+                        null
+                    }
                 )
             }
             _tasks.clear()

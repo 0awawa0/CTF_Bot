@@ -3,7 +3,7 @@ package ui.compose.shared.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -31,12 +31,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-open class Column(
+data class Column(
     val name: String,
     val editable: Boolean = false,
     val weight: Float = 1f,
@@ -45,29 +44,38 @@ open class Column(
 )
 
 interface Row {
+    val id: Long
+    val isSelected: Boolean
+        get() = false
     val columns: List<Column>
     val values: MutableMap<Column, String>
+    val editingColumn: Column?
     fun commitChanges()
 }
 
 @Composable
-fun <T: Column> Table(
-    columns: List<T>,
-    items: List<Row>,
-    modifier: Modifier = Modifier
+fun <T: Row>Table(
+    columns: List<Column>,
+    items: List<T>,
+    modifier: Modifier = Modifier,
+    onSelectRow: (T) -> Unit = {},
+    onEditColumn: (Column) -> Unit = {},
 ) {
     Column(modifier) {
         TableHeader(columns)
         LazyColumn {
             items(items) {
-                TableRow(it)
+                TableRow(it, onSelect = onSelectRow, onEditColumn = onEditColumn)
             }
         }
     }
 }
 
 @Composable
-fun TableHeader(columns: List<Column>, modifier: Modifier = Modifier) {
+fun TableHeader(
+    columns: List<Column>,
+    modifier: Modifier = Modifier,
+) {
     Row(modifier.fillMaxWidth()) {
         for (column in columns) {
             Text(
@@ -86,11 +94,27 @@ fun TableHeader(columns: List<Column>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TableRow(row: Row, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth().height(intrinsicSize = IntrinsicSize.Max)) {
+fun <T: Row> TableRow(
+    row: T,
+    onSelect: (T) -> Unit,
+    onEditColumn: (Column) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier
+        .fillMaxWidth()
+        .height(intrinsicSize = IntrinsicSize.Max)
+        .clickable(enabled = true, onClick = { onSelect(row) })
+        .then(if (row.isSelected) {
+            Modifier.border(BorderStroke(2.dp, MaterialTheme.colors.secondary))
+        } else {
+            Modifier
+        })
+    ) {
         for (field in row.columns) {
             TableField(
                 value = row.values[field] ?: "",
+                onTap = { onSelect(row) },
+                onEdit = { onEditColumn(field) },
                 modifier = Modifier.fillMaxWidth().fillMaxHeight().weight(field.weight),
                 editable = field.editable,
                 onValueChanged = {
@@ -98,7 +122,8 @@ fun TableRow(row: Row, modifier: Modifier = Modifier) {
                     row.commitChanges()
                 },
                 maxLines = field.maxLines,
-                textAlign = field.textAlign
+                textAlign = field.textAlign,
+                isEditing = field == row.editingColumn
             )
         }
     }
@@ -107,35 +132,40 @@ fun TableRow(row: Row, modifier: Modifier = Modifier) {
 @Composable
 fun TableField(
     value: String,
+    onTap: () -> Unit,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier,
     onValueChanged: (String) -> Unit = {},
     editable: Boolean = false,
     maxLines: Int = 3,
-    textAlign: TextAlign = TextAlign.Start
+    textAlign: TextAlign = TextAlign.Start,
+    isEditing: Boolean = false,
 ) {
-    var editEnabled by remember { mutableStateOf(false) }
-
-    Box(modifier.pointerInput(Unit) {
-        detectTapGestures(
-            onDoubleTap = { editEnabled = true && editable }
-        )
-    }
-        .border(BorderStroke(1.dp, if (editEnabled) Color.Black else Color.LightGray))
-        .background(if (editEnabled) Color.White else Color.Transparent)
+    var lastClick by remember { mutableStateOf(0L) }
+    Box(modifier
+        .border(BorderStroke(1.dp, if (isEditing) Color.Black else Color.LightGray))
+        .background(if (isEditing) Color.White else Color.Transparent)
+        .clickable {
+            onTap()
+            val time = System.nanoTime() / 1_000_000
+            if (time - lastClick < 250) {
+                if (editable) onEdit()
+            }
+            lastClick = time
+        }
         .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (editEnabled) {
+        if (isEditing) {
 
             var updatedValue by remember { mutableStateOf(value) }
             val focusRequester = remember { FocusRequester() }
             BasicTextField(
                 value = updatedValue,
                 modifier = Modifier.onKeyEvent { keyEvent ->
-                    if (keyEvent.key == Key.Escape) editEnabled = false
+                    if (keyEvent.key == Key.Escape) onValueChanged(value)
                     if (keyEvent.key == Key.Enter) {
                         onValueChanged(updatedValue)
-                        editEnabled = false
                     }
                     return@onKeyEvent false
                 }

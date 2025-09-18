@@ -62,7 +62,9 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.41.2.2")
 
     // UI
-    implementation("no.tornado:tornadofx:2.0.0-SNAPSHOT")
+//    implementation("no.tornado:tornadofx:2.0.0-SNAPSHOT")
+//
+    implementation("com.googlecode.blaisemath.tornado:tornadofx-fx18k16:2.0.1")
     implementation(compose.foundation)
     implementation(compose.ui)
     implementation(compose.desktop.macos_arm64)
