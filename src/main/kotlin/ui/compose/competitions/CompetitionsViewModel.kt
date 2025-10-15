@@ -1,5 +1,6 @@
 package ui.compose.competitions
 
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,19 +36,20 @@ class CompetitionsViewModel: BaseViewModel() {
 
     private val _competitions = mutableStateMapOf<Long?, Competition>()
     private val selectedCompetitionId: MutableStateFlow<Long?> = MutableStateFlow(null)
-    private val selectedTaskId: MutableStateFlow<Long?> = MutableStateFlow(null)
+    private val _selectedTaskId: MutableStateFlow<Long?> = MutableStateFlow(null)
     private val _tasks = mutableStateListOf<TaskRow>()
     private val _scoreboard = mutableStateListOf<ScoreboardRow>()
-
+    private val _competitionControlsState = mutableStateOf(CompetitionControlButtonsState())
+    private val _taskControlsState = mutableStateOf(TaskControlButtonsState())
     private val _fileChooseDialog = MutableStateFlow<FileChooseModel?>(null)
     private val _dialog = MutableStateFlow<DialogModel?>(null)
     private val _instanceCreationDialog = MutableStateFlow<InstanceCreationModel?>(null)
 
+    val competitionControlButtonsState: State<CompetitionControlButtonsState> = _competitionControlsState
+    val taskControlButtonsState: State<TaskControlButtonsState> = _taskControlsState
+
     val competitions: List<Competition> get() = _competitions.values.toList().sortedBy { it.id }
     val selectedCompetition: Competition? get() = _competitions[selectedCompetitionId.value]
-    val selectedTask: TaskRow? get() = selectedTaskId.value?.let {
-        _tasks[it.toInt()]
-    }
     val tasks: List<TaskRow> get() = _tasks
     val scoreboard: List<ScoreboardRow> get() = _scoreboard
 
@@ -65,12 +67,30 @@ class CompetitionsViewModel: BaseViewModel() {
                 it.handle()
             }
         }
+
+        viewModelScope.launch {
+            updateCompetitionsList()
+        }
+
+        _competitionControlsState.value = CompetitionControlButtonsState(
+            add = ButtonState(
+                isEnabled = true,
+                onClick = ::addCompetition
+            ),
+            addFromJson = ButtonState(
+                isEnabled = true,
+                onClick = ::onAddCompetitionFromJson
+            )
+        )
     }
 
-    fun onSelected(competition: Competition) {
+    fun onSelectCompetition(competition: Competition) {
+        if (competition.id == selectedCompetitionId.value) return
+
         _competitions[selectedCompetitionId.value]?.let {
             _competitions[selectedCompetitionId.value] = it.copy(selected = false)
         }
+
         _competitions[competition.id]?.let {
             _competitions[competition.id] = competition.copy(selected = true)
             selectedCompetitionId.value = competition.id
@@ -79,65 +99,60 @@ class CompetitionsViewModel: BaseViewModel() {
                 updatePlayersList()
             }
         }
-    }
 
-    fun onAddFileFromJson() {
-        _fileChooseDialog.value = FileChooseModel(
-            title = "Choose file",
-            mode = FileChooseModel.Mode.OPEN_FILE,
-            onResult = ::addCompetitionsFromJson
+        _competitionControlsState.value = _competitionControlsState.value.copy(
+            delete = ButtonState(
+                isEnabled = true,
+                onClick = ::onCompetitionDeleteClicked
+            ),
+            exportToJson = ButtonState(
+                isEnabled = true,
+                onClick = ::exportCompetition
+            )
+        )
+
+        _taskControlsState.value = _taskControlsState.value.copy(
+            add = ButtonState(
+                isEnabled = true,
+                onClick = ::addTask
+            ),
+            addFromJson = ButtonState(
+                isEnabled = true,
+                onClick = ::addTaskFromJson
+            ),
+            delete = ButtonState(),
+            exportToJson = ButtonState()
         )
     }
 
-    fun addCompetition() {
-        val competitionName = mutableStateOf("")
-        _instanceCreationDialog.value = InstanceCreationModel(
-            title = "Add competition",
-            fields = listOf(
-                InstanceCreationModel.InstanceField.Text(
-                    name = "Competition name",
-                    value = competitionName,
-                    onValueChanged = { competitionName.value = it }
+    fun onSelectTask(task: TaskRow) {
+        _taskControlsState.value = taskControlButtonsState
+            .value
+            .copy(
+                delete = ButtonState(
+                    isEnabled = true,
+                    onClick = {
+                        viewModelScope.launch {
+                            DbHelper.deleteTask(task.id)
+                        }
+                    }
+                ),
+                exportToJson = ButtonState(
+                    isEnabled = true,
+                    onClick = ::exportTaskToJson
                 )
-            ),
-            onSave = {
-                viewModelScope.launch {
-                    DbHelper.add(CompetitionModel(competitionName.value))?.let {
-                        addCompetitionFinished(true)
-                    } ?: addCompetitionFinished(false)
-                }
-            },
-            onCancel = {
-                addCompetitionFinished(false)
-            }
-        )
+            )
+        _selectedTaskId.value = task.id
+        editingColumn = null
+        viewModelScope.launch { updateTasksList() }
     }
 
-    fun onCompetitionDeleteClicked() {
-        val competitionName = selectedCompetition?.name
-        _dialog.value = DialogModel(
-            title = "Competition deletion",
-            message = "This will delete competition '$competitionName' from database. This action is unrecoverable. Continue?",
-            options = listOf(
-                DialogModel.createAcceptOption("OK") {
-                    deleteCompetition()
-                    _dialog.value = null
-                },
-                DialogModel.createDenyOption("Cancel") { _dialog.value = null }
-            ),
-            close = { _dialog.value = null }
-        )
+    fun onEditField(column: Column) {
+        editingColumn = column
+        viewModelScope.launch { updateTasksList() }
     }
 
-    fun exportCompetition() {
-        _fileChooseDialog.value = FileChooseModel(
-            title = "Choose directory",
-            mode = FileChooseModel.Mode.OPEN_DIR,
-            onResult = ::onDirectorySelectedForExport
-        )
-    }
-
-    fun addTask() {
+    private fun addTask() {
         val category = mutableStateOf("")
         val name = mutableStateOf("")
         val description = mutableStateOf("")
@@ -205,7 +220,7 @@ class CompetitionsViewModel: BaseViewModel() {
         )
     }
 
-    fun addTaskFromJson() {
+    private fun addTaskFromJson() {
         _fileChooseDialog.value = FileChooseModel(
             title = "Choose file",
             mode = FileChooseModel.Mode.OPEN_FILE,
@@ -225,15 +240,11 @@ class CompetitionsViewModel: BaseViewModel() {
         )
     }
 
-    fun exportTaskToJson() {
+    private fun exportTaskToJson() {
 
     }
 
-    fun deleteTask() {
-
-    }
-
-    suspend fun updateCompetitionsList() {
+    private suspend fun updateCompetitionsList() {
         withContext(Dispatchers.Default) {
             _competitions.clear()
             _competitions.putAll(DbHelper.getAllCompetitions().map { it.id to Competition(it.id, it.name) })
@@ -246,17 +257,63 @@ class CompetitionsViewModel: BaseViewModel() {
         }
     }
 
-    fun onSelectTask(task: TaskRow) {
-        selectedTaskId.value = task.id
-        viewModelScope.launch { updateTasksList() }
-    }
-
-    fun onEditField(column: Column) {
-        editingColumn = column
-        viewModelScope.launch { updateTasksList() }
-    }
-
     private fun hideMessage() { _dialog.value = null }
+
+    private fun onAddCompetitionFromJson() {
+        _fileChooseDialog.value = FileChooseModel(
+            title = "Choose file",
+            mode = FileChooseModel.Mode.OPEN_FILE,
+            onResult = ::addCompetitionsFromJson
+        )
+    }
+
+    private fun addCompetition() {
+        val competitionName = mutableStateOf("")
+        _instanceCreationDialog.value = InstanceCreationModel(
+            title = "Add competition",
+            fields = listOf(
+                InstanceCreationModel.InstanceField.Text(
+                    name = "Competition name",
+                    value = competitionName,
+                    onValueChanged = { competitionName.value = it }
+                )
+            ),
+            onSave = {
+                viewModelScope.launch {
+                    DbHelper.add(CompetitionModel(competitionName.value))?.let {
+                        addCompetitionFinished(true)
+                    } ?: addCompetitionFinished(false)
+                }
+            },
+            onCancel = {
+                addCompetitionFinished(false)
+            }
+        )
+    }
+
+    private fun onCompetitionDeleteClicked() {
+        val selectedCompetition = selectedCompetition ?: return
+        _dialog.value = DialogModel(
+            title = "Competition deletion",
+            message = "This will delete competition '${selectedCompetition.name}' from database. This action is unrecoverable. Continue?",
+            options = listOf(
+                DialogModel.createAcceptOption("OK") {
+                    deleteCompetition(name = selectedCompetition.name, selectedCompetition.id)
+                    _dialog.value = null
+                },
+                DialogModel.createDenyOption("Cancel") { _dialog.value = null }
+            ),
+            close = { _dialog.value = null }
+        )
+    }
+
+    private fun exportCompetition() {
+        _fileChooseDialog.value = FileChooseModel(
+            title = "Choose directory",
+            mode = FileChooseModel.Mode.OPEN_DIR,
+            onResult = ::onDirectorySelectedForExport
+        )
+    }
 
     private fun addCompetitionsFromJson(file: File?) {
         _fileChooseDialog.value = null
@@ -325,17 +382,17 @@ class CompetitionsViewModel: BaseViewModel() {
         )
     }
 
-    private fun deleteCompetition() {
+    private fun deleteCompetition(name: String, id: Long) {
         viewModelScope.launch {
             val result = kotlin.runCatching {
-                selectedCompetitionId.value?.let { id ->
-                    DbHelper.getCompetition(id)?.let { competition ->
-                        DbHelper.delete(competition)
-                        selectedCompetitionId.value = null
-                        updateCompetitionsList()
-                        showMessage("Competition '${competition.name}' deleted successfully.")
-                    }
-                }
+                DbHelper.deleteCompetition(id)
+                selectedCompetitionId.value = null
+                _competitionControlsState.value = _competitionControlsState.value.copy(
+                    delete = ButtonState(),
+                    exportToJson = ButtonState()
+                )
+                updateCompetitionsList()
+                showMessage("Competition '${name}' deleted successfully.")
             }
 
             result.exceptionOrNull()?.let {
@@ -366,8 +423,8 @@ class CompetitionsViewModel: BaseViewModel() {
                     dto = taskDbo.toTask(),
                     changesCoroutineScope = viewModelScope,
                     onChangesSaved = {},
-                    isSelected = selectedTaskId.value == taskDbo.id,
-                    editingColumn = if (selectedTaskId.value == taskDbo.id) {
+                    isSelected = _selectedTaskId.value == taskDbo.id,
+                    editingColumn = if (_selectedTaskId.value == taskDbo.id) {
                         editingColumn
                     } else {
                         null
@@ -400,4 +457,23 @@ class CompetitionsViewModel: BaseViewModel() {
             is PlayerDTO -> updateTasksList()
         }
     }
+
+    data class ButtonState(
+        val isEnabled: Boolean = false,
+        val onClick: () -> Unit = {}
+    )
+
+    data class CompetitionControlButtonsState(
+        val add: ButtonState = ButtonState(),
+        val addFromJson: ButtonState = ButtonState(),
+        val exportToJson: ButtonState = ButtonState(),
+        val delete: ButtonState = ButtonState()
+    )
+
+    data class TaskControlButtonsState(
+        val add: ButtonState = ButtonState(),
+        val addFromJson: ButtonState = ButtonState(),
+        val exportToJson: ButtonState = ButtonState(),
+        val delete: ButtonState = ButtonState()
+    )
 }

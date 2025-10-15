@@ -1,6 +1,5 @@
 package database
 
-import androidx.compose.ui.graphics.Paint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asFlow
@@ -509,6 +508,36 @@ object DbHelper {
             return true
         } catch (ex: Exception) {
             Logger.error(tag, "Failed to delete player: ${ex.message}\n${ex.stackTraceToString()}")
+            return false
+        }
+    }
+
+    suspend fun deleteCompetition(id: Long): Boolean {
+        try {
+            val dto = transactionOn(database) {
+                val competition = CompetitionEntity.findById(id)?.let { CompetitionDTO(it) }
+                CompetitionsTable.deleteWhere { CompetitionsTable.id eq id }
+                competition
+            }
+            dto?.let { mEventsPipe.emit(DbEvent.Delete(it)) }
+            return true
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to delete competition: ${ex.message}\n${ex.stackTraceToString()}")
+            return false
+        }
+    }
+
+    suspend fun deleteTask(id: Long): Boolean {
+        try {
+            val dto = transactionOn(database) {
+                val task = TaskEntity.findById(id)?.let { TaskDTO(it) }
+                TasksTable.deleteWhere { TasksTable.id eq id }
+                task
+            }
+            dto?.let { mEventsPipe.emit(DbEvent.Delete(it)) }
+            return true
+        } catch (ex: Exception) {
+            Logger.error(tag, "Failed to delete task: ${ex.message}\n${ex.stackTraceToString()}")
             return false
         }
     }

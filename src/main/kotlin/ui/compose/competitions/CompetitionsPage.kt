@@ -23,10 +23,8 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +54,6 @@ class CompetitionsPage: TabPage {
             onDispose { viewModel.onDispose() }
         }
 
-        LaunchedEffect(viewModel.hashCode()) { viewModel.updateCompetitionsList() }
         Content(viewModel, modifier = modifier.fillMaxSize())
     }
 
@@ -84,21 +81,6 @@ class CompetitionsPage: TabPage {
 
     @Composable
     private fun LeftPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-
-        val buttonsState = remember(viewModel.selectedCompetition) {
-            LeftPaneButtonsState(
-                addButtonState = ButtonState(true, viewModel::addCompetition),
-                addFromJsonButtonState = ButtonState(true, viewModel::onAddFileFromJson),
-                exportToJsonButtonState = ButtonState(
-                    isEnabled = viewModel.selectedCompetition != null,
-                    onClick = viewModel::exportCompetition
-                ),
-                deleteButtonState = ButtonState(
-                    isEnabled = viewModel.selectedCompetition != null,
-                    onClick = viewModel::onCompetitionDeleteClicked
-                )
-            )
-        }
         Column(
             modifier.border(
                 border = BorderStroke(1.dp, MaterialTheme.colors.onBackground),
@@ -106,12 +88,12 @@ class CompetitionsPage: TabPage {
             ).padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LeftButtonsPane(buttonsState = buttonsState)
+            LeftButtonsPane(buttonsState = viewModel.competitionControlButtonsState.value)
             Divider(Modifier.width(150.dp))
             SelectableItemsList(
                 modifier = Modifier.width(200.dp),
                 items = viewModel.competitions,
-                onItemSelected = { viewModel.onSelected(it) }
+                onItemSelected = { viewModel.onSelectCompetition(it) }
             )
         }
     }
@@ -119,51 +101,42 @@ class CompetitionsPage: TabPage {
     @Composable
     private fun LeftButtonsPane(
         modifier: Modifier = Modifier,
-        buttonsState: LeftPaneButtonsState
+        buttonsState: CompetitionsViewModel.CompetitionControlButtonsState
     ) {
         val buttonColors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
         Column(modifier.width(IntrinsicSize.Max), verticalArrangement = Arrangement.SpaceEvenly) {
             Row(modifier = Modifier.width(IntrinsicSize.Max), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    onClick = buttonsState.addButtonState.onClick,
+                    onClick = buttonsState.add.onClick,
                     colors = buttonColors,
-                    enabled = buttonsState.addButtonState.isEnabled
+                    enabled = buttonsState.add.isEnabled
                 ) { Text("Add") }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    onClick = buttonsState.deleteButtonState.onClick,
+                    onClick = buttonsState.delete.onClick,
                     colors = buttonColors,
-                    enabled = buttonsState.deleteButtonState.isEnabled
+                    enabled = buttonsState.delete.isEnabled
                 ) { Text("Delete") }
             }
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = buttonsState.addFromJsonButtonState.onClick,
+                onClick = buttonsState.addFromJson.onClick,
                 colors = buttonColors,
-                enabled = buttonsState.addFromJsonButtonState.isEnabled
+                enabled = buttonsState.addFromJson.isEnabled
             ) { Text("Add from JSON") }
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = buttonsState.exportToJsonButtonState.onClick,
+                onClick = buttonsState.exportToJson.onClick,
                 colors = buttonColors,
-                enabled = buttonsState.exportToJsonButtonState.isEnabled
+                enabled = buttonsState.exportToJson.isEnabled
             ) { Text("Export to JSON") }
         }
     }
 
     @Composable
     private fun RightPane(viewModel: CompetitionsViewModel, modifier: Modifier = Modifier) {
-        val buttonsState = remember(viewModel.selectedCompetition, viewModel.selectedTask) {
-            RightPaneButtonsState(
-                add = ButtonState(isEnabled = viewModel.selectedCompetition != null, viewModel::addTask),
-                addFromJson = ButtonState(isEnabled = viewModel.selectedCompetition != null, viewModel::addTaskFromJson),
-                exportToJson = ButtonState(isEnabled = viewModel.selectedTask != null, viewModel::exportCompetition),
-                delete = ButtonState(isEnabled = viewModel.selectedTask != null, viewModel::deleteTask)
-            )
-        }
-
         Column(modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = viewModel.selectedCompetition?.name ?: "",
@@ -187,12 +160,12 @@ class CompetitionsPage: TabPage {
                 )
             }
             Spacer(Modifier.height(4.dp))
-            RightPaneButtons(buttonsState, Modifier.fillMaxWidth())
+            RightPaneButtons(viewModel.taskControlButtonsState.value, Modifier.fillMaxWidth())
         }
     }
 
     @Composable
-    private fun RightPaneButtons(state: RightPaneButtonsState, modifier: Modifier) {
+    private fun RightPaneButtons(state: CompetitionsViewModel.TaskControlButtonsState, modifier: Modifier) {
         Row(modifier, horizontalArrangement = Arrangement.SpaceEvenly) {
             Button(onClick = state.add.onClick, enabled = state.add.isEnabled) {
                 Text("Add")
@@ -208,23 +181,4 @@ class CompetitionsPage: TabPage {
             }
         }
     }
-
-    private data class ButtonState(
-        val isEnabled: Boolean,
-        val onClick: () -> Unit
-    )
-
-    private data class LeftPaneButtonsState(
-        val addButtonState: ButtonState,
-        val addFromJsonButtonState: ButtonState,
-        val exportToJsonButtonState: ButtonState,
-        val deleteButtonState: ButtonState
-    )
-
-    private data class RightPaneButtonsState(
-        val add: ButtonState,
-        val addFromJson: ButtonState,
-        val exportToJson: ButtonState,
-        val delete: ButtonState,
-    )
 }
